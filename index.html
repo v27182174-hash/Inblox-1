@@ -237,37 +237,67 @@ const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravi
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
 /* Аккаунты хранятся в браузере (localStorage): после обновления страницы вход сохраняется */
-const Acc={cur:null,list:store.get('inblox.accounts',[]),persist:store.set('inblox.probe',1),
-  key(n){ return 'inblox.'+n+'.'+this.cur.id; },
-  async hash(pw,salt){
-    try{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+pw)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
-    catch(e){ let h=5381; const t=salt+':'+pw; for(let i=0;i<t.length;i++) h=((h<<5)+h+t.charCodeAt(i))|0; return 'f'+(h>>>0).toString(16); }
-  },
-  find(name){ const n=name.toLowerCase(); return this.list.find(a=>a.name.toLowerCase()===n); },
-  enter(a){
-    this.cur=a; store.set('inblox.session',a.id);
-    S.games=store.get(this.key('games'),[]); S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
-    S.avatar=Object.assign({},DEF_AVATAR,{name:a.name},store.get(this.key('avatar'),{})); Snd.cache={}; Cloud.attach();
-  },
-  async register(name,pw){
-    if(this.find(name)) return 'Такое имя уже занято';
-    const salt=uid(), a={id:uid(),name,salt,hash:await this.hash(pw,salt),created:Date.now()}, first=this.list.length===0;
-    this.list.push(a); store.set('inblox.accounts',this.list); Cloud.accDirty=true;
-    if(first){ this.cur=a; for(const n of ['games','avatar','sounds']){ const v=store.get('inblox.'+n,null); if(v!=null) store.set(this.key(n),v); } }
-    this.enter(a); if(first){ S.avatar.name=a.name; saveAvatar(); }
-    return null;
-  },
-  async login(name,pw){
-    const a=this.find(name); if(!a||a.hash!==await this.hash(pw,a.salt)) return 'Неверное имя или пароль';
-    this.enter(a); return null;
-  },
-  logout(){
-    Snd.stopMusic(); Cloud.sent={}; this.cur=null; store.set('inblox.session',null); S.games=[]; S.sounds=[]; S.avatar=Object.assign({},DEF_AVATAR);
-    Auth.show('login');
+/* ---------- Сервер (Cloudflare _worker.js + D1) ---------- */
+const banUntil=u=>u?(u<4e12?' (до '+new Date(u).toLocaleString('ru-RU')+')':' (навсегда)'):'';
+const Api={tok:store.get('inblox.token',null),
+  async call(method,path,body){
+    let r,d=null;
+    try{ r=await fetch('/api/'+path,{method,headers:{'Content-Type':'application/json',...(this.tok?{Authorization:'Bearer '+this.tok}:{})},body:body===undefined?undefined:JSON.stringify(body)}); }
+    catch(e){ return {ok:false,net:true,status:0,d:{},error:'Нет связи с сервером'}; }
+    try{ d=await r.json(); }catch(e){ d={}; }
+    d=d||{};
+    if(d.banned&&Acc.cur) Acc.kick('Аккаунт заблокирован'+(d.reason?': '+d.reason:'')+banUntil(d.until));
+    else if(r.status===401&&this.tok&&Acc.cur&&path!=='login') Acc.kick('Сессия закончилась. Войдите снова');
+    return {ok:r.ok,status:r.status,d,error:d.error||(r.ok?'':'Сервер недоступен ('+r.status+')')};
   }
 };
-const saveGames=()=>{ if(!Acc.cur) return; if(!store.set(Acc.key('games'),S.games)) toast('Нет места в браузере: игры сохранены только до закрытия страницы',4000); Cloud.queue(); };
-const saveAvatar=()=>{ if(!Acc.cur) return; S.avatar.ts=Date.now(); store.set(Acc.key('avatar'),S.avatar); Cloud.avDirty=true; Cloud.queue(); };
+const Acc={cur:null,list:[],persist:true,
+  key(n){ return 'inblox.'+n+'.'+this.cur.id; },
+  enter(d){
+    this.cur=d.user; if(d.token){ Api.tok=d.token; store.set('inblox.token',d.token); }
+    S.games=Array.isArray(d.games)?d.games:[]; Sync.reset();
+    S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
+    S.avatar=Object.assign({},DEF_AVATAR,{name:d.user.name},d.avatar||{}); Snd.cache={}; Cloud.set('Онлайн');
+    this.migrate();
+  },
+  /* перенос игр и звуков из старого локального аккаунта с тем же именем (если они были в этом браузере) */
+  async migrate(){
+    try{
+      const olds=store.get('inblox.accounts',[]), me=this.cur; if(!olds.length||store.get('inblox.migrated.'+me.id,false)) return;
+      store.set('inblox.migrated.'+me.id,true);
+      const o=olds.find(a=>a&&a.name&&a.name.toLowerCase()===me.name.toLowerCase()); if(!o) return;
+      let add=0; for(const g of store.get('inblox.games.'+o.id,[])) if(g&&g.id&&!S.games.find(x=>x.id===g.id)){ S.games.push(g); add++; }
+      const ls=store.get('inblox.sounds.'+o.id,[]); let sn=0;
+      for(const x of ls){ if(!x||S.sounds.find(q=>q.id===x.id)) continue; if(x.idb){ const d=await Media.get(o.id+':s:'+x.id); if(d) await Media.put(me.id+':s:'+x.id,d); S.sounds.push({id:x.id,name:x.name,stored:true}); } else S.sounds.push(x); sn++; }
+      if(add||sn){ if(add) saveGames(); if(sn) saveSounds(); if(Home.on) Home.render(); toast('Перенесено с этого устройства: игр '+add,3500); }
+    }catch(e){ console.error(e); }
+  },
+  async register(name,pw){ const r=await Api.call('POST','register',{name,pw}); if(!r.ok||!r.d.user) return r.error||'Сервер недоступен'; this.enter(r.d); return null; },
+  async login(name,pw){ const r=await Api.call('POST','login',{name,pw}); if(!r.ok||!r.d.user) return r.d.banned?'Аккаунт заблокирован'+(r.d.reason?': '+r.d.reason:'')+banUntil(r.d.until):(r.error||'Сервер недоступен'); this.enter(r.d); return null; },
+  out(){ Snd.stopMusic(); this.cur=null; Api.tok=null; store.set('inblox.token',null); S.games=[]; S.sounds=[]; S.avatar=Object.assign({},DEF_AVATAR); Sync.reset(); Home.pub=[]; },
+  logout(){ Api.call('POST','logout'); this.out(); Auth.show('login'); },
+  kick(msg){ if(!this.cur) return; if(Play.on) Play.teardown(); this.out(); Auth.show('login'); Auth.err=msg; const e=$('#aErr'); if(e) e.textContent=msg; }
+};
+/* Синхронизация игр и аватара с сервером (с задержкой, только изменённое) */
+const Sync={sent:{},timer:null,avT:null,busy:false,
+  reset(){ this.sent={}; for(const g of S.games) this.sent[g.id]=JSON.stringify(g); clearTimeout(this.timer); clearTimeout(this.avT); },
+  games(ms=900){ clearTimeout(this.timer); this.timer=setTimeout(()=>this.flush(),ms); },
+  async flush(){
+    if(!Acc.cur) return; if(this.busy){ this.games(); return; } this.busy=true;
+    try{
+      const cur=new Set(S.games.map(g=>g.id));
+      for(const g of S.games){ const j=JSON.stringify(g); if(this.sent[g.id]===j) continue;
+        const r=await Api.call('PUT','games/'+encodeURIComponent(g.id),{game:g});
+        if(r.ok||(!r.net&&r.status!==401&&r.status!==403)){ this.sent[g.id]=j; if(!r.ok) toast('Не сохранено на сервере: '+r.error,4500); }
+        else if(r.net){ toast('Нет связи с сервером: игра сохранится позже',3000); this.games(6000); break; }
+        else break; }
+      for(const id of Object.keys(this.sent)) if(!cur.has(id)){ const r=await Api.call('DELETE','games/'+encodeURIComponent(id)); if(r.ok) delete this.sent[id]; else if(r.net){ this.games(6000); break; } }
+    } finally{ this.busy=false; }
+  },
+  avatar(){ clearTimeout(this.avT); this.avT=setTimeout(()=>{ if(Acc.cur) Api.call('PUT','avatar',{avatar:{...S.avatar}}); },700); }
+};
+const saveGames=()=>{ if(!Acc.cur) return; Sync.games(); };
+const saveAvatar=()=>{ if(!Acc.cur) return; S.avatar.ts=Date.now(); Sync.avatar(); };
 const saveSounds=async()=>{
   if(!Acc.cur) return; const aid=Acc.cur.id;
   for(const x of S.sounds) if(!x.tmp&&x.data&&!x.stored) x.stored=await Media.put(aid+':s:'+x.id,x.data);
@@ -278,7 +308,7 @@ const saveSounds=async()=>{
 /* ---------- Облако: личное хранилище артефакта (db), привязано к вашему входу в claude.ai ---------- */
 const Cloud={db:null,uid:null,ok:false,ro:false,txt:'',docs:new Map(),sent:{},accDirty:false,avDirty:false,q:Promise.resolve(),timer:null,
   set(t){ this.txt=t; $$('.cloudst').forEach(e=>e.textContent=t); },
-  async init(){
+  async init(){ return;
     this.set('Облако: подключение…');
     try{
       const c=window.claude; if(!c||!c.use){ this.set('Облако: нет'); return; }
@@ -761,7 +791,7 @@ const Play={
   },
   async chatSend(t){
     const now=Date.now(); if(now-this.clast<1200){ toast('Не так быстро'); return; } this.clast=now;
-    const m=await Net.chatSend(this.game.id,t); this.cseen.add(m.id); this.chatAdd(m);
+    const m=await Net.chatSend(this.game.id,t); if(!m) return; this.cseen.add(m.id); this.chatAdd(m);
   },
   bindTouch(){
     const joy=$('#joy'), knob=$('#joyK'), jb=$('#jbtn'); let jid=null,j0=null;
@@ -1223,34 +1253,65 @@ const HomeBG={scene:null,cam:null,av:null,items:[],t:0,
    ГЛАВНОЕ МЕНЮ
    ============================================================ */
 /* ============================================================
-   СООБЩЕСТВО: каталог игр, лайки, чат.
-   Сейчас всё хранится локально в браузере (общее для аккаунтов на этом устройстве).
-   Интерфейс Net — единственное место, которое нужно заменить на запросы к серверу.
+   СООБЩЕСТВО: каталог игр, лайки, чат — через сервер (Api)
    ============================================================ */
-const Net={K:'inblox.pub',CK:'inblox.chat.',
-  async list(){ return store.get(this.K,[]); },
-  async get(id){ return (await this.list()).find(e=>e.id===id)||null; },
-  _save(l){ if(!store.set(this.K,l)) toast('Нет места в браузере: публикация сохранится только до закрытия страницы',4500); },
+const Net={
+  async list(){ const r=await Api.call('GET','pub'); return r.ok&&Array.isArray(r.d.items)?r.d.items:[]; },
+  async get(id){ const r=await Api.call('GET','pub/'+encodeURIComponent(id)); return r.ok?r.d.item:null; },
   async publish(game,desc){
-    const l=await this.list(), me=Acc.cur; let e=l.find(x=>x.id===game.id);
-    if(e&&e.authorId!==me.id) return 'Эта игра принадлежит другому автору';
-    const g=clone(game); delete g.builtin; delete g._snd; const snd=[];
+    const me=Acc.cur, g=clone(game); delete g.builtin; delete g._snd; const snd=[];
     for(const v of Object.values(g.sounds||{})){ if(typeof v!=='string'||!v.startsWith('s:')) continue; const id=v.slice(2); if(snd.find(q=>q.id===id)) continue;
       const x=S.sounds.find(q=>q.id===id); if(!x) continue; if(!x.data&&x.stored) x.data=await Media.get(me.id+':s:'+x.id); if(x.data) snd.push({id,name:x.name,data:x.data}); }
-    if(e){ e.game=g; e.sounds=snd; e.name=g.name; if(desc!=null) e.desc=desc; }
-    else l.push({id:game.id,name:g.name,desc:desc||'',authorId:me.id,authorName:me.name,ts:Date.now(),likes:[],plays:0,game:g,sounds:snd});
-    this._save(l); return null;
+    const r=await Api.call('POST','pub',{game:g,desc:desc==null?null:desc,sounds:snd}); return r.ok?null:r.error;
   },
-  async setDesc(id,desc){ const l=await this.list(), e=l.find(x=>x.id===id); if(e&&e.authorId===Acc.cur.id){ e.desc=desc; this._save(l); } },
-  async unpublish(id){ const l=await this.list(), e=l.find(x=>x.id===id); if(e&&e.authorId===Acc.cur.id) this._save(l.filter(x=>x.id!==id)); },
-  async like(id){ const l=await this.list(), e=l.find(x=>x.id===id); if(!e) return null; const me=Acc.cur.id, i=e.likes.indexOf(me); if(i<0) e.likes.push(me); else e.likes.splice(i,1); this._save(l); return {liked:i<0,count:e.likes.length}; },
-  async addPlay(id){ const l=await this.list(), e=l.find(x=>x.id===id); if(e){ e.plays=(e.plays||0)+1; this._save(l); } },
-  async chatList(room){ return store.get(this.CK+room,[]); },
-  async chatSend(room,text){
-    const me=Acc.cur, m={id:uid(),uid:me.id,name:(S.avatar.name||me.name).slice(0,16),text:String(text).slice(0,140),ts:Date.now()};
-    const l=store.get(this.CK+room,[]); l.push(m); if(l.length>60) l.splice(0,l.length-60); store.set(this.CK+room,l); return m;
+  async setDesc(id,desc){ const r=await Api.call('PATCH','pub/'+encodeURIComponent(id),{desc}); if(!r.ok) toast(r.error); },
+  async unpublish(id){ const r=await Api.call('DELETE','pub/'+encodeURIComponent(id)); if(!r.ok) toast(r.error); },
+  async like(id){ const r=await Api.call('POST','pub/'+encodeURIComponent(id)+'/like'); return r.ok?r.d:null; },
+  async addPlay(id){ Api.call('POST','pub/'+encodeURIComponent(id)+'/play'); },
+  async chatList(room){ const r=await Api.call('GET','chat/'+encodeURIComponent(room)); return r.ok?(r.d.messages||[]):[]; },
+  async chatSend(room,text){ const r=await Api.call('POST','chat/'+encodeURIComponent(room),{text}); if(!r.ok){ toast(r.error,2500); return null; } return r.d.message; },
+  chatSub(room,cb){
+    let last=0,stop=false,busy=false;
+    const tick=async()=>{ if(stop||busy||document.hidden) return; busy=true; const r=await Api.call('GET','chat/'+encodeURIComponent(room)+'?after='+last); busy=false; if(stop||!r.ok) return; const l=r.d.messages||[]; if(l.length){ last=Math.max(last,...l.map(m=>m.id)); cb(l); } };
+    const t=setInterval(tick,2500); return ()=>{ stop=true; clearInterval(t); };
+  }
+};
+
+/* ---------- Админ-панель: игроки, баны, модерация чата ---------- */
+const Admin={tab:'users',q:'',
+  open(){ this.tab='users'; this.q=''; this.render(); },
+  async render(){
+    const ov=$('#hOv'); ov.classList.add('on'); ov.onclick=e=>{ if(e.target===ov) ov.classList.remove('on'); };
+    ov.innerHTML=`<div class="gpg"><div class="gb"><div class="row"><h2 style="margin:0">Админ-панель</h2><span class="sp"></span><button class="btn" id="adX">Закрыть</button></div>
+      <nav class="tabs" style="margin:.8em 0"><button class="tab ${this.tab==='users'?'on':''}" data-at="users">Игроки</button><button class="tab ${this.tab==='chat'?'on':''}" data-at="chat">Чат</button></nav><div id="adBody"><p class="muted">Загрузка…</p></div></div></div>`;
+    $('#adX').onclick=()=>{ ov.classList.remove('on'); Home.render(); }; $$('[data-at]',ov).forEach(b=>b.onclick=()=>{ this.tab=b.dataset.at; this.render(); });
+    if(this.tab==='users') await this.users(); else await this.chat();
   },
-  chatSub(room,cb){ const k=this.CK+room, h=e=>{ if(e.key===k&&e.newValue){ try{ cb(JSON.parse(e.newValue)); }catch(x){} } }; window.addEventListener('storage',h); return ()=>window.removeEventListener('storage',h); }
+  async users(){
+    const r=await Api.call('GET','admin/users?q='+encodeURIComponent(this.q)), el=$('#adBody'); if(!el) return;
+    if(!r.ok){ el.innerHTML='<p class="muted">'+esc(r.error)+'</p>'; return; }
+    const now=Date.now();
+    el.innerHTML=`<input type="text" id="adQ" placeholder="Поиск по имени (Enter)" value="${esc(this.q)}" style="width:100%;margin-bottom:.7em">`+(r.d.users.map(u=>{ const b=u.ban_until>now;
+      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">Бан${banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span>${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
+    $('#adQ').onkeydown=e=>{ if(e.key==='Enter'){ this.q=e.target.value.trim(); this.users(); } };
+    $$('[data-ban]',el).forEach(b=>b.onclick=()=>this.banForm(b.dataset.ban,b.dataset.nm));
+    $$('[data-unban]',el).forEach(b=>b.onclick=async()=>{ const x=await Api.call('POST','admin/unban',{userId:b.dataset.unban}); toast(x.ok?'Разбанен':x.error); this.users(); });
+  },
+  banForm(id,name){
+    const el=$('#adBody'); el.innerHTML=`<h3 style="margin:.2em 0 .6em;font-size:1.2em">Бан: ${esc(name)}</h3><span class="lbl">Срок</span>
+      <select id="adH" style="width:100%;margin-bottom:.7em"><option value="1">1 час</option><option value="24" selected>1 день</option><option value="168">7 дней</option><option value="720">30 дней</option><option value="0">Навсегда</option></select>
+      <span class="lbl">Причина (увидит игрок)</span><input type="text" id="adR" maxlength="200" style="width:100%;margin-bottom:.9em">
+      <div class="row"><button class="btn danger" id="adOk">Забанить</button><button class="btn" id="adNo">Отмена</button></div>`;
+    $('#adNo').onclick=()=>this.render();
+    $('#adOk').onclick=async()=>{ const x=await Api.call('POST','admin/ban',{userId:id,hours:+$('#adH').value,reason:$('#adR').value.trim()}); toast(x.ok?'Игрок забанен':x.error); this.render(); };
+  },
+  async chat(){
+    const r=await Api.call('GET','admin/chat'), el=$('#adBody'); if(!el) return;
+    if(!r.ok){ el.innerHTML='<p class="muted">'+esc(r.error)+'</p>'; return; }
+    el.innerHTML=(r.d.messages.map(m=>`<div class="row" style="padding:.4em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:10em;word-break:break-word"><b>${esc(m.name)}</b> <span class="muted" style="font-size:.8em">${esc(m.room)} · ${new Date(m.ts).toLocaleTimeString('ru-RU')}</span><br>${esc(m.text)}</span><button class="btn sm" data-dm="${m.id}">✕</button><button class="btn sm danger" data-bu="${m.uid}" data-nm="${esc(m.name)}">Бан</button></div>`).join('')||'<p class="muted">Сообщений пока нет.</p>');
+    $$('[data-dm]',el).forEach(b=>b.onclick=async()=>{ await Api.call('DELETE','admin/chat/'+b.dataset.dm); this.chat(); });
+    $$('[data-bu]',el).forEach(b=>b.onclick=()=>this.banForm(b.dataset.bu,b.dataset.nm));
+  }
 };
 
 const Home={
@@ -1274,7 +1335,7 @@ const Home={
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
     const el=$('#home'), builtins=BUILTIN.map(f=>f());
     el.innerHTML=`<div class="head"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span><span class="sp"></span>
-      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span><span class="muted" title="Аккаунт">${esc(Acc.cur?Acc.cur.name:'')}</span><button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
+      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span><span class="muted" title="Аккаунт">${esc(Acc.cur?Acc.cur.name:'')}</span>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
     <div class="scroll"><div class="hero"><h2>Создавай игры в 3D</h2><p class="muted" style="margin:0">Играйте во встроенные карты или соберите свою в редакторе.</p></div><div class="shelf"><h3 style="font-size:1.4em">Игры</h3>
       <div class="grid"><div class="card new" id="cNew" tabindex="0" role="button"><span class="plus">+</span>Новая игра</div>
       ${S.games.map(g=>this.card(g,false)).join('')}${builtins.map(g=>this.card(g,true)).join('')}</div>
@@ -1285,6 +1346,7 @@ const Home={
       <div class="socials"><span class="muted">Мы в соцсетях:</span><a class="tg" href="https://t.me/inbloxchanell" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9.8 15.6l-.4 4.2c.6 0 .9-.3 1.2-.6l2.9-2.7 6 4.4c1.1.6 1.9.3 2.2-1l3.9-18.3c.4-1.6-.6-2.3-1.6-1.9L1.2 9.4c-1.5.6-1.5 1.5-.3 1.9l5.9 1.8L20.5 5c.6-.4 1.2-.2.7.2z"/></svg>Telegram</a></div></div></div>
       <div class="ov" id="hOv"></div>`;
     const all=[...S.games,...builtins], byId=id=>all.find(g=>g.id===id);
+    if($('#hAdm')) $('#hAdm').onclick=()=>Admin.open();
     $('#hAv').onclick=()=>AvS.open(); $('#hOut').onclick=()=>Acc.logout(); $('#hNew').onclick=$('#cNew').onclick=()=>Ed.open(newGame('Моя игра '+(S.games.length+1)));
     $('#cNew').onkeydown=e=>{ if(e.key==='Enter') Ed.open(newGame('Моя игра '+(S.games.length+1))); };
     $$('[data-play]',el).forEach(b=>b.onclick=()=>{ const g=clone(byId(b.dataset.play)); g.settings={...DEF_SET,...g.settings}; g.sounds={...DEF_SND,...g.sounds}; Play.start(g,'home'); });
@@ -1300,11 +1362,11 @@ const Home={
   commCard(e){
     const k=SKIES[e.game.settings&&e.game.settings.sky]||SKIES.day;
     return `<article class="card" style="cursor:pointer" tabindex="0" role="button" data-open="${e.id}"><div class="thumb" style="background:linear-gradient(${k.top},${k.bot})">${e.game.cover?`<img src="${esc(e.game.cover)}" alt="">`:this.minimap(e.game)}</div>
-      <div class="meta"><b title="${esc(e.name)}">${esc(e.name)}</b><span class="st"><span>от ${esc(e.authorName)}</span><span>❤ ${e.likes.length}</span><span>▶ ${e.plays||0}</span></span></div>
+      <div class="meta"><b title="${esc(e.name)}">${esc(e.name)}</b><span class="st"><span>от ${esc(e.authorName)}</span><span>❤ ${e.likes}</span><span>▶ ${e.plays||0}</span></span></div>
       <div class="acts"><button class="btn pri sm" data-cplay="${e.id}">Играть</button><button class="btn sm" data-open="${e.id}">Страница</button></div></article>`;
   },
   fillComm(){
-    const g=$('#cGrid'); if(!g) return; const l=[...this.pub].sort(this.sort==='new'?(a,b)=>b.ts-a.ts:(a,b)=>b.likes.length-a.likes.length||b.ts-a.ts);
+    const g=$('#cGrid'); if(!g) return; const l=[...this.pub].sort(this.sort==='new'?(a,b)=>b.ts-a.ts:(a,b)=>b.likes-a.likes||b.ts-a.ts);
     g.innerHTML=l.length?l.map(e=>this.commCard(e)).join(''):'<p class="muted" style="grid-column:1/-1;margin:0">Пока никто не опубликовал игру. Нажмите «Опубликовать» на карточке своей игры.</p>';
     $$('[data-open]',g).forEach(b=>{ b.onclick=ev=>{ ev.stopPropagation(); this.openPage(b.dataset.open); }; b.onkeydown=ev=>{ if(ev.key==='Enter'&&ev.target===b) this.openPage(b.dataset.open); }; });
     $$('[data-cplay]',g).forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); this.playPub(b.dataset.cplay); });
@@ -1329,14 +1391,14 @@ const Home={
   },
   async openPage(id){
     const e=await Net.get(id), ov=$('#hOv'); if(!e){ toast('Игра не найдена'); ov.classList.remove('on'); this.render(); return; }
-    const me=Acc.cur, mine=e.authorId===me.id, liked=e.likes.includes(me.id), k=SKIES[e.game.settings&&e.game.settings.sky]||SKIES.day;
+    const me=Acc.cur, mine=e.authorId===me.id, liked=!!e.liked, k=SKIES[e.game.settings&&e.game.settings.sky]||SKIES.day;
     const n=e.game.parts.filter(p=>p.type!=='coin').length, c=e.game.parts.length-n;
     ov.innerHTML=`<div class="gpg"><div class="gth" style="background:linear-gradient(${k.top},${k.bot})">${e.game.cover?`<img src="${esc(e.game.cover)}" alt="">`:this.minimap(e.game)}</div><div class="gb">
       <h2>${esc(e.name)}</h2><div class="muted">Автор: <b style="color:var(--fg)">${esc(e.authorName)}</b> · ${new Date(e.ts).toLocaleDateString('ru-RU')}</div>
-      <div class="row" style="margin-top:.8em"><span class="pill">❤ <b id="gpL">${e.likes.length}</b></span><span class="pill">▶ <b>${e.plays||0}</b></span><span class="pill">${n} блоков${c?' · '+c+' монет':''}</span></div>
+      <div class="row" style="margin-top:.8em"><span class="pill">❤ <b id="gpL">${e.likes}</b></span><span class="pill">▶ <b>${e.plays||0}</b></span><span class="pill">${n} блоков${c?' · '+c+' монет':''}</span></div>
       <p class="desc">${e.desc?esc(e.desc):'<span class="muted">Автор не добавил описание.</span>'}</p>
       <div class="row"><button class="btn pri" id="gpPlay">▶ Играть</button><button class="btn like ${liked?'on':''}" id="gpLike">${liked?'❤ Нравится':'♡ Нравится'}</button>
-      ${mine?`<button class="btn" id="gpEdit">Описание</button><button class="btn" id="gpUpd" title="Обновить опубликованную версию из вашей игры">Обновить версию</button><button class="btn danger" id="gpDel">Снять с публикации</button>`:''}
+      ${mine?`<button class="btn" id="gpEdit">Описание</button><button class="btn" id="gpUpd" title="Обновить опубликованную версию из вашей игры">Обновить версию</button>`:''}${(mine||me.role==='admin')?`<button class="btn danger" id="gpDel">${mine?'Снять с публикации':'Удалить (админ)'}</button>`:''}
       <span class="sp"></span><button class="btn" id="gpX">Закрыть</button></div></div></div>`;
     ov.classList.add('on'); ov.onclick=ev=>{ if(ev.target===ov) ov.classList.remove('on'); };
     $('#gpX').onclick=()=>{ ov.classList.remove('on'); this.render(); };
@@ -1345,6 +1407,8 @@ const Home={
     if(mine){
       $('#gpEdit').onclick=()=>this.pubDialog(null,e);
       $('#gpUpd').onclick=async()=>{ const src=S.games.find(g=>g.id===id); if(!src){ toast('Исходная игра не найдена в ваших играх'); return; } const err=await Net.publish(src,null); toast(err||'Версия обновлена'); this.openPage(id); };
+    }
+    if(mine||me.role==='admin'){
       let sure=false; $('#gpDel').onclick=async()=>{ if(!sure){ sure=true; $('#gpDel').textContent='Точно снять?'; setTimeout(()=>{ sure=false; const b=$('#gpDel'); if(b) b.textContent='Снять с публикации'; },2500); return; }
         await Net.unpublish(id); ov.classList.remove('on'); toast('Игра снята с публикации'); this.render(); };
     }
@@ -1386,7 +1450,7 @@ const Auth={tab:'login',err:'',busy:false,
       <p id="aErr" style="color:var(--danger);margin:0 0 .8em;min-height:1.35em">${esc(this.err)}</p>
       <button class="btn pri" id="aGo" style="width:100%">${reg?'Создать аккаунт':'Войти'}</button>
       <p class="muted cloudst" style="margin:.9em 0 0;font-size:.85em;text-align:center">${esc(Cloud.txt)}</p>
-      <p class="muted" style="margin:.4em 0 0;font-size:.85em;text-align:center">${Acc.persist?'Играть можно только с аккаунтом. Данные хранятся в браузере и в вашем облаке (если оно доступно).':'Этот браузер не разрешает сохранять данные: без облака аккаунт пропадёт после обновления страницы.'}</p>
+      <p class="muted" style="margin:.4em 0 0;font-size:.85em;text-align:center">Аккаунт, игры и аватар хранятся на сервере: войти можно с любого устройства.</p>
     </div></div>`;
     $('#aTL').onclick=()=>this.show('login'); $('#aTR').onclick=()=>this.show('reg'); $('#aGo').onclick=()=>this.submit();
     $$('input',el).forEach(i=>i.onkeydown=e=>{ if(e.key==='Enter') this.submit(); });
@@ -1487,7 +1551,15 @@ function frame(now){
 }
 if(renderer){ try{ HomeBG.init(); }catch(err){ console.error(err); } }
 Fit.apply();
-{ const sid=store.get('inblox.session',null), a=Acc.list.find(x=>x.id===sid); if(a){ Acc.enter(a); go('home'); Home.render(); } else Auth.show(Acc.list.length?'login':'reg'); }
+if(Api.tok){
+  go('auth'); $('#auth').innerHTML='<div class="ov on" style="background:rgba(5,5,8,.55)"><div class="box"><p style="margin:0">Подключение к серверу…</p></div></div>';
+  Api.call('GET','me').then(r=>{
+    if(r.ok&&r.d.user){ Acc.enter(r.d); go('home'); Home.render(); return; }
+    if(!r.net&&(r.status===401||r.status===403)){ Api.tok=null; store.set('inblox.token',null); }
+    const msg=r.net?'Нет связи с сервером':(r.d.banned?'Аккаунт заблокирован'+(r.d.reason?': '+r.d.reason:'')+banUntil(r.d.until):'');
+    Auth.show('login'); if(msg){ Auth.err=msg; const e=$('#aErr'); if(e) e.textContent=msg; }
+  });
+} else Auth.show('login');
 requestAnimationFrame(frame);
 Cloud.init();
 </script>
