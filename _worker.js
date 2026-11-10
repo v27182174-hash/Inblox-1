@@ -137,6 +137,7 @@ async function api(req,env,url){
     }
     if(seg.length===1&&m==='POST'){
       const b=await body(), g=b&&b.game; if(!g||!Array.isArray(g.parts)||!ID_RE.test(g.id||'')) return err('Неверные данные игры');
+      if(g.script!=null&&(typeof g.script!=='string'||g.script.length>30000)) return err('Скрипт слишком длинный (максимум 30 000 символов)',413);
       const snd=Array.isArray(b.sounds)?b.sounds.filter(s=>s&&typeof s.id==='string'&&typeof s.data==='string'&&s.data.startsWith('data:audio')).map(s=>({id:s.id.slice(0,40),name:cleanText(s.name,40),data:s.data})):[];
       const gj=JSON.stringify(g), sj=JSON.stringify(snd);
       if(bytes(gj)>LIM.pubGame) return err('Игра слишком большая для публикации (максимум 0,9 МБ)',413);
@@ -240,7 +241,13 @@ async function api(req,env,url){
 export default {
   async fetch(req,env){
     const url=new URL(req.url);
-    if(!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
+    if(!url.pathname.startsWith('/api/')){
+      const res=await env.ASSETS.fetch(req);
+      if(!(res.headers.get('Content-Type')||'').includes('text/html')) return res;
+      /* Скрипты игр (Python) не могут обращаться к чужим сайтам: разрешены только наш сервер и CDN с Python */
+      const h=new Headers(res.headers); h.set('Content-Security-Policy',"connect-src 'self' https://cdn.jsdelivr.net https://cloudflareinsights.com data: blob:");
+      return new Response(res.body,{status:res.status,statusText:res.statusText,headers:h});
+    }
     try{ return await api(req,env,url); }
     catch(e){ console.error(e); return err('Ошибка сервера',500); }
   }
