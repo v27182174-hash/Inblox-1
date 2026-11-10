@@ -31,7 +31,8 @@ const banInfo=u=>u.ban_until>Date.now()?{banned:true,reason:u.ban_reason||'',unt
 
 async function me(db,u,token){
   const gs=(await db.prepare('SELECT json FROM games WHERE owner=? ORDER BY ts').bind(u.id).all()).results||[];
-  const row=await db.prepare('SELECT avatar FROM users WHERE id=?').bind(u.id).first();
+  const row=await db.prepare('SELECT avatar,look FROM users WHERE id=?').bind(u.id).first();
+  if(row&&row.avatar&&!row.look){ const lk=lookOf(parse(row.avatar),u.role); if(lk) await db.prepare('UPDATE users SET look=? WHERE id=?').bind(JSON.stringify(lk),u.id).run(); }
   const body='{"user":'+JSON.stringify({id:u.id,name:u.name,role:u.role})+(token?',"token":"'+token+'"':'')+',"games":['+gs.map(r=>r.json).join(',')+'],"avatar":'+((row&&row.avatar)||'null')+'}';
   return new Response(body,{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
 }
@@ -42,6 +43,26 @@ async function newSession(db,userId){
   return token;
 }
 const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
+/* Короткое «лицо» игрока для кружка-аватара (только безопасные поля) */
+function lookOf(a,role){
+  if(!a||typeof a!=='object') return null;
+  const c=v=>typeof v==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(v)?v:undefined, id=v=>typeof v==='string'&&/^[\w\-]{1,20}$/.test(v)?v:undefined;
+  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),emblem:id(a.emblem)};
+  if(typeof a.shirtTex==='string'&&/^p:[a-z]{1,12}$/.test(a.shirtTex)) o.shirtTex=a.shirtTex;
+  if(role==='admin'){ if(a.vipSuit) o.vipSuit=1; if(a.vipShades) o.vipShades=1; }
+  for(const k of Object.keys(o)) if(o[k]===undefined) delete o[k];
+  return o;
+}
+/* Колонки bio и look добавляются сами при первом обращении (ничего вручную в базе делать не нужно) */
+let schemaOk=false;
+async function ensureSchema(db){
+  if(schemaOk) return;
+  for(const [col,def] of [['bio',"TEXT NOT NULL DEFAULT ''"],['look','TEXT']]){
+    try{ await db.prepare('SELECT '+col+' FROM users LIMIT 1').first(); }
+    catch(e){ try{ await db.prepare('ALTER TABLE users ADD COLUMN '+col+' '+def).run(); }catch(e2){ console.error(e2); } }
+  }
+  schemaOk=true;
+}
 const cleanText=(s,n)=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
 
 function thumbOf(g){
@@ -53,6 +74,7 @@ async function api(req,env,url){
   const m=req.method, seg=url.pathname.slice(5).split('/').filter(Boolean).map(decodeURIComponent), p=seg.join('/');
   if(p==='ping') return J({db:!!env.DB,bindings:Object.keys(env)});
   const db=env.DB; if(!db) return err('База данных не подключена (видны привязки: '+Object.keys(env).join(', ')+'). Добавьте D1 с именем DB и сделайте новый деплой',500);
+  await ensureSchema(db);
   const ip=req.headers.get('CF-Connecting-IP')||'x';
   let raw=null; const body=async()=>{ if(raw===null){ raw=await req.text(); } if(raw.length>3000000) return null; return parse(raw); };
   if(m!=='GET'&&m!=='DELETE'&&m!=='OPTIONS'){ const cl=+req.headers.get('Content-Length')||0; if(cl>3500000) return err('Слишком большой запрос',413); }
@@ -104,14 +126,14 @@ async function api(req,env,url){
     const b=await body(), a=b&&b.avatar; if(!a||typeof a!=='object') return err('Неверные данные');
     if(u.role!=='admin'){ delete a.vipSuit; delete a.vipShades; }
     const js=JSON.stringify(a); if(bytes(js)>LIM.avatar) return err('Аватар слишком большой',413);
-    await db.prepare('UPDATE users SET avatar=? WHERE id=?').bind(js,u.id).run(); return J({ok:1});
+    await db.prepare('UPDATE users SET avatar=?,look=? WHERE id=?').bind(js,JSON.stringify(lookOf(a,u.role)),u.id).run(); return J({ok:1});
   }
 
   /* ---- каталог игр ---- */
   if(seg[0]==='pub'){
     if(seg.length===1&&m==='GET'){
-      const rs=(await db.prepare('SELECT p.id,p.name,p.descr,p.owner,x.name author,p.ts,p.plays,p.thumb,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner ORDER BY p.ts DESC LIMIT 40').bind(u.id).all()).results||[];
-      return J({items:rs.map(r=>({id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.thumb)||{parts:[]}}))});
+      const rs=(await db.prepare('SELECT p.id,p.name,p.descr,p.owner,x.name author,x.role arole,x.look,p.ts,p.plays,p.thumb,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner ORDER BY p.ts DESC LIMIT 40').bind(u.id).all()).results||[];
+      return J({items:rs.map(r=>({id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.thumb)||{parts:[]}}))});
     }
     if(seg.length===1&&m==='POST'){
       const b=await body(), g=b&&b.game; if(!g||!Array.isArray(g.parts)||!ID_RE.test(g.id||'')) return err('Неверные данные игры');
@@ -132,9 +154,9 @@ async function api(req,env,url){
     }
     const id=seg[1]; if(!id||!ID_RE.test(id)) return err('Неверный id',400);
     if(seg.length===2&&m==='GET'){
-      const r=await db.prepare('SELECT p.*,x.name author,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner WHERE p.id=?').bind(u.id,id).first();
+      const r=await db.prepare('SELECT p.*,x.name author,x.role arole,x.look,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner WHERE p.id=?').bind(u.id,id).first();
       if(!r) return err('Игра не найдена',404);
-      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:parse(r.sounds)||[]}});
+      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:parse(r.sounds)||[]}});
     }
     if(seg.length===2&&m==='PATCH'){
       const b=await body(); const r=await db.prepare('UPDATE pub SET descr=? WHERE id=? AND owner=?').bind(cleanText(b&&b.desc,500),id,u.id).run();
@@ -152,6 +174,22 @@ async function api(req,env,url){
       const c=(await db.prepare('SELECT COUNT(*) n FROM likes WHERE pub_id=?').bind(id).first()).n; return J({liked,count:c});
     }
     if(seg.length===3&&seg[2]==='play'&&m==='POST'){ await db.prepare('UPDATE pub SET plays=plays+1 WHERE id=?').bind(id).run(); return J({ok:1}); }
+  }
+
+  /* ---- профили ---- */
+  if(seg[0]==='profile'){
+    if(seg.length===2&&m==='GET'){
+      const id=seg[1]; if(!ID_RE.test(id)) return err('Неверный id');
+      const r=await db.prepare('SELECT id,name,role,created,bio,look FROM users WHERE id=?').bind(id).first(); if(!r) return err('Игрок не найден',404);
+      const gs=(await db.prepare('SELECT p.id,p.name,p.descr,p.ts,p.plays,p.thumb,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p WHERE p.owner=? ORDER BY p.ts DESC LIMIT 40').bind(u.id,id).all()).results||[];
+      const look=parse(r.look), games=gs.map(g=>({id:g.id,name:g.name,desc:g.descr,authorId:r.id,authorName:r.name,authorRole:r.role,look,ts:g.ts,plays:g.plays,likes:g.likes,liked:!!g.liked,game:parse(g.thumb)||{parts:[]}}));
+      return J({profile:{id:r.id,name:r.name,role:r.role,created:r.created,bio:r.bio||'',look,games,stats:{games:games.length,likes:games.reduce((a,g)=>a+g.likes,0),plays:games.reduce((a,g)=>a+(g.plays||0),0)}}});
+    }
+    if(seg.length===1&&m==='PATCH'){
+      const b=await body(); if(!b) return err('Неверные данные');
+      const bio=String(b.bio==null?'':b.bio).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,'').replace(/\r/g,'').trim().slice(0,300);
+      await db.prepare('UPDATE users SET bio=? WHERE id=?').bind(bio,u.id).run(); return J({ok:1,bio});
+    }
   }
 
   /* ---- чат ---- */
