@@ -50,8 +50,9 @@ function thumbOf(g){
 }
 
 async function api(req,env,url){
-  const db=env.DB; if(!db) return err('База данных не подключена: добавьте привязку D1 с именем DB',500);
   const m=req.method, seg=url.pathname.slice(5).split('/').filter(Boolean).map(decodeURIComponent), p=seg.join('/');
+  if(p==='ping') return J({db:!!env.DB,bindings:Object.keys(env)});
+  const db=env.DB; if(!db) return err('База данных не подключена (видны привязки: '+Object.keys(env).join(', ')+'). Добавьте D1 с именем DB и сделайте новый деплой',500);
   const ip=req.headers.get('CF-Connecting-IP')||'x';
   let raw=null; const body=async()=>{ if(raw===null){ raw=await req.text(); } if(raw.length>3000000) return null; return parse(raw); };
   if(m!=='GET'&&m!=='DELETE'&&m!=='OPTIONS'){ const cl=+req.headers.get('Content-Length')||0; if(cl>3500000) return err('Слишком большой запрос',413); }
