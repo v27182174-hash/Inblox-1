@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Inblox</title>
+<title>Inblox</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#101014"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Inblox">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
@@ -247,6 +247,10 @@ const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpo
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
 /* Аккаунты хранятся в браузере (localStorage): после обновления страницы вход сохраняется */
 /* ---------- Сервер (Cloudflare _worker.js + D1) ---------- */
+let installEv=null;
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEv=e; if(typeof Home!=='undefined'&&Home.on) Home.render(); });
+addEventListener('appinstalled',()=>{ installEv=null; if(typeof Home!=='undefined'&&Home.on) Home.render(); });
+if('serviceWorker' in navigator&&location.protocol==='https:') addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 const banUntil=u=>u?(u<4e12?' (до '+new Date(u).toLocaleString('ru-RU')+')':' (навсегда)'):'';
 const Api={tok:store.get('inblox.token',null),
   async call(method,path,body){
@@ -1403,7 +1407,7 @@ const Home={
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
     const el=$('#home'), builtins=BUILTIN.map(f=>f());
     el.innerHTML=`<div class="head"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span><span class="sp"></span>
-      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span><button class="btn" id="hProf" title="Мой профиль">👤 ${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
+      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span>${installEv?'<button class="btn pri" id="hInst">Установить приложение</button>':''}<button class="btn" id="hProf" title="Мой профиль">👤 ${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
     <div class="scroll"><div class="hero"><h2>Создавай игры в 3D</h2><p class="muted" style="margin:0">Играйте во встроенные карты или соберите свою в редакторе.</p></div><div class="shelf"><h3 style="font-size:1.4em">Игры</h3>
       <div class="grid"><div class="card new" id="cNew" tabindex="0" role="button"><span class="plus">+</span>Новая игра</div>
       ${S.games.map(g=>this.card(g,false)).join('')}${builtins.map(g=>this.card(g,true)).join('')}</div>
@@ -1416,6 +1420,7 @@ const Home={
     const all=[...S.games,...builtins], byId=id=>all.find(g=>g.id===id);
     if($('#hAdm')) $('#hAdm').onclick=()=>Admin.open();
     $('#hProf').onclick=()=>this.openProfile(Acc.cur.id);
+    if($('#hInst')) $('#hInst').onclick=async()=>{ const ev=installEv; if(!ev) return; ev.prompt(); try{ await ev.userChoice; }catch(e){} installEv=null; this.render(); };
     $('#hAv').onclick=()=>AvS.open(); $('#hOut').onclick=()=>Acc.logout(); $('#hNew').onclick=$('#cNew').onclick=()=>Ed.open(newGame('Моя игра '+(S.games.length+1)));
     $('#cNew').onkeydown=e=>{ if(e.key==='Enter') Ed.open(newGame('Моя игра '+(S.games.length+1))); };
     $$('[data-play]',el).forEach(b=>b.onclick=()=>{ const g=clone(byId(b.dataset.play)); g.settings={...DEF_SET,...g.settings}; g.sounds={...DEF_SND,...g.sounds}; Play.start(g,'home'); });
