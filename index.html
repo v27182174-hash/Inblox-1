@@ -149,6 +149,15 @@ label.drop{position:relative;display:block;overflow:hidden}
 .istouch .tool{padding:.5em .5em}
 
 /* Сообщество и чат */
+.avc{width:2.2em;height:2.2em;border-radius:50%;object-fit:cover;background:#1b1d29;border:2px solid var(--line);flex:none;vertical-align:middle}
+.avc.s{width:1.5em;height:1.5em;border-width:1px}
+.avc.l{width:6.5em;height:6.5em;border-width:3px}
+.adm{color:#35e0a1;font-weight:700;margin-left:.4em;font-size:.8em}
+.auth{display:inline-flex;align-items:center;gap:.55em;cursor:pointer;background:none;border:0;color:inherit;padding:0;font:inherit;text-align:left}
+.auth:hover b{text-decoration:underline}
+.au{display:inline-flex;align-items:center;gap:.35em}
+.bio{white-space:pre-wrap;word-break:break-word;color:#dcdce2;line-height:1.45;margin:.8em 0}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(13em,1fr));gap:.8em;margin-top:.8em}
 .acts{flex-wrap:wrap}
 .sechead{display:flex;align-items:center;gap:.6em;margin-top:2.2em}
 .sechead h3{font-size:1.4em;margin:0}
@@ -751,6 +760,40 @@ function animAvatar(av,t,speed,air,vy){
   av.body.scale.set(sxz,sy,sxz);
   av.body.position.y=(1-e)*Math.abs(Math.sin(t*11))*.06*k;
 }
+const PICS={};
+function avatarPic(look){
+  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.vipSuit,L.vipShades]);
+  if(PICS[key]) return PICS[key];
+  const c=document.createElement('canvas'); c.width=c.height=160; const g=c.getContext('2d');
+  const bg=g.createLinearGradient(0,0,0,160); bg.addColorStop(0,'#2b3050'); bg.addColorStop(1,'#171a28'); g.fillStyle=bg; g.fillRect(0,0,160,160);
+  const rr=(x,y,w,h,r)=>{ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); };
+  /* туловище */
+  g.save(); rr(20,112,120,70,18); g.clip();
+  if(L.vipSuit){ const t=suitTex(); g.drawImage(t.image,0,0,128,64,20,112,120,60); t.dispose(); }
+  else{ g.fillStyle=L.shirt; g.fillRect(20,112,120,60); const d=L.shirtTex&&String(L.shirtTex).startsWith('p:')&&TEXS.find(x=>x[0]===L.shirtTex.slice(2)); if(d){ const t=document.createElement('canvas'); t.width=t.height=128; d[2](t.getContext('2d'),128,128); g.drawImage(t,0,0,128,64,20,112,120,60); } }
+  g.restore();
+  /* шея и голова */
+  g.fillStyle=L.skin; g.fillRect(68,102,24,14); g.fillStyle='rgba(0,0,0,.2)'; g.fillRect(68,102,24,14);
+  g.save(); rr(46,42,68,68,10); g.clip(); const f=faceTex(L); g.drawImage(f.image,46,42,68,68); f.dispose(); g.restore();
+  g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=2; rr(46,42,68,68,10); g.stroke();
+  /* головной убор */
+  g.fillStyle=L.hatColor;
+  const tri=(a,b,c,d,e,f2)=>{ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.lineTo(e,f2); g.closePath(); g.fill(); };
+  switch(L.hat){
+    case 'cap': g.beginPath(); g.ellipse(80,44,36,24,0,Math.PI,0); g.fill(); rr(44,41,72,7,3); g.fill(); break;
+    case 'tophat': rr(36,38,88,8,3); g.fill(); g.fillRect(52,8,56,32); break;
+    case 'crown': g.fillRect(48,32,64,12); for(let i=0;i<4;i++) tri(48+i*16,32,64+i*16,32,56+i*16,12); break;
+    case 'ears': tri(52,44,68,44,58,20); tri(108,44,92,44,102,20); break;
+    case 'antenna': g.fillRect(78,18,4,26); g.beginPath(); g.arc(80,14,7,0,7); g.fill(); break;
+  }
+  /* солнечные очки (эксклюзив админа) */
+  if(L.vipShades){
+    for(const cx of [66.2,93.8]){ g.fillStyle='#d4af37'; rr(cx-13.5,60,27,22,5); g.fill(); g.fillStyle='#0a0a12'; rr(cx-10.5,62.5,21,17,3); g.fill(); g.fillStyle='rgba(255,255,255,.4)'; g.fillRect(cx-8,64,9,3); }
+    g.fillStyle='#d4af37'; g.fillRect(78,66,4,3); g.fillRect(46,69,6,3); g.fillRect(108,69,6,3);
+  }
+  return PICS[key]=c.toDataURL('image/png');
+}
+const avImg=(look,cls='')=>`<img class="avc ${cls}" src="${avatarPic(look)}" alt="" draggable="false">`;
 function nameSprite(name){
   const t=canvasTex(256,48,(g,w,h)=>{ g.font='600 26px Inter,system-ui,sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.lineWidth=5; g.strokeStyle='rgba(0,0,0,.6)'; g.strokeText(name,w/2,h/2); g.fillStyle='#fff'; g.fillText(name,w/2,h/2); });
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false})); s.scale.set(3.6,.68,1); s.position.y=3.7; s.renderOrder=5; return s;
@@ -1316,8 +1359,9 @@ const Admin={tab:'users',q:'',
     if(!r.ok){ el.innerHTML='<p class="muted">'+esc(r.error)+'</p>'; return; }
     const now=Date.now();
     el.innerHTML=`<input type="text" id="adQ" placeholder="Поиск по имени (Enter)" value="${esc(this.q)}" style="width:100%;margin-bottom:.7em">`+(r.d.users.map(u=>{ const b=u.ban_until>now;
-      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">Бан${banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span>${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
+      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">Бан${banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span><button class="btn sm" data-pr="${u.id}">Профиль</button>${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
     $('#adQ').onkeydown=e=>{ if(e.key==='Enter'){ this.q=e.target.value.trim(); this.users(); } };
+    $$('[data-pr]',el).forEach(b=>b.onclick=()=>Home.openProfile(b.dataset.pr));
     $$('[data-ban]',el).forEach(b=>b.onclick=()=>this.banForm(b.dataset.ban,b.dataset.nm));
     $$('[data-unban]',el).forEach(b=>b.onclick=async()=>{ const x=await Api.call('POST','admin/unban',{userId:b.dataset.unban}); toast(x.ok?'Разбанен':x.error); this.users(); });
   },
@@ -1359,7 +1403,7 @@ const Home={
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
     const el=$('#home'), builtins=BUILTIN.map(f=>f());
     el.innerHTML=`<div class="head"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span><span class="sp"></span>
-      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span><span class="muted" title="Аккаунт">${esc(Acc.cur?Acc.cur.name:'')}</span>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
+      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span><button class="btn" id="hProf" title="Мой профиль">👤 ${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
     <div class="scroll"><div class="hero"><h2>Создавай игры в 3D</h2><p class="muted" style="margin:0">Играйте во встроенные карты или соберите свою в редакторе.</p></div><div class="shelf"><h3 style="font-size:1.4em">Игры</h3>
       <div class="grid"><div class="card new" id="cNew" tabindex="0" role="button"><span class="plus">+</span>Новая игра</div>
       ${S.games.map(g=>this.card(g,false)).join('')}${builtins.map(g=>this.card(g,true)).join('')}</div>
@@ -1371,6 +1415,7 @@ const Home={
       <div class="ov" id="hOv"></div>`;
     const all=[...S.games,...builtins], byId=id=>all.find(g=>g.id===id);
     if($('#hAdm')) $('#hAdm').onclick=()=>Admin.open();
+    $('#hProf').onclick=()=>this.openProfile(Acc.cur.id);
     $('#hAv').onclick=()=>AvS.open(); $('#hOut').onclick=()=>Acc.logout(); $('#hNew').onclick=$('#cNew').onclick=()=>Ed.open(newGame('Моя игра '+(S.games.length+1)));
     $('#cNew').onkeydown=e=>{ if(e.key==='Enter') Ed.open(newGame('Моя игра '+(S.games.length+1))); };
     $$('[data-play]',el).forEach(b=>b.onclick=()=>{ const g=clone(byId(b.dataset.play)); g.settings={...DEF_SET,...g.settings}; g.sounds={...DEF_SND,...g.sounds}; Play.start(g,'home'); });
@@ -1386,7 +1431,7 @@ const Home={
   commCard(e){
     const k=SKIES[e.game.settings&&e.game.settings.sky]||SKIES.day;
     return `<article class="card" style="cursor:pointer" tabindex="0" role="button" data-open="${e.id}"><div class="thumb" style="background:linear-gradient(${k.top},${k.bot})">${e.game.cover?`<img src="${esc(e.game.cover)}" alt="">`:this.minimap(e.game)}</div>
-      <div class="meta"><b title="${esc(e.name)}">${esc(e.name)}</b><span class="st"><span>от ${esc(e.authorName)}</span><span>❤ ${e.likes}</span><span>▶ ${e.plays||0}</span></span></div>
+      <div class="meta"><b title="${esc(e.name)}">${esc(e.name)}</b><span class="st"><span class="au">${avImg(e.look,'s')}${esc(e.authorName)}</span><span>❤ ${e.likes}</span><span>▶ ${e.plays||0}</span></span></div>
       <div class="acts"><button class="btn pri sm" data-cplay="${e.id}">Играть</button><button class="btn sm" data-open="${e.id}">Страница</button></div></article>`;
   },
   fillComm(){
@@ -1413,12 +1458,38 @@ const Home={
       if(entry){ await Net.setDesc(entry.id,d); toast('Описание сохранено'); this.openPage(entry.id); return; }
       const err=await Net.publish(g,d); if(err){ toast(err); return; } ov.classList.remove('on'); toast('Игра опубликована'); this.render(); };
   },
+  bindCards(root){
+    $$('[data-open]',root).forEach(b=>{ b.onclick=ev=>{ ev.stopPropagation(); this.openPage(b.dataset.open); }; b.onkeydown=ev=>{ if(ev.key==='Enter'&&ev.target===b) this.openPage(b.dataset.open); }; });
+    $$('[data-cplay]',root).forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); this.playPub(b.dataset.cplay); });
+  },
+  async openProfile(id){
+    const r=await Api.call('GET','profile/'+encodeURIComponent(id)), ov=$('#hOv'); if(!r.ok){ toast(r.error); return; }
+    const p=r.d.profile, mine=!!Acc.cur&&p.id===Acc.cur.id;
+    const draw=editing=>{
+      ov.innerHTML=`<div class="gpg"><div class="gb">
+        <div class="row" style="gap:1em;flex-wrap:nowrap">${avImg(p.look,'l')}<div style="flex:1;min-width:0"><h2 style="margin:0;word-break:break-word">${esc(p.name)}${p.role==='admin'?'<span class="adm">admin</span>':''}</h2><div class="muted">С нами с ${new Date(p.created).toLocaleDateString('ru-RU')}</div></div><button class="btn" id="prX">Закрыть</button></div>
+        <div class="row" style="margin-top:.8em"><span class="pill">🎮 игр: <b>${p.stats.games}</b></span><span class="pill">❤ <b>${p.stats.likes}</b></span><span class="pill">▶ <b>${p.stats.plays}</b></span></div>
+        ${editing?`<span class="lbl" style="margin-top:.9em;display:block">О себе</span><textarea class="gta" id="prBio" maxlength="300" placeholder="Расскажите о себе…">${esc(p.bio)}</textarea><div class="row" style="margin-top:.6em"><button class="btn pri" id="prSave">Сохранить</button><button class="btn" id="prNo">Отмена</button></div>`
+          :`<p class="bio">${p.bio?esc(p.bio):'<span class="muted">Игрок пока ничего не рассказал о себе.</span>'}</p>${mine?'<div class="row"><button class="btn" id="prEdit">Изменить описание</button><button class="btn" id="prAv">Аватар</button></div>':''}`}
+        <h3 style="margin:1.2em 0 0;font-size:1.2em">Игры игрока</h3>
+        <div class="pgrid">${p.games.length?p.games.map(e=>this.commCard(e)).join(''):'<p class="muted" style="grid-column:1/-1;margin:0">Пока нет опубликованных игр.</p>'}</div></div></div>`;
+      ov.classList.add('on'); ov.onclick=ev=>{ if(ev.target===ov) ov.classList.remove('on'); };
+      $('#prX').onclick=()=>ov.classList.remove('on'); this.bindCards(ov);
+      if(mine){
+        if($('#prEdit')) $('#prEdit').onclick=()=>draw(true);
+        if($('#prAv')) $('#prAv').onclick=()=>{ ov.classList.remove('on'); AvS.open(); };
+        if($('#prNo')) $('#prNo').onclick=()=>draw(false);
+        if($('#prSave')) $('#prSave').onclick=async()=>{ const b=$('#prBio').value.trim().slice(0,300); const x=await Api.call('PATCH','profile',{bio:b}); if(!x.ok){ toast(x.error); return; } p.bio=x.d.bio||''; toast('Описание сохранено'); draw(false); };
+      }
+    };
+    draw(false);
+  },
   async openPage(id){
     const e=await Net.get(id), ov=$('#hOv'); if(!e){ toast('Игра не найдена'); ov.classList.remove('on'); this.render(); return; }
     const me=Acc.cur, mine=e.authorId===me.id, liked=!!e.liked, k=SKIES[e.game.settings&&e.game.settings.sky]||SKIES.day;
     const n=e.game.parts.filter(p=>p.type!=='coin').length, c=e.game.parts.length-n;
     ov.innerHTML=`<div class="gpg"><div class="gth" style="background:linear-gradient(${k.top},${k.bot})">${e.game.cover?`<img src="${esc(e.game.cover)}" alt="">`:this.minimap(e.game)}</div><div class="gb">
-      <h2>${esc(e.name)}</h2><div class="muted">Автор: <b style="color:var(--fg)">${esc(e.authorName)}</b> · ${new Date(e.ts).toLocaleDateString('ru-RU')}</div>
+      <h2>${esc(e.name)}</h2><div class="muted" style="display:flex;align-items:center;gap:.6em;flex-wrap:wrap"><button class="auth" data-prof="${esc(e.authorId)}" title="Открыть профиль">${avImg(e.look)}<span>Автор: <b style="color:var(--fg)">${esc(e.authorName)}</b>${e.authorRole==='admin'?'<span class="adm">admin</span>':''}</span></button><span>· ${new Date(e.ts).toLocaleDateString('ru-RU')}</span></div>
       <div class="row" style="margin-top:.8em"><span class="pill">❤ <b id="gpL">${e.likes}</b></span><span class="pill">▶ <b>${e.plays||0}</b></span><span class="pill">${n} блоков${c?' · '+c+' монет':''}</span></div>
       <p class="desc">${e.desc?esc(e.desc):'<span class="muted">Автор не добавил описание.</span>'}</p>
       <div class="row"><button class="btn pri" id="gpPlay">▶ Играть</button><button class="btn like ${liked?'on':''}" id="gpLike">${liked?'❤ Нравится':'♡ Нравится'}</button>
@@ -1426,6 +1497,7 @@ const Home={
       <span class="sp"></span><button class="btn" id="gpX">Закрыть</button></div></div></div>`;
     ov.classList.add('on'); ov.onclick=ev=>{ if(ev.target===ov) ov.classList.remove('on'); };
     $('#gpX').onclick=()=>{ ov.classList.remove('on'); this.render(); };
+    $$('[data-prof]',ov).forEach(b=>b.onclick=()=>this.openProfile(b.dataset.prof));
     $('#gpPlay').onclick=()=>this.playPub(id);
     $('#gpLike').onclick=async()=>{ const r=await Net.like(id); if(!r) return; $('#gpL').textContent=r.count; const b=$('#gpLike'); b.classList.toggle('on',r.liked); b.textContent=r.liked?'❤ Нравится':'♡ Нравится'; };
     if(mine){
