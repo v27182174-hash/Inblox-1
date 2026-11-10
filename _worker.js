@@ -16,6 +16,16 @@ async function pbk(pw,saltHex){
 const FOREVER=4102444800000, DAY=86400000;
 const ID_RE=/^[\w\-]{1,40}$/, ROOM_RE=/^[\w:.\-]{1,64}$/;
 const SND={perSound:14000000,total:60000000,count:80,chunk:800000};
+const IMGRE=/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/;
+/* картинки игры (game.images): только data:image, не больше 12 штук и ~0,75 МБ суммарно */
+function cleanImages(g){
+  if(g.images==null) return; const o={}; let n=0,t=0;
+  if(typeof g.images==='object') for(const [id,v] of Object.entries(g.images)){
+    if(n>=12||!ID_RE.test(id)||!v||typeof v.data!=='string'||v.data.length>142000||t+v.data.length>760000||!IMGRE.test(v.data)) continue;
+    o[id]={name:cleanText(v.name,24)||'Картинка',data:v.data}; n++; t+=v.data.length;
+  }
+  g.images=o;
+}
 const LIM={game:1500000,pubGame:900000,pubSounds:900000,avatar:200000,games:200,pubs:30};
 
 async function throttle(db,key,max,win){
@@ -95,7 +105,9 @@ async function api(req,env,url){
     const cnt=(await db.prepare('SELECT COUNT(*) n FROM users').first()).n;
     if(cnt>0&&/^(admin|админ|moder|модер|inblox)/i.test(name)) return err('Это имя зарезервировано');
     const lc=name.toLowerCase();
-    if(await db.prepare('SELECT 1 x FROM users WHERE name_lc=?').bind(lc).first()) return err('Такое имя уже занято',409);
+    if(await db.prepare('SELECT 1 x FROM users WHERE name_lc=?').bind(lc).first()) return err('Такой ник уже занят',409);
+    const skel=lc.replace(/[ _\-]/g,'');   /* «Ivan_1», «ivan 1» и «ivan1» считаются одним ником */
+    if(skel&&await db.prepare("SELECT 1 x FROM users WHERE REPLACE(REPLACE(REPLACE(name_lc,' ',''),'_',''),'-','')=?").bind(skel).first()) return err('Такой ник уже занят или слишком похож на чужой',409);
     const id=rnd(8), salt=rnd(16), hash=await pbk(pw,salt), role=cnt===0?'admin':'user';
     try{ await db.prepare('INSERT INTO users(id,name,name_lc,salt,hash,role,created) VALUES(?,?,?,?,?,?,?)').bind(id,name,lc,salt,hash,role,Date.now()).run(); }
     catch(e){ return err('Такое имя уже занято',409); }
@@ -121,6 +133,7 @@ async function api(req,env,url){
     const id=seg[1]; if(!ID_RE.test(id)) return err('Неверный id игры');
     if(m==='PUT'){
       const b=await body(), g=b&&b.game; if(!g||!Array.isArray(g.parts)||g.id!==id) return err('Неверные данные игры');
+      cleanImages(g);
       const js=JSON.stringify(g); if(bytes(js)>LIM.game) return err('Игра слишком большая (максимум 1,5 МБ)',413);
       const has=await db.prepare('SELECT 1 x FROM games WHERE owner=? AND id=?').bind(u.id,id).first();
       if(!has){ const n=(await db.prepare('SELECT COUNT(*) n FROM games WHERE owner=?').bind(u.id).first()).n; if(n>=LIM.games) return err('Слишком много игр (максимум '+LIM.games+')',400); }
@@ -132,6 +145,7 @@ async function api(req,env,url){
   if(p==='avatar'&&m==='PUT'){
     const b=await body(), a=b&&b.avatar; if(!a||typeof a!=='object') return err('Неверные данные');
     if(u.role!=='admin'){ delete a.vipSuit; delete a.vipShades; }
+    a.name=u.name;   /* ник в аватаре всегда равен нику аккаунта */
     const js=JSON.stringify(a); if(bytes(js)>LIM.avatar) return err('Аватар слишком большой',413);
     await db.prepare('UPDATE users SET avatar=?,look=? WHERE id=?').bind(js,JSON.stringify(lookOf(a,u.role)),u.id).run(); return J({ok:1});
   }
@@ -192,6 +206,7 @@ async function api(req,env,url){
       const b=await body(), g=b&&b.game; if(!g||!Array.isArray(g.parts)||!ID_RE.test(g.id||'')) return err('Неверные данные игры');
       if(g.script!=null&&(typeof g.script!=='string'||g.script.length>30000)) return err('Скрипт слишком длинный (максимум 30 000 символов)',413);
       const snd=Array.isArray(b.sounds)?b.sounds.filter(s=>s&&typeof s.id==='string'&&typeof s.data==='string'&&s.data.startsWith('data:audio')).map(s=>({id:s.id.slice(0,40),name:cleanText(s.name,40),data:s.data})):[];
+      cleanImages(g);
       const gj=JSON.stringify(g), sj=JSON.stringify(snd);
       if(bytes(gj)>LIM.pubGame) return err('Игра слишком большая для публикации (максимум 0,9 МБ)',413);
       if(bytes(sj)>LIM.pubSounds) return err('Свои звуки в игре слишком большие для публикации (максимум 0,9 МБ)',413);

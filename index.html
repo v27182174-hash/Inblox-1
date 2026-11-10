@@ -169,7 +169,12 @@ label.drop{position:relative;display:block;overflow:hidden}
 .guil.edit .gui-el{pointer-events:auto;cursor:move;outline:1px dashed rgba(255,255,255,.4);touch-action:none;overflow:visible}
 .guil.edit .gui-el.sel{outline:2px solid #59a8ff}
 .guil.edit .gui-el.off{opacity:.4}
-.gui-rh{position:absolute;right:-.4em;bottom:-.4em;width:.9em;height:.9em;background:#59a8ff;border-radius:.2em;cursor:nwse-resize;touch-action:none}
+.gui-rh{position:absolute;right:-.4em;bottom:-.4em;width:.9em;height:.9em;background:#59a8ff;border-radius:.2em;cursor:nwse-resize;touch-action:none;z-index:1}
+.istouch .gui-rh{width:1.9em;height:1.9em;right:-.95em;bottom:-.95em;border-radius:.45em}
+.istouch .guil.edit .gui-el::after{content:'';position:absolute;inset:-.7em}
+.rpanel.gdrag{opacity:.15;pointer-events:none;transition:opacity .1s}
+.imgs .sw{width:2.7em;height:2.7em;background-size:cover!important;background-position:center!important}
+.imgadd{position:relative;display:inline-flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,.35)!important;background:transparent;color:var(--muted);cursor:pointer;overflow:hidden;font-size:1.1em}
 .pban{position:absolute;left:0;right:0;top:28%;text-align:center;font-size:2.6em;font-weight:700;text-shadow:0 2px 8px #000;pointer-events:none!important;opacity:0;transition:opacity .4s}
 .pban.on{opacity:1}
 .phud{position:absolute;left:50%;top:3.6em;transform:translateX(-50%);background:rgba(10,10,12,.6);border-radius:99em;padding:.25em .9em;font-weight:600;pointer-events:none!important}
@@ -297,7 +302,7 @@ const Acc={cur:null,list:[],persist:true,
     this.cur=d.user; if(d.token){ Api.tok=d.token; store.set('inblox.token',d.token); }
     S.games=Array.isArray(d.games)?d.games:[]; Sync.reset();
     S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
-    S.avatar=Object.assign({},DEF_AVATAR,{name:d.user.name},d.avatar||{}); if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
+    S.avatar=Object.assign({},DEF_AVATAR,d.avatar||{},{name:d.user.name}); if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
     this.migrate(); SndSync.init();
   },
   /* перенос игр и звуков из старого локального аккаунта с тем же именем (если они были в этом браузере) */
@@ -463,6 +468,7 @@ const KINDS=[
   {n:'Финиш',shape:'box',type:'goal',c:'#ffd23d',s:[3,3,3]},
   {n:'Монета',shape:'cyl',type:'coin',c:'#ffcc33',s:[1.2,1.2,1.2]},
   {n:'Декор',shape:'box',type:'decor',c:'#79c267',s:[2,2,2]},
+  {n:'Картинка',shape:'box',type:'decor',c:'#eeeeee',s:[4,3,.2],face:'z'},
 ];
 const mk=(shape,type,x,y,z,sx,sy,sz,color,ry=0,mv=null)=>({id:uid(),shape,type,x,y,z,sx,sy,sz,ry,color,mv:mv||{axis:'',dist:4,speed:1}});
 
@@ -674,6 +680,13 @@ function makeWorld(game,editor){
       else if(p.type==='bounce'||p.type==='goal') o.emissive=new THREE.Color(p.color).multiplyScalar(.25);
       else if(p.type==='coin'){ o.emissive=new THREE.Color(p.color).multiplyScalar(.5); }
       const side=new THREE.MeshLambertMaterial(o);
+      const im=p.img&&p.type!=='coin'&&game.images&&game.images[p.img];
+      if(im&&imgOk(im.data)){
+        const pic=new THREE.MeshLambertMaterial({map:imgTex(p.img,im.data),alphaTest:.05}), f=p.imgFace||'all';
+        if(p.shape==='cyl') return f==='top'?[side,pic,side]:f==='z'?[pic,side,side]:[pic,pic,pic];
+        if(f==='all') return [pic,pic,pic,pic,pic,pic];
+        const A=[side,side,side,side,side,side]; if(f==='top') A[2]=pic; else { A[4]=pic; A[5]=pic; } return A;
+      }
       if(p.type==='decor'||p.type==='kill'||p.type==='solid'||p.type==='coin') return p.shape==='cyl'?[side,side,side]:[side,side,side,side,side,side];
       const top=new THREE.MeshLambertMaterial({...o,map:iconTex(p.type,p.color)});
       if(p.type==='goal'){ return p.shape==='cyl'?[top,top,top]:[top,top,top,top,top,top]; }
@@ -925,14 +938,38 @@ function pyWorker(onMsg){
 /* ============================================================
    GUI: экранные элементы игры (текст, кнопка, панель)
    ============================================================ */
-const GUI_MAX=40, GUI_TYPES=[['text','Текст'],['button','Кнопка'],['frame','Панель']];
+/* ---------- Изображения игры: хранятся внутри игры (game.images = {id:{name,data}}) ---------- */
+const IMG_MAX=12, IMG_ONE=140000, IMG_TOTAL=600000;
+const imgOk=d=>typeof d==='string'&&d.length<=IMG_ONE+2000&&/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(d);
+async function imgPack(f){
+  if(!f||!(/^image\//.test(f.type)||/\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name||''))) throw new Error('type');
+  const url=await readDataURL(f); if(!url) throw new Error('read');
+  const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('decode')); i.src=url; });
+  let k=Math.min(1,512/Math.max(im.width,im.height)), q=.85;
+  for(let i=0;i<9;i++){
+    const w=Math.max(1,Math.round(im.width*k)), h=Math.max(1,Math.round(im.height*k)), c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(im,0,0,w,h);
+    let d=c.toDataURL('image/webp',q); if(!d.startsWith('data:image/webp')) d=c.toDataURL('image/png');
+    if(d.length<=IMG_ONE) return d;
+    if(d.startsWith('data:image/webp')&&q>.45) q-=.15; else k*=.8;
+  }
+  throw new Error('big');
+}
+const imgTexCache=new Map();
+function imgTex(id,data){
+  const key=id+':'+data.length; let t=imgTexCache.get(key); if(t) return t;
+  if(imgTexCache.size>24){ const f=imgTexCache.keys().next().value; const o=imgTexCache.get(f); imgTexCache.delete(f); if(o) o.dispose(); }
+  t=new THREE.TextureLoader().load(data); t.userData={keep:true}; imgTexCache.set(key,t); return t;
+}
+const GUI_MAX=40, GUI_TYPES=[['text','Текст'],['button','Кнопка'],['frame','Панель'],['image','Картинка']];
 const GUI_DEF={
   text:{text:'Текст',x:40,y:10,w:20,h:6,size:1.4,color:'#ffffff',bg:'#000000',alpha:0,radius:.4,align:'center'},
   button:{text:'Кнопка',x:42,y:80,w:16,h:8,size:1.2,color:'#14161c',bg:'#59a8ff',alpha:1,radius:.6,align:'center'},
-  frame:{text:'',x:30,y:30,w:40,h:40,size:1.2,color:'#ffffff',bg:'#000000',alpha:.55,radius:.8,align:'center'}
+  frame:{text:'',x:30,y:30,w:40,h:40,size:1.2,color:'#ffffff',bg:'#000000',alpha:.55,radius:.8,align:'center'},
+  image:{text:'',x:35,y:30,w:30,h:30,size:1.2,color:'#ffffff',bg:'#000000',alpha:0,radius:0,align:'center'}
 };
 function guiClean(e){
-  e=e&&typeof e==='object'?e:{}; const type=['text','button','frame'].includes(e.type)?e.type:'text', d=GUI_DEF[type];
+  e=e&&typeof e==='object'?e:{}; const type=['text','button','frame','image'].includes(e.type)?e.type:'text', d=GUI_DEF[type];
   const n=(v,lo,hi,df)=>{ v=+v; return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):df; };
   const col=(v,df)=>typeof v==='string'&&/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)?v.toLowerCase():df;
   return {id:String(e.id==null?'':e.id).replace(/[^\w\-]/g,'').slice(0,40)||uid(), type,
@@ -940,17 +977,20 @@ function guiClean(e){
     text:String(e.text==null?d.text:e.text).replace(/[\u0000-\u0008\u000b-\u001f]/g,'').slice(0,120),
     x:n(e.x,-50,150,d.x), y:n(e.y,-50,150,d.y), w:n(e.w,1,100,d.w), h:n(e.h,1,100,d.h), size:n(e.size,.5,8,d.size),
     color:col(e.color,d.color), bg:col(e.bg,d.bg), alpha:n(e.alpha,0,1,d.alpha), radius:n(e.radius,0,3,d.radius),
-    align:['left','center','right'].includes(e.align)?e.align:d.align, visible:e.visible!==false};
+    align:['left','center','right'].includes(e.align)?e.align:d.align, visible:e.visible!==false,
+    img:String(e.img==null?'':e.img).replace(/[^\w\-]/g,'').slice(0,40), fit:['contain','cover','fill'].includes(e.fit)?e.fit:'contain'};
 }
 const hexA=(h,a)=>{ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const v=parseInt(h,16); return 'rgba('+(v>>16&255)+','+(v>>8&255)+','+(v&255)+','+a+')'; };
-function guiPaint(n,e){
+function guiPaint(n,e,imgs){
   const s=n.style; s.left=e.x+'%'; s.top=e.y+'%'; s.width=e.w+'%'; s.height=e.h+'%'; s.fontSize=e.size+'em'; s.color=e.color;
   s.background=e.alpha>0?hexA(e.bg,e.alpha):'transparent'; s.borderRadius=e.radius+'em'; s.justifyContent=e.align==='left'?'flex-start':e.align==='right'?'flex-end':'center'; s.textAlign=e.align;
-  const t=n.querySelector('.gt'); if(t) t.textContent=e.text; n.style.display=e.visible||n.dataset.ed?'flex':'none';
+  const im=e.img&&imgs&&imgs[e.img], has=!!(im&&imgOk(im.data));
+  if(has){ s.backgroundImage='url('+im.data+')'; s.backgroundRepeat='no-repeat'; s.backgroundPosition='center'; s.backgroundSize=e.fit==='fill'?'100% 100%':e.fit; } else s.backgroundImage='';
+  const t=n.querySelector('.gt'); if(t) t.textContent=e.text||(n.dataset.ed&&e.type==='image'&&!has?'🖼 Картинка':''); n.style.display=e.visible||n.dataset.ed?'flex':'none';
 }
-function guiNode(e,edit){
+function guiNode(e,edit,imgs){
   const n=document.createElement('div'); n.className='gui-el '+e.type; n.dataset.id=e.id; if(edit) n.dataset.ed='1';
-  const t=document.createElement('span'); t.className='gt'; n.appendChild(t); guiPaint(n,e); return n;
+  const t=document.createElement('span'); t.className='gt'; n.appendChild(t); guiPaint(n,e,imgs); return n;
 }
 
 const Play={
@@ -1046,7 +1086,7 @@ const Play={
   guiMount(){
     const lay=$('#pGui'); this.gui={map:new Map(),dom:new Map()}; if(!lay) return;
     for(const raw of (Array.isArray(this.game.gui)?this.game.gui:[]).slice(0,GUI_MAX)){
-      const e=guiClean(raw), n=guiNode(e,false); this.gui.map.set(e.id,e); this.gui.dom.set(e.id,n);
+      const e=guiClean(raw), n=guiNode(e,false,this.game.images); this.gui.map.set(e.id,e); this.gui.dom.set(e.id,n);
       if(e.type==='button') n.onclick=()=>this.guiClick(e.id);
       lay.appendChild(n);
     }
@@ -1055,7 +1095,7 @@ const Play={
   guiSet(c){
     const g=this.gui, e=g&&g.map.get(c.id), n=g&&g.dom.get(c.id); if(!e||!n) return; const t={...e};
     for(const k of ['text','visible','color','bg','x','y','w','h','size']) if(k in c) t[k]=c[k];
-    Object.assign(e,guiClean(t)); guiPaint(n,e);
+    Object.assign(e,guiClean(t)); guiPaint(n,e,this.game.images);
   },
   guiClick(id){
     if(this.state!=='play'||this.paused||!this.gui) return; const e=this.gui.map.get(id); if(!e) return;
@@ -1353,6 +1393,7 @@ const Ed={
   addKind(k){
     this.pushUndo(); const t=this.orb.t, s=k.s;
     const p=mk(k.shape,k.type,this.snap(t.x),s[1]/2,this.snap(t.z),s[0],s[1],s[2],k.c);
+    if(k.face) p.imgFace=k.face;
     this.game.parts.push(p); this.world.add(p); this.select(p.id); Snd.play('b:click');
   },
   select(id){ this.sel=id; if(this.tab!=='props'&&id) this.tab='props'; this.renderBody(); },
@@ -1367,34 +1408,70 @@ const Ed={
     this.guiShow();
     $('#edStat').textContent=this.game.parts.length+' объектов';
   },
+  /* --- изображения игры --- */
+  imgPickHTML(cur){
+    const im=this.game.images||{}, ids=Object.keys(im).filter(id=>im[id]&&imgOk(im[id].data)&&/^[\w\-]+$/.test(id));
+    return `<span class="lbl">Изображение</span><div class="sws imgs">${ids.map(id=>`<button class="sw ${cur===id?'on':''}" data-ip="${esc(id)}" title="${esc(im[id].name)}" style="background:url(${im[id].data}) center/cover"></button>`).join('')}<label class="sw imgadd" title="Загрузить своё изображение">＋<input type="file" accept="image/*" class="fileov" data-iadd></label></div>
+      <p class="muted" style="margin:.4em 0 0;font-size:.8em">PNG, JPG, WebP или GIF. До ${IMG_MAX} картинок в игре, они сжимаются и хранятся внутри игры.</p>
+      ${cur?`<div class="chips" style="margin-top:.4em"><button class="chip" data-ipx>Убрать</button><button class="chip" data-ipdel="${esc(cur)}" style="color:#ff6b6b">Удалить из игры</button></div>`:''}`;
+  },
+  imgBind(el,pick){
+    $$('[data-ip]',el).forEach(b=>b.onclick=()=>pick(b.dataset.ip));
+    const x=$('[data-ipx]',el); if(x) x.onclick=()=>pick('');
+    const f=$('[data-iadd]',el); if(f) f.onchange=async()=>{ const file=f.files[0]; f.value=''; if(!file) return; const id=await this.addImage(file); if(id) pick(id); };
+    const d=$('[data-ipdel]',el); if(d) d.onclick=()=>this.delImage(d.dataset.ipdel);
+  },
+  async addImage(f){
+    const im=this.game.images=(this.game.images&&typeof this.game.images==='object'?this.game.images:{});
+    if(Object.keys(im).length>=IMG_MAX){ toast('Не больше '+IMG_MAX+' картинок в одной игре'); return null; }
+    let d; try{ d=await imgPack(f); }catch(e){ toast('Не удалось открыть картинку (нужен PNG, JPG, WebP или GIF)',3500); return null; }
+    const tot=Object.values(im).reduce((a,v)=>a+v.data.length,0); if(tot+d.length>IMG_TOTAL){ toast('Картинки занимают слишком много места. Удалите ненужные',4000); return null; }
+    const id=uid(); im[id]={name:String(f.name||'Картинка').replace(/\.[^.]+$/,'').slice(0,24)||'Картинка',data:d}; this.dirty=true; toast('Картинка добавлена'); return id;
+  },
+  delImage(id){
+    if(this.game.images) delete this.game.images[id];
+    for(const p of this.game.parts) if(p.img===id){ delete p.img; this.world.update(p); }
+    for(const e of (this.game.gui||[])) if(e.img===id) e.img='';
+    this.dirty=true; this.renderBody();
+  },
   /* --- GUI --- */
   guiGet(id){ return (this.game.gui||[]).find(e=>e.id===id)||null; },
   guiShow(){
     const lay=$('#edGui'); if(!lay) return; const on=this.tab==='gui'; lay.style.display=on?'block':'none'; lay.classList.toggle('edit',on); lay.innerHTML=''; if(!on) return;
     for(const e of (this.game.gui||[])){
-      const n=guiNode(e,true); if(e.id===this.guiSelId) n.classList.add('sel'); if(!e.visible) n.classList.add('off');
+      const n=guiNode(e,true,this.game.images); if(e.id===this.guiSelId) n.classList.add('sel'); if(!e.visible) n.classList.add('off');
       n.onpointerdown=ev=>this.guiDown(ev,e.id,false);
-      if(e.id===this.guiSelId){ const h=document.createElement('div'); h.className='gui-rh'; h.onpointerdown=ev=>this.guiDown(ev,e.id,true); n.appendChild(h); }
+      if(e.id===this.guiSelId) n.appendChild(this.guiHandle(e.id));
       lay.appendChild(n);
     }
   },
+  guiHandle(id){ const h=document.createElement('div'); h.className='gui-rh'; h.onpointerdown=ev=>this.guiDown(ev,id,true); return h; },
+  /* Перетаскивание не пересоздаёт элементы (иначе на телефоне касание обрывается) и держится через setPointerCapture */
   guiDown(ev,id,resize){
-    ev.preventDefault(); ev.stopPropagation(); if(!this.guiGet(id)) return;
-    if(this.guiSelId!==id){ this.guiSelId=id; this.renderBody(); }
-    const lay=$('#edGui'), e=this.guiGet(id), r=lay.getBoundingClientRect(); if(!e||!r.width) return;
+    ev.preventDefault(); ev.stopPropagation(); const e=this.guiGet(id), tg=ev.currentTarget; if(!e||!tg) return;
+    const lay=$('#edGui'), node=tg.classList.contains('gui-el')?tg:tg.parentNode, r=lay.getBoundingClientRect(); if(!r.width||!r.height) return;
+    if(this.guiSelId!==id){
+      this.guiSelId=id;
+      $$('.gui-el',lay).forEach(x=>{ const on=x.dataset.id===id; x.classList.toggle('sel',on); const h=x.querySelector('.gui-rh'); if(h&&!on) h.remove(); });
+      if(!node.querySelector('.gui-rh')) node.appendChild(this.guiHandle(id));
+      this.renderGui($('#edBody'));
+    }
+    try{ tg.setPointerCapture(ev.pointerId); }catch(x){}
+    const panel=$('#editor .rpanel'); if(panel) panel.classList.add('gdrag');
     const sx=ev.clientX, sy=ev.clientY, o={x:e.x,y:e.y,w:e.w,h:e.h}, snap=v=>Math.round(v*2)/2;
     const mv=m=>{
+      if(m.pointerId!==ev.pointerId) return;
       const dx=(m.clientX-sx)/r.width*100, dy=(m.clientY-sy)/r.height*100;
       if(resize){ e.w=clamp(snap(o.w+dx),1,100); e.h=clamp(snap(o.h+dy),1,100); } else { e.x=clamp(snap(o.x+dx),-50,150); e.y=clamp(snap(o.y+dy),-50,150); }
-      this.dirty=true; const n=lay.querySelector('[data-id="'+id+'"]'); if(n) guiPaint(n,e); this.guiSync();
+      this.dirty=true; guiPaint(node,e,this.game.images); this.guiSync();
     };
-    const up=()=>{ removeEventListener('pointermove',mv); removeEventListener('pointerup',up); removeEventListener('pointercancel',up); };
-    addEventListener('pointermove',mv); addEventListener('pointerup',up); addEventListener('pointercancel',up);
+    const up=m=>{ if(m&&m.pointerId!==ev.pointerId) return; tg.removeEventListener('pointermove',mv); tg.removeEventListener('pointerup',up); tg.removeEventListener('pointercancel',up); if(panel) panel.classList.remove('gdrag'); try{ tg.releasePointerCapture(ev.pointerId); }catch(x){} };
+    tg.addEventListener('pointermove',mv); tg.addEventListener('pointerup',up); tg.addEventListener('pointercancel',up);
   },
   guiSync(){ const e=this.guiGet(this.guiSelId); if(!e) return; $$('#edBody [data-gk]').forEach(i=>{ if(i.type!=='checkbox'&&document.activeElement!==i&&['x','y','w','h'].includes(i.dataset.gk)) i.value=e[i.dataset.gk]; }); },
   guiUpd(k,v){
     const e=this.guiGet(this.guiSelId); if(!e) return; e[k]=guiClean({...e,[k]:v})[k]; this.dirty=true;
-    const n=$('#edGui [data-id="'+e.id+'"]'); if(n){ guiPaint(n,e); n.classList.toggle('off',!e.visible); }
+    const n=$('#edGui [data-id="'+e.id+'"]'); if(n){ guiPaint(n,e,this.game.images); n.classList.toggle('off',!e.visible); }
   },
   guiAdd(type){
     const arr=this.game.gui=(this.game.gui||[]); if(arr.length>=GUI_MAX){ toast('Не больше '+GUI_MAX+' элементов GUI'); return; }
@@ -1410,16 +1487,20 @@ const Ed={
       ${sel?`<div class="sec"><span class="lbl">Выбрано: ${esc(tl[sel.type])}</span>
         <label><span class="lbl">Имя для Python</span><input type="text" data-gk="name" maxlength="24" placeholder="например: score" value="${esc(sel.name)}"></label>
         <label><span class="lbl" style="margin-top:.5em;display:block">Текст</span><input type="text" data-gk="text" maxlength="120" value="${esc(sel.text)}"></label>
+        <div style="margin-top:.6em">${this.imgPickHTML(sel.img)}<label style="display:block;margin-top:.5em"><span class="lbl">Как вписать</span><select data-gk="fit"><option value="contain" ${sel.fit==='contain'?'selected':''}>Вписать целиком</option><option value="cover" ${sel.fit==='cover'?'selected':''}>Заполнить (обрезать)</option><option value="fill" ${sel.fit==='fill'?'selected':''}>Растянуть</option></select></label></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5em;margin-top:.5em">${num('x','X, %')}${num('y','Y, %')}${num('w','Ширина, %')}${num('h','Высота, %')}</div>
         <div style="margin-top:.5em">${rng('size','Размер текста',.5,8,.1)}${rng('alpha','Прозрачность фона',0,1,.05)}${rng('radius','Скругление',0,3,.1)}</div>
         <span class="lbl" style="margin-top:.5em;display:block">Выравнивание текста</span><div class="chips">${[['left','Слева'],['center','Центр'],['right','Справа']].map(([v,n])=>`<button class="chip ${sel.align===v?'on':''}" data-gal="${v}">${n}</button>`).join('')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5em;margin-top:.5em"><label><span class="lbl">Цвет текста</span><input type="color" data-gk="color" value="${sel.color}"></label><label><span class="lbl">Цвет фона</span><input type="color" data-gk="bg" value="${sel.bg}"></label></div>
         <label class="row" style="gap:.5em;margin-top:.7em;justify-content:flex-start"><input type="checkbox" data-gk="visible" ${sel.visible?'checked':''}> Видно с начала игры</label>
+        <span class="lbl" style="margin-top:.7em;display:block">Точный сдвиг</span><div class="chips">${[['x',-1,'←'],['y',-1,'↑'],['y',1,'↓'],['x',1,'→']].map(([k,d,l])=>`<button class="chip" data-gn="${k}" data-d="${d}" style="min-width:2.6em">${l}</button>`).join('')}</div>
         <div class="chips" style="margin-top:.7em"><button class="chip" data-gdup>Копия</button><button class="chip" data-gz="-1" title="Назад (ниже других)">↓</button><button class="chip" data-gz="1" title="Вперёд (выше других)">↑</button><button class="chip" data-gdel style="color:#ff6b6b">Удалить</button></div></div>`:''}`;
+    this.imgBind(el,id=>{ this.guiUpd('img',id); this.renderGui(el); });
     $$('[data-ga]',el).forEach(b=>b.onclick=()=>this.guiAdd(b.dataset.ga));
     $$('[data-gs]',el).forEach(b=>b.onclick=()=>{ this.guiSelId=b.dataset.gs; this.renderBody(); });
     $$('[data-gk]',el).forEach(i=>i.addEventListener('input',()=>{ if((i.type==='number')&&i.value==='') return; this.guiUpd(i.dataset.gk,i.type==='checkbox'?i.checked:(i.type==='number'||i.type==='range')?+i.value:i.value); }));
     $$('[data-gal]',el).forEach(b=>b.onclick=()=>{ this.guiUpd('align',b.dataset.gal); this.renderBody(); });
+    $$('[data-gn]',el).forEach(b=>b.onclick=()=>{ const e=this.guiGet(this.guiSelId); if(!e) return; this.guiUpd(b.dataset.gn,e[b.dataset.gn]+(+b.dataset.d)); this.guiSync(); });
     const d=$('[data-gdel]',el); if(d) d.onclick=()=>{ this.game.gui=arr.filter(e=>e.id!==this.guiSelId); this.guiSelId=null; this.dirty=true; this.renderBody(); };
     const c=$('[data-gdup]',el); if(c) c.onclick=()=>{ if(arr.length>=GUI_MAX){ toast('Не больше '+GUI_MAX+' элементов GUI'); return; } const e=guiClean({...sel,id:uid(),name:(sel.name+'2').slice(0,24),x:sel.x+2,y:sel.y+2}); arr.push(e); this.guiSelId=e.id; this.dirty=true; this.renderBody(); };
     $$('[data-gz]',el).forEach(b=>b.onclick=()=>{ const i=arr.findIndex(e=>e.id===this.guiSelId), j=i+(+b.dataset.gz); if(i<0||j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; this.dirty=true; this.renderBody(); });
@@ -1433,6 +1514,7 @@ const Ed={
     <div class="sec"><div class="row field"><div><span class="lbl">Тип</span><select data-k="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
       <div><span class="lbl">Форма</span><select data-k="shape"><option value="box">Блок</option><option value="cyl">Цилиндр</option></select></div></div>
       <span class="lbl">Цвет</span><input type="color" data-k="color"><div class="swr">${CLOTHES.concat(['#9aa0aa','#79c267','#ff4d3d','#8b5a2b']).map(c=>`<button class="sw" style="background:${c}" data-c="${c}" aria-label="${c}"></button>`).join('')}</div></div>
+    ${p.type==='coin'?'':`<div class="sec">${this.imgPickHTML(p.img||'')}<label style="display:block;margin-top:.6em"><span class="lbl">Где показывать</span><select data-k="imgFace"><option value="all">На всех гранях</option><option value="z">Спереди и сзади</option><option value="top">Сверху</option></select></label></div>`}
     <div class="sec"><span class="lbl">Имя для скрипта Python</span><input type="text" data-k="name" maxlength="24" placeholder="например: door"></div>
     <div class="sec"><span class="lbl">Позиция</span><div class="g3">${num('x','X')}${num('y','Y')}${num('z','Z')}</div>
       <span class="lbl" style="margin-top:.8em">Размер</span><div class="g3">${num('sx','X')}${num('sy','Y')}${num('sz','Z')}</div>
@@ -1445,13 +1527,14 @@ const Ed={
     });
     $$('.sw',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); this.setProp('color',b.dataset.c); this.fillProps(); });
     $('#pDup').onclick=()=>this.dup(); $('#pRot').onclick=()=>this.rot(); $('#pDel').onclick=()=>this.del();
+    this.imgBind(el,id=>{ this.pushUndo(); this.setProp('img',id); this.renderProps(el); });
     this.fillProps();
   },
   fillProps(){
     const p=this.part(), el=$('#edBody'); if(!p||this.tab!=='props'||!el) return;
     const set=(k,v)=>{ const i=$(`[data-k="${k}"]`,el); if(i&&i!==document.activeElement) i.value=(typeof v==='number')?+v.toFixed(3):v; };
     ['x','y','z','sx','sy','sz','ry'].forEach(k=>set(k,p[k])); set('type',p.type); set('shape',p.shape); set('color',p.color); set('name',p.name||'');
-    set('mvaxis',p.mv.axis); set('mvdist',p.mv.dist); set('mvspeed',p.mv.speed);
+    set('imgFace',p.imgFace||'all'); set('mvaxis',p.mv.axis); set('mvdist',p.mv.dist); set('mvspeed',p.mv.speed);
     const coin=p.type==='coin'; ['sy','sz'].forEach(k=>{ const i=$(`[data-k="${k}"]`,el); if(i) i.disabled=coin; });
   },
   setProp(k,v){
@@ -1462,7 +1545,7 @@ const Ed={
     if(k==='shape'&&v==='cyl') p.sz=p.sx;
     if(k==='type'&&v==='coin'){ p.shape='cyl'; p.sx=p.sy=p.sz=1.2; }
     this.dirty=true;
-    if(['type','shape','color'].includes(k)){ this.world.update(p); this.fillProps(); } else this.world.xform(p);
+    if(['type','shape','color','img','imgFace'].includes(k)){ this.world.update(p); this.fillProps(); } else this.world.xform(p);
     this.fillProps();
   },
   renderGame(el){
@@ -1653,7 +1736,7 @@ const AvS={
     const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>${a[k]?`<button class="btn sm danger" data-texx="${k}" style="margin-top:.5em">Убрать текстуру</button>`:''}`;
     el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
-      <div class="sec"><span class="lbl">Имя</span><input type="text" id="avName" maxlength="16" value="${esc(a.name)}"></div>
+      <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"><p class="muted" style="margin:.4em 0 0;font-size:.85em">Это ваш ник: он уникален, принадлежит только вам и его нельзя изменить.</p></div>
       <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
       <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
       <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
@@ -1668,7 +1751,6 @@ const AvS={
     $$('[data-vip]',el).forEach(b=>b.onclick=()=>{ if(!Acc.cur||Acc.cur.role!=='admin') return; this.set(b.dataset.vip,!S.avatar[b.dataset.vip]); });
     $$('[data-tk]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.tk,b.dataset.tv));
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
-    $('#avName').oninput=e=>{ S.avatar.name=e.target.value.trim()||'Игрок'; saveAvatar(); };
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
     $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
     if(sc) $('.apanel',el).scrollTop=sc;
