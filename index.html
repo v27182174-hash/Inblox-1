@@ -257,7 +257,7 @@ const Acc={cur:null,list:[],persist:true,
     this.cur=d.user; if(d.token){ Api.tok=d.token; store.set('inblox.token',d.token); }
     S.games=Array.isArray(d.games)?d.games:[]; Sync.reset();
     S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
-    S.avatar=Object.assign({},DEF_AVATAR,{name:d.user.name},d.avatar||{}); Snd.cache={}; Cloud.set('Онлайн');
+    S.avatar=Object.assign({},DEF_AVATAR,{name:d.user.name},d.avatar||{}); if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
     this.migrate();
   },
   /* перенос игр и звуков из старого локального аккаунта с тем же именем (если они были в этом браузере) */
@@ -664,6 +664,19 @@ function torsoTex(cfg){
     function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); g.fill(); }
   });
 }
+function suitTex(){
+  return canvasTex(128,128,(g,w,h)=>{
+    g.fillStyle='#0d0e12'; g.fillRect(0,0,w,h);
+    g.fillStyle='#f4f4f6'; g.beginPath(); g.moveTo(40,0); g.lineTo(88,0); g.lineTo(64,86); g.closePath(); g.fill();           /* белая рубашка */
+    g.fillStyle='#262833'; g.beginPath(); g.moveTo(22,0); g.lineTo(40,0); g.lineTo(64,86); g.lineTo(46,72); g.lineTo(28,30); g.closePath(); g.fill();   /* атласные лацканы */
+    g.beginPath(); g.moveTo(106,0); g.lineTo(88,0); g.lineTo(64,86); g.lineTo(82,72); g.lineTo(100,30); g.closePath(); g.fill();
+    g.strokeStyle='rgba(255,255,255,.22)'; g.lineWidth=2; g.beginPath(); g.moveTo(40,0); g.lineTo(64,86); g.lineTo(88,0); g.stroke();
+    g.fillStyle='#0d0e12'; g.beginPath(); g.moveTo(64,11); g.lineTo(42,2); g.lineTo(42,20); g.closePath(); g.fill(); g.beginPath(); g.moveTo(64,11); g.lineTo(86,2); g.lineTo(86,20); g.closePath(); g.fill(); g.fillRect(59,5,10,12);   /* бабочка */
+    g.fillStyle='#8a8d99'; g.beginPath(); g.arc(64,34,2.4,0,7); g.fill(); g.beginPath(); g.arc(64,52,2.4,0,7); g.fill();       /* пуговицы рубашки */
+    g.fillStyle='#3a3d49'; g.beginPath(); g.arc(64,98,4,0,7); g.fill(); g.beginPath(); g.arc(64,114,4,0,7); g.fill();         /* пуговицы пиджака */
+    g.fillStyle='#f4f4f6'; g.beginPath(); g.moveTo(92,48); g.lineTo(108,44); g.lineTo(107,53); g.lineTo(93,55); g.closePath(); g.fill();   /* платок */
+  });
+}
 function seeded(n){ return ()=>{ n=(n*16807)%2147483647; return (n-1)/2147483646; }; }
 const TEXS=[
 ['denim','Джинса',(g,w,h)=>{ g.fillStyle='#3d5fa0'; g.fillRect(0,0,w,h); g.fillStyle='rgba(255,255,255,.10)'; for(let i=0;i<w;i+=4) g.fillRect(i,0,1,h); g.fillStyle='rgba(0,0,0,.12)'; for(let i=0;i<h;i+=4) g.fillRect(0,i,w,1); const r=seeded(7); for(let i=0;i<260;i++){ g.fillStyle=r()>.5?'rgba(255,255,255,.14)':'rgba(0,0,30,.18)'; g.fillRect(r()*w,r()*h,2,2); } }],
@@ -691,15 +704,16 @@ function userTex(url){
 function buildAvatar(cfg){
   const g=new THREE.Group(), body=new THREE.Group(); g.add(body);
   const M=c=>new THREE.MeshLambertMaterial({color:c}), MT=(c,tex)=>{ const m=new THREE.MeshLambertMaterial({color:tex?'#ffffff':c}); if(tex) m.map=userTex(tex); return m; }, skin=M(cfg.skin), shirt=MT(cfg.shirt,cfg.shirtTex), pants=MT(cfg.pants,cfg.pantsTex), shoe=M('#15151a');
+  const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), shirtM=vs?suitM:shirt, pantsM=vs?suitM:pants;
   const box=(w,h,d,m,x,y,z,parent)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); b.castShadow=true; b.receiveShadow=true; (parent||body).add(b); return b; };
-  const front=cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
-  box(1.2,1.2,.6,[shirt,shirt,shirt,shirt,front,shirt],0,1.6,0);
+  const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
+  box(1.2,1.2,.6,[shirtM,shirtM,shirtM,shirtM,front,shirtM],0,1.6,0);
   const faceM=new THREE.MeshLambertMaterial({map:faceTex(cfg)});
   const head=box(.8,.8,.8,[skin,skin,skin,skin,faceM,skin],0,2.6,0);
   const limb=(x,y)=>{ const p=new THREE.Group(); p.position.set(x,y,0); body.add(p); return p; };
   const armL=limb(-.8,2.15), armR=limb(.8,2.15), legL=limb(-.3,1), legR=limb(.3,1);
-  [armL,armR].forEach(a=>{ box(.4,.7,.4,shirt,0,-.35,0,a); box(.4,.45,.4,skin,0,-.925,0,a); });
-  [legL,legR].forEach(l=>{ box(.55,.8,.55,pants,0,-.4,0,l); box(.55,.2,.62,shoe,0,-.9,.03,l); });
+  [armL,armR].forEach(a=>{ box(.4,.7,.4,shirtM,0,-.35,0,a); box(.4,.45,.4,skin,0,-.925,0,a); if(vs) box(.43,.09,.43,M('#f4f4f6'),0,-.66,0,a); });
+  [legL,legR].forEach(l=>{ box(.55,.8,.55,pantsM,0,-.4,0,l); box(.55,.2,.62,shoe,0,-.9,.03,l); if(vs) box(.03,.8,.2,M('#2c2e3a'),l===legL?-.285:.285,-.4,0,l); });
   const hm=M(cfg.hatColor), hat=new THREE.Group(); body.add(hat);
   const add=(geo,x,y,z,rx=0,rz=0)=>{ const m=new THREE.Mesh(geo,hm); m.position.set(x,y,z); m.rotation.set(rx,0,rz); m.castShadow=true; hat.add(m); return m; };
   switch(cfg.hat){
@@ -708,6 +722,14 @@ function buildAvatar(cfg){
     case 'crown': { const r=add(new THREE.CylinderGeometry(.42,.42,.25,10,1,true),0,3.12,0); r.material=new THREE.MeshLambertMaterial({color:cfg.hatColor,side:THREE.DoubleSide}); for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; add(new THREE.ConeGeometry(.1,.3,6),Math.cos(a)*.38,3.38,Math.sin(a)*.38); } break; }
     case 'ears': add(new THREE.ConeGeometry(.17,.38,4),-.26,3.18,0,0,.25); add(new THREE.ConeGeometry(.17,.38,4),.26,3.18,0,0,-.25); break;
     case 'antenna': add(new THREE.CylinderGeometry(.03,.03,.45,8),0,3.22,0); add(new THREE.SphereGeometry(.1,12,10),0,3.5,0); break;
+  }
+  if(cfg.vipShades){
+    const gold=new THREE.MeshLambertMaterial({color:'#d4af37',emissive:'#3a2a00'}), lens=new THREE.MeshPhongMaterial({color:'#0a0a12',specular:'#9fc4ff',shininess:110}), shine=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.4});
+    for(const sx of [-1,1]){
+      box(.37,.27,.03,gold,sx*.17,2.665,.405); box(.31,.21,.03,lens,sx*.17,2.665,.42); box(.1,.035,.01,shine,sx*.23,2.73,.44);   /* оправа, стекло, блик */
+      box(.03,.05,.4,gold,sx*.4,2.7,.2);                                                                                       /* дужка */
+    }
+    box(.1,.04,.04,gold,0,2.72,.41);                                                                                           /* переносица */
   }
   return {group:g,body,head,armL,armR,legL,legR};
 }
@@ -1204,9 +1226,11 @@ const AvS={
       <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
       <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
       <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
+      ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}
     </aside><div class="ahint">Тяните, чтобы повернуть</div>`;
     $$('[data-v]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.k,b.dataset.v));
     $$('input[type=color]',el).forEach(i=>i.addEventListener('change',()=>this.set(i.dataset.k,i.value)));
+    $$('[data-vip]',el).forEach(b=>b.onclick=()=>{ if(!Acc.cur||Acc.cur.role!=='admin') return; this.set(b.dataset.vip,!S.avatar[b.dataset.vip]); });
     $$('[data-tk]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.tk,b.dataset.tv));
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avName').oninput=e=>{ S.avatar.name=e.target.value.trim()||'Игрок'; saveAvatar(); };
