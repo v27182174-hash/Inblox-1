@@ -102,6 +102,7 @@ async function api(req,env,url){
   }
   if(p==='avatar'&&m==='PUT'){
     const b=await body(), a=b&&b.avatar; if(!a||typeof a!=='object') return err('Неверные данные');
+    if(u.role!=='admin'){ delete a.vipSuit; delete a.vipShades; }
     const js=JSON.stringify(a); if(bytes(js)>LIM.avatar) return err('Аватар слишком большой',413);
     await db.prepare('UPDATE users SET avatar=? WHERE id=?').bind(js,u.id).run(); return J({ok:1});
   }
