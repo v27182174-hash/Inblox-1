@@ -15,6 +15,7 @@ async function pbk(pw,saltHex){
 }
 const FOREVER=4102444800000, DAY=86400000;
 const ID_RE=/^[\w\-]{1,40}$/, ROOM_RE=/^[\w:.\-]{1,64}$/;
+const SND={perSound:14000000,total:60000000,count:80,chunk:800000};
 const LIM={game:1500000,pubGame:900000,pubSounds:900000,avatar:200000,games:200,pubs:30};
 
 async function throttle(db,key,max,win){
@@ -47,7 +48,7 @@ const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
 function lookOf(a,role){
   if(!a||typeof a!=='object') return null;
   const c=v=>typeof v==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(v)?v:undefined, id=v=>typeof v==='string'&&/^[\w\-]{1,20}$/.test(v)?v:undefined;
-  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),emblem:id(a.emblem)};
+  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),head:id(a.head),emblem:id(a.emblem)};
   if(typeof a.shirtTex==='string'&&/^p:[a-z]{1,12}$/.test(a.shirtTex)) o.shirtTex=a.shirtTex;
   if(role==='admin'){ if(a.vipSuit) o.vipSuit=1; if(a.vipShades) o.vipShades=1; }
   for(const k of Object.keys(o)) if(o[k]===undefined) delete o[k];
@@ -61,6 +62,12 @@ async function ensureSchema(db){
     try{ await db.prepare('SELECT '+col+' FROM users LIMIT 1').first(); }
     catch(e){ try{ await db.prepare('ALTER TABLE users ADD COLUMN '+col+' '+def).run(); }catch(e2){ console.error(e2); } }
   }
+  try{
+    await db.batch([
+      db.prepare('CREATE TABLE IF NOT EXISTS snd(owner TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,got INTEGER NOT NULL DEFAULT 0,ts INTEGER NOT NULL,PRIMARY KEY(owner,id))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))')
+    ]);
+  }catch(e){ console.error(e); }
   schemaOk=true;
 }
 const cleanText=(s,n)=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
@@ -129,6 +136,52 @@ async function api(req,env,url){
     await db.prepare('UPDATE users SET avatar=?,look=? WHERE id=?').bind(js,JSON.stringify(lookOf(a,u.role)),u.id).run(); return J({ok:1});
   }
 
+  /* ---- звуки пользователя (хранятся кусками в D1, чтобы обойти лимит строки 2 МБ) ---- */
+  if(seg[0]==='sounds'){
+    if(seg.length===1&&m==='GET'){
+      const rs=(await db.prepare('SELECT id,name,size FROM snd WHERE owner=? AND n>0 AND got=n ORDER BY ts').bind(u.id).all()).results||[];
+      return J({items:rs});
+    }
+    const id=seg[1]; if(!ID_RE.test(id||'')) return err('Неверный id звука');
+    if(seg.length===2&&m==='GET'){
+      const r=await db.prepare('SELECT name,n,got FROM snd WHERE owner=? AND id=?').bind(u.id,id).first();
+      if(!r||r.n<1||r.got!==r.n) return err('Звук не найден',404);
+      const cs=(await db.prepare('SELECT data FROM snd_chunk WHERE owner=? AND id=? ORDER BY i').bind(u.id,id).all()).results||[];
+      return J({id,name:r.name,data:cs.map(c=>c.data).join('')});
+    }
+    if(seg.length===2&&m==='DELETE'){
+      await db.batch([db.prepare('DELETE FROM snd_chunk WHERE owner=? AND id=?').bind(u.id,id),db.prepare('DELETE FROM snd WHERE owner=? AND id=?').bind(u.id,id)]);
+      return J({ok:1});
+    }
+    if(seg.length===3&&m==='PUT'){
+      if(!await throttle(db,'snd:'+u.id,400,600000)) return err('Слишком много загрузок, подождите немного',429);
+      const i=parseInt(seg[2]), b=await body(); if(!b) return err('Неверные данные');
+      const total=parseInt(b.total), data=b.data;
+      if(!(total>=1&&total<=40)||!(i>=0&&i<total)||typeof data!=='string'||!data.length||data.length>SND.chunk) return err('Неверный кусок звука');
+      const others=await db.prepare('SELECT COALESCE(SUM(size),0) s,COUNT(*) c FROM snd WHERE owner=? AND id<>?').bind(u.id,id).first();
+      if(i===0){
+        if(!data.startsWith('data:audio')) return err('Это не звуковой файл');
+        if(others.c>=SND.count) return err('Слишком много звуков (максимум '+SND.count+')');
+        await db.batch([
+          db.prepare('DELETE FROM snd_chunk WHERE owner=? AND id=?').bind(u.id,id),
+          db.prepare('INSERT INTO snd(owner,id,name,size,n,got,ts) VALUES(?,?,?,0,?,0,?) ON CONFLICT(owner,id) DO UPDATE SET name=excluded.name,size=0,n=excluded.n,got=0,ts=excluded.ts').bind(u.id,id,cleanText(b.name,40)||'Звук',total,Date.now())
+        ]);
+      }
+      const meta=await db.prepare('SELECT n,got,size FROM snd WHERE owner=? AND id=?').bind(u.id,id).first();
+      if(!meta||meta.n!==total||meta.got!==i) return err('Загрузка прервана, начните заново',409);
+      const size=meta.size+data.length;
+      if(size>SND.perSound||others.s+size>SND.total){
+        await db.batch([db.prepare('DELETE FROM snd_chunk WHERE owner=? AND id=?').bind(u.id,id),db.prepare('DELETE FROM snd WHERE owner=? AND id=?').bind(u.id,id)]);
+        return err(size>SND.perSound?'Звук слишком большой (максимум 10 МБ)':'Нет места для звуков на сервере (максимум 60 МБ на аккаунт)',413);
+      }
+      await db.batch([
+        db.prepare('INSERT OR REPLACE INTO snd_chunk(owner,id,i,data) VALUES(?,?,?,?)').bind(u.id,id,i,data),
+        db.prepare('UPDATE snd SET got=got+1,size=?,ts=? WHERE owner=? AND id=?').bind(size,Date.now(),u.id,id)
+      ]);
+      return J({ok:1,done:i===total-1});
+    }
+  }
+
   /* ---- каталог игр ---- */
   if(seg[0]==='pub'){
     if(seg.length===1&&m==='GET'){
@@ -160,8 +213,11 @@ async function api(req,env,url){
       return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:parse(r.sounds)||[]}});
     }
     if(seg.length===2&&m==='PATCH'){
-      const b=await body(); const r=await db.prepare('UPDATE pub SET descr=? WHERE id=? AND owner=?').bind(cleanText(b&&b.desc,500),id,u.id).run();
-      return r.meta&&r.meta.changes?J({ok:1}):err('Нет доступа',403);
+      const b=await body()||{}; let ch=0;
+      if(b.desc!==undefined){ const r=await db.prepare('UPDATE pub SET descr=? WHERE id=? AND owner=?').bind(cleanText(b.desc,500),id,u.id).run(); ch+=(r.meta&&r.meta.changes)||0; }
+      if(b.name!==undefined){ const nm=cleanText(b.name,40); if(!nm) return err('Пустое название');
+        const r=await db.prepare("UPDATE pub SET name=?,json=json_set(json,'$.name',?) WHERE id=? AND owner=?").bind(nm,nm,id,u.id).run(); ch+=(r.meta&&r.meta.changes)||0; }
+      return ch?J({ok:1}):err('Нет доступа',403);
     }
     if(seg.length===2&&m==='DELETE'){
       const r=u.role==='admin'?await db.prepare('DELETE FROM pub WHERE id=?').bind(id).run():await db.prepare('DELETE FROM pub WHERE id=? AND owner=?').bind(id,u.id).run();

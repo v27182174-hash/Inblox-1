@@ -71,6 +71,7 @@ input[type=checkbox]{accent-color:#fff;width:1.1em;height:1.1em}
 .card .meta{padding:.8em .9em .5em}
 .card .meta b{display:block;font-family:var(--display);font-weight:600;font-size:1.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .meta span{font-size:.85em;color:var(--muted)}
+.card .meta input.rn{font-family:var(--display);font-weight:600;font-size:1em;padding:.1em .35em}
 .card .acts{display:flex;gap:.4em;padding:.4em .9em .9em;margin-top:auto}
 .card.new{align-items:center;justify-content:center;border-style:dashed;background:transparent;cursor:pointer;min-height:14em;color:var(--muted);gap:.5em;font-size:1em}
 .card.new:hover{color:var(--fg);border-color:rgba(255,255,255,.35)}
@@ -158,6 +159,17 @@ label.drop{position:relative;display:block;overflow:hidden}
 .flybar{position:absolute;left:50%;top:4.4em;transform:translateX(-50%);display:flex;gap:.35em;flex-wrap:wrap;justify-content:center;max-width:46em;background:var(--panel);border:1px solid var(--line);border-radius:.8em;padding:.4em .5em;backdrop-filter:blur(8px);z-index:6}
 .flybar .btn{padding:.3em .6em}
 .btn.on{background:#fff;color:#000}
+.guil{position:absolute;inset:0;overflow:hidden;pointer-events:none!important;z-index:0}
+.gui-el{position:absolute;box-sizing:border-box;display:flex;align-items:center;padding:.1em .4em;line-height:1.2;overflow:hidden;pointer-events:none;user-select:none;-webkit-user-select:none;font-family:var(--body)}
+.gui-el .gt{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.gui-el.text .gt{text-shadow:0 1px 4px #000}
+.gui-el.button{pointer-events:auto;cursor:pointer;font-weight:600;transition:filter .1s,transform .1s}
+.gui-el.button:hover{filter:brightness(1.12)}
+.gui-el.button:active{transform:scale(.97)}
+.guil.edit .gui-el{pointer-events:auto;cursor:move;outline:1px dashed rgba(255,255,255,.4);touch-action:none;overflow:visible}
+.guil.edit .gui-el.sel{outline:2px solid #59a8ff}
+.guil.edit .gui-el.off{opacity:.4}
+.gui-rh{position:absolute;right:-.4em;bottom:-.4em;width:.9em;height:.9em;background:#59a8ff;border-radius:.2em;cursor:nwse-resize;touch-action:none}
 .pban{position:absolute;left:0;right:0;top:28%;text-align:center;font-size:2.6em;font-weight:700;text-shadow:0 2px 8px #000;pointer-events:none!important;opacity:0;transition:opacity .4s}
 .pban.on{opacity:1}
 .phud{position:absolute;left:50%;top:3.6em;transform:translateX(-50%);background:rgba(10,10,12,.6);border-radius:99em;padding:.25em .9em;font-weight:600;pointer-events:none!important}
@@ -256,7 +268,7 @@ async function imgData(f,w,h,q=.85){
 }
 
 /* ---------- данные ---------- */
-const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo'};
+const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo',head:'cube'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
@@ -286,7 +298,7 @@ const Acc={cur:null,list:[],persist:true,
     S.games=Array.isArray(d.games)?d.games:[]; Sync.reset();
     S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
     S.avatar=Object.assign({},DEF_AVATAR,{name:d.user.name},d.avatar||{}); if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
-    this.migrate();
+    this.migrate(); SndSync.init();
   },
   /* перенос игр и звуков из старого локального аккаунта с тем же именем (если они были в этом браузере) */
   async migrate(){
@@ -330,7 +342,55 @@ const saveSounds=async()=>{
   if(!Acc.cur) return; const aid=Acc.cur.id;
   for(const x of S.sounds) if(!x.tmp&&x.data&&!x.stored) x.stored=await Media.put(aid+':s:'+x.id,x.data);
   if(!Acc.cur||Acc.cur.id!==aid) return;
-  if(!store.set(Acc.key('sounds'),S.sounds.filter(x=>!x.tmp).map(x=>x.stored?{id:x.id,name:x.name,idb:1}:{id:x.id,name:x.name,data:x.data}))) toast('Нет места в браузере: звуки доступны только до закрытия страницы',4000);
+  if(!store.set(Acc.key('sounds'),S.sounds.filter(x=>!x.tmp&&(x.stored||x.data)).map(x=>x.stored?{id:x.id,name:x.name,idb:1}:{id:x.id,name:x.name,data:x.data}))) toast('Нет места в браузере: звуки доступны только до закрытия страницы',4000);
+  SndSync.push();
+};
+
+/* Звуки хранятся на сервере (D1, кусками): доступны с любого устройства. В браузере остаётся кэш. */
+async function sndData(x){
+  if(x.data) return x.data; const uid=Acc.cur&&Acc.cur.id;
+  if(uid){ const d=await Media.get(uid+':s:'+x.id); if(d) return x.data=d; }
+  if(x.remote){
+    const r=await Api.call('GET','sounds/'+encodeURIComponent(x.id));
+    if(r.ok&&r.d.data){ x.data=r.d.data; if(uid&&await Media.put(uid+':s:'+x.id,x.data)){ x.stored=true; } return x.data; }
+  }
+  return null;
+}
+const SndSync={up:new Set(),busy:false,again:false,CH:700000,
+  okKey(){ return Acc.cur?Acc.key('sndok'):null; },
+  okGet(){ const k=this.okKey(); return new Set(k?store.get(k,[]):[]); },
+  okSet(s){ const k=this.okKey(); if(k) store.set(k,[...s]); },
+  async init(){ this.up=new Set(); await this.list(); this.push(); },
+  async list(){
+    const aid=Acc.cur&&Acc.cur.id; if(!aid) return; const r=await Api.call('GET','sounds'); if(!r.ok||!Acc.cur||Acc.cur.id!==aid) return;
+    const items=r.d.items||[], ids=new Set(items.map(s=>s.id)), ok=this.okGet(); let ch=false;
+    for(const s of items){ const x=S.sounds.find(q=>q.id===s.id); if(x) x.remote=true; else S.sounds.push({id:s.id,name:s.name,remote:true}); ok.add(s.id); }
+    /* звук, который уже был на сервере, но пропал оттуда, удалён с другого устройства — убираем и здесь */
+    for(const x of S.sounds.slice()) if(!x.tmp&&!ids.has(x.id)&&ok.has(x.id)){ S.sounds=S.sounds.filter(q=>q!==x); delete Snd.cache[x.id]; Media.del(aid+':s:'+x.id); ok.delete(x.id); ch=true; }
+    this.okSet(ok); if(ch) saveSounds();
+  },
+  async send(id,name,data){
+    const total=Math.max(1,Math.ceil(data.length/this.CH));
+    for(let i=0;i<total;i++){
+      const r=await Api.call('PUT','sounds/'+encodeURIComponent(id)+'/'+i,{name,total,data:data.slice(i*this.CH,(i+1)*this.CH)});
+      if(!r.ok) return r;
+    }
+    return {ok:true};
+  },
+  async push(){
+    if(!Acc.cur) return; if(this.busy){ this.again=true; return; } this.busy=true; const aid=Acc.cur.id;
+    try{
+      for(const x of S.sounds.slice()){
+        if(!Acc.cur||Acc.cur.id!==aid) break; if(x.tmp||x.remote||this.up.has(x.id)) continue;
+        const d=await sndData(x); if(!d) continue; this.up.add(x.id);
+        const r=await this.send(x.id,x.name,d);
+        if(r.ok){ x.remote=true; const ok=this.okGet(); ok.add(x.id); this.okSet(ok); }
+        else if(r.net){ this.up.delete(x.id); setTimeout(()=>this.push(),15000); break; }
+        else toast('Звук «'+x.name+'» не сохранён на сервере: '+r.error,4500);
+      }
+    } finally{ this.busy=false; if(this.again){ this.again=false; setTimeout(()=>this.push(),50); } }
+  },
+  remove(id){ this.up.delete(id); const ok=this.okGet(); ok.delete(id); this.okSet(ok); if(Acc.cur) Api.call('DELETE','sounds/'+encodeURIComponent(id)); }
 };
 
 /* ---------- Облако: личное хранилище артефакта (db), привязано к вашему входу в claude.ai ---------- */
@@ -486,7 +546,7 @@ const Snd={ctx:null,master:null,mg:null,cache:{},timer:null,src:null,tok:0,
     const x=S.sounds.find(v=>v.id===id); if(!x) return Promise.resolve(null);
     return this.cache[id]=(async()=>{
       try{
-        let d=x.data; if(!d&&x.stored&&Acc.cur) d=x.data=await Media.get(Acc.cur.id+':s:'+id);
+        const d=await sndData(x);
         if(!d) throw 0;
         const b=atob(d.split(',')[1]), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i);
         return await this.ctx.decodeAudioData(u.buffer);
@@ -652,6 +712,22 @@ const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
 const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
 const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики']];
+const HEADS=[['cube','Куб'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
+const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
+/* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
+function headGeo(id){
+  const s=HEAD_DEF[id]||HEAD_DEF.cube, n=s.k?12:1, geo=new THREE.BoxGeometry(s.w,s.h,s.d,n,n,n);
+  if(s.k){
+    const p=geo.attributes.position, nr=geo.attributes.normal, hx=s.w/2, hy=s.h/2, hz=s.d/2, c=new THREE.Vector3(), sp=new THREE.Vector3(), nn=new THREE.Vector3();
+    for(let i=0;i<p.count;i++){
+      c.set(p.getX(i)/hx,p.getY(i)/hy,p.getZ(i)/hz); sp.copy(c).normalize(); c.lerp(sp,s.k);
+      nn.set(nr.getX(i),nr.getY(i),nr.getZ(i)).lerp(sp,s.k).normalize();
+      p.setXYZ(i,c.x*hx,c.y*hy,c.z*hz); nr.setXYZ(i,nn.x,nn.y,nn.z);
+    }
+    p.needsUpdate=true; nr.needsUpdate=true; geo.computeBoundingSphere();
+  }
+  return geo;
+}
 const EMBLEMS=[['none','Нет'],['logo','Inblox'],['stripe','Полоса'],['star','Звезда']];
 
 function drawHeart(g,x,y,s,c){ g.fillStyle=c; g.beginPath(); g.moveTo(x,y+s*.55); g.bezierCurveTo(x-s*1.1,y-s*.1,x-s*.6,y-s*.9,x,y-s*.4); g.bezierCurveTo(x+s*.6,y-s*.9,x+s*1.1,y-s*.1,x,y+s*.55); g.fill(); }
@@ -737,12 +813,12 @@ function buildAvatar(cfg){
   const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
   box(1.2,1.2,.6,[shirtM,shirtM,shirtM,shirtM,front,shirtM],0,1.6,0);
   const faceM=new THREE.MeshLambertMaterial({map:faceTex(cfg)});
-  const head=box(.8,.8,.8,[skin,skin,skin,skin,faceM,skin],0,2.6,0);
+  const hs=HEAD_DEF[cfg.head]||HEAD_DEF.cube, head=new THREE.Mesh(headGeo(cfg.head),[skin,skin,skin,skin,faceM,skin]); head.position.set(0,2.2+hs.h/2,0); head.castShadow=true; head.receiveShadow=true; body.add(head);
   const limb=(x,y)=>{ const p=new THREE.Group(); p.position.set(x,y,0); body.add(p); return p; };
   const armL=limb(-.8,2.15), armR=limb(.8,2.15), legL=limb(-.3,1), legR=limb(.3,1);
   [armL,armR].forEach(a=>{ box(.4,.7,.4,shirtM,0,-.35,0,a); box(.4,.45,.4,skin,0,-.925,0,a); if(vs) box(.43,.09,.43,M('#f4f4f6'),0,-.66,0,a); });
   [legL,legR].forEach(l=>{ box(.55,.8,.55,pantsM,0,-.4,0,l); box(.55,.2,.62,shoe,0,-.9,.03,l); if(vs) box(.03,.8,.2,M('#2c2e3a'),l===legL?-.285:.285,-.4,0,l); });
-  const hm=M(cfg.hatColor), hat=new THREE.Group(); body.add(hat);
+  const hm=M(cfg.hatColor), hat=new THREE.Group(); body.add(hat); hat.position.y=hs.h-.8-.11*hs.k; hat.scale.set(hs.w/.8,1,hs.d/.8);
   const add=(geo,x,y,z,rx=0,rz=0)=>{ const m=new THREE.Mesh(geo,hm); m.position.set(x,y,z); m.rotation.set(rx,0,rz); m.castShadow=true; hat.add(m); return m; };
   switch(cfg.hat){
     case 'cap': { const d=add(new THREE.SphereGeometry(.47,20,12,0,Math.PI*2,0,Math.PI/2),0,3,0); d.scale.set(1,.75,1); add(new THREE.BoxGeometry(.7,.06,.4),0,3.02,.55); break; }
@@ -753,11 +829,12 @@ function buildAvatar(cfg){
   }
   if(cfg.vipShades){
     const gold=new THREE.MeshLambertMaterial({color:'#d4af37',emissive:'#3a2a00'}), lens=new THREE.MeshPhongMaterial({color:'#0a0a12',specular:'#9fc4ff',shininess:110}), shine=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.4});
+    const sg=new THREE.Group(); body.add(sg); sg.position.set(0,2.2+hs.h/2-2.6,hs.d/2-.4+.05*hs.k); sg.scale.set(hs.w/.8,1,1);
     for(const sx of [-1,1]){
-      box(.37,.27,.03,gold,sx*.17,2.665,.405); box(.31,.21,.03,lens,sx*.17,2.665,.42); box(.1,.035,.01,shine,sx*.23,2.73,.44);   /* оправа, стекло, блик */
-      box(.03,.05,.4,gold,sx*.4,2.7,.2);                                                                                       /* дужка */
+      box(.37,.27,.03,gold,sx*.17,2.665,.405,sg); box(.31,.21,.03,lens,sx*.17,2.665,.42,sg); box(.1,.035,.01,shine,sx*.23,2.73,.44,sg);   /* оправа, стекло, блик */
+      box(.03,.05,.4,gold,sx*.4,2.7,.2,sg);                                                                                       /* дужка */
     }
-    box(.1,.04,.04,gold,0,2.72,.41);                                                                                           /* переносица */
+    box(.1,.04,.04,gold,0,2.72,.41,sg);                                                                                           /* переносица */
   }
   return {group:g,body,head,armL,armR,legL,legR};
 }
@@ -781,7 +858,7 @@ function animAvatar(av,t,speed,air,vy){
 }
 const PICS={};
 function avatarPic(look){
-  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.vipSuit,L.vipShades]);
+  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.head,L.vipSuit,L.vipShades]);
   if(PICS[key]) return PICS[key];
   const c=document.createElement('canvas'); c.width=c.height=160; const g=c.getContext('2d');
   const bg=g.createLinearGradient(0,0,0,160); bg.addColorStop(0,'#2b3050'); bg.addColorStop(1,'#171a28'); g.fillStyle=bg; g.fillRect(0,0,160,160);
@@ -793,10 +870,12 @@ function avatarPic(look){
   g.restore();
   /* шея и голова */
   g.fillStyle=L.skin; g.fillRect(68,102,24,14); g.fillStyle='rgba(0,0,0,.2)'; g.fillRect(68,102,24,14);
-  g.save(); rr(46,42,68,68,10); g.clip(); const f=faceTex(L); g.drawImage(f.image,46,42,68,68); f.dispose(); g.restore();
-  g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=2; rr(46,42,68,68,10); g.stroke();
+  const hs=HEAD_DEF[L.head]||HEAD_DEF.cube, hw=68*hs.w/.8, hh=68*hs.h/.8, hy=110-hh, hx=80-hw/2, hr=Math.min(hw,hh)/2*(hs.k?Math.min(1,.25+hs.k*.75):.15);
+  g.save(); if(hs.h>.9){ g.translate(80,110); g.scale(.82,.82); g.translate(-80,-110); }
+  g.save(); rr(hx,hy,hw,hh,hr); g.clip(); const f=faceTex(L); g.drawImage(f.image,hx,hy,hw,hh); f.dispose(); g.restore();
+  g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=2; rr(hx,hy,hw,hh,hr); g.stroke();
   /* головной убор */
-  g.fillStyle=L.hatColor;
+  g.fillStyle=L.hatColor; g.save(); g.translate(80,hy+hs.k*5); g.scale(hs.w/.8,1); g.translate(-80,-42);
   const tri=(a,b,c,d,e,f2)=>{ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.lineTo(e,f2); g.closePath(); g.fill(); };
   switch(L.hat){
     case 'cap': g.beginPath(); g.ellipse(80,44,36,24,0,Math.PI,0); g.fill(); rr(44,41,72,7,3); g.fill(); break;
@@ -805,11 +884,15 @@ function avatarPic(look){
     case 'ears': tri(52,44,68,44,58,20); tri(108,44,92,44,102,20); break;
     case 'antenna': g.fillRect(78,18,4,26); g.beginPath(); g.arc(80,14,7,0,7); g.fill(); break;
   }
+  g.restore();
   /* солнечные очки (эксклюзив админа) */
   if(L.vipShades){
+    g.save(); g.translate(80,hy+hh/2); g.scale(hs.w/.8,1); g.translate(-80,-76);
     for(const cx of [66.2,93.8]){ g.fillStyle='#d4af37'; rr(cx-13.5,60,27,22,5); g.fill(); g.fillStyle='#0a0a12'; rr(cx-10.5,62.5,21,17,3); g.fill(); g.fillStyle='rgba(255,255,255,.4)'; g.fillRect(cx-8,64,9,3); }
     g.fillStyle='#d4af37'; g.fillRect(78,66,4,3); g.fillRect(46,69,6,3); g.fillRect(108,69,6,3);
+    g.restore();
   }
+  g.restore();
   return PICS[key]=c.toDataURL('image/png');
 }
 const avImg=(look,cls='')=>`<img class="avc ${cls}" src="${avatarPic(look)}" alt="" draggable="false">`;
@@ -830,15 +913,46 @@ const PH={H:3,R:.55,SPEED:11,JUMP:24,G:75,BOUNCE:46};
    Поток не видит страницу, аккаунт и токены; завис — его просто закрывают.
    ============================================================ */
 const PY_BASE='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
-const PY_WORKER_SRC="\nlet py=null,tickFn=null,checkFn=null,initFn=null;\nconst post=m=>self.postMessage(m);\nself.onmessage=async e=>{\n  const m=e.data;\n  try{\n    if(m.t==='load'){\n      importScripts(m.base+'pyodide.js');\n      py=await loadPyodide({indexURL:m.base});\n      py.setStdout({batched:s=>post({t:'log',text:s})}); py.setStderr({batched:s=>post({t:'log',text:s,err:1})});\n      py.runPython(\"import json, math, random, asyncio, traceback, builtins\\n\\n_PROPS = ('x', 'y', 'z', 'sx', 'sy', 'sz', 'ry', 'color', 'visible')\\n_NUM = ('x', 'y', 'z', 'sx', 'sy', 'sz', 'ry')\\n_parts = {}\\n_list = []\\n_out = []\\n_dirty = {}\\n_seen = set()\\n_g = {}\\n_clock = [0.0]\\n_BLOCK = {'js', 'pyodide', 'pyodide_js', '_pyodide', '_pyodide_core', 'micropip', 'ctypes', 'subprocess',\\n          'os', 'sys', 'importlib', 'socket', 'shutil', 'pathlib', 'multiprocessing', 'threading', '_thread',\\n          'webbrowser', 'urllib', 'http', 'ftplib', 'asyncio_http'}\\n_real_import = builtins.__import__\\n\\n\\ndef _num(v, k):\\n    try:\\n        f = float(v)\\n    except Exception:\\n        raise TypeError(\\\"%s должно быть числом\\\" % k)\\n    if f != f or f in (float('inf'), float('-inf')):\\n        raise ValueError(\\\"%s: недопустимое число\\\" % k)\\n    return f\\n\\n\\ndef _coerce(k, v):\\n    if k in _NUM:\\n        return _num(v, k)\\n    if k == 'visible':\\n        return bool(v)\\n    s = str(v)\\n    if len(s) in (4, 7) and s[0] == '#' and all(c in '0123456789abcdefABCDEF' for c in s[1:]):\\n        return s.lower()\\n    raise ValueError(\\\"Цвет задаётся строкой вида '#ff0000'\\\")\\n\\n\\nclass Part:\\n    \\\"\\\"\\\"Объект сцены с именем. Меняйте x, y, z, sx, sy, sz, ry, color, visible.\\\"\\\"\\\"\\n\\n    def __init__(self, d):\\n        s = {k: d.get(k) for k in _PROPS}\\n        self.__dict__.update(_id=d['id'], name=d.get('name', ''), type=d.get('type', ''), _s=s)\\n\\n    def __getattr__(self, k):\\n        s = self.__dict__['_s']\\n        if k in s:\\n            return s[k]\\n        raise AttributeError(k)\\n\\n    def __setattr__(self, k, v):\\n        if k in _PROPS:\\n            v = _coerce(k, v)\\n            s = self.__dict__['_s']\\n            if s[k] != v:\\n                s[k] = v\\n                _dirty.setdefault(self._id, set()).add(k)\\n        elif k in ('name', 'type', '_id', '_s'):\\n            raise AttributeError(\\\"«%s» нельзя менять\\\" % k)\\n        else:\\n            self.__dict__[k] = v\\n\\n    def move(self, dx=0, dy=0, dz=0):\\n        self.x = self.x + dx\\n        self.y = self.y + dy\\n        self.z = self.z + dz\\n\\n    def __repr__(self):\\n        return \\\"<Part %s %s (%.1f, %.1f, %.1f)>\\\" % (self.type, self.name, self.x, self.y, self.z)\\n\\n\\nclass _Player:\\n    def __init__(self):\\n        self.__dict__.update(x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, grounded=False, coins=0,\\n                             coins_total=0, deaths=0, time=0.0, name='', _speed=1.0, _jp=1.0, _gr=1.0)\\n\\n    def teleport(self, x, y, z):\\n        x, y, z = _num(x, 'x'), _num(y, 'y'), _num(z, 'z')\\n        _out.append({'c': 'tp', 'x': x, 'y': y, 'z': z})\\n        self.__dict__.update(x=x, y=y, z=z)\\n\\n    def jump(self, power=1.0):\\n        _out.append({'c': 'jump', 'v': _num(power, 'power')})\\n\\n    def distance_to(self, part):\\n        return math.sqrt((self.x - part.x) ** 2 + (self.y + 1.5 - part.y) ** 2 + (self.z - part.z) ** 2)\\n\\n    @property\\n    def speed(self):\\n        return self._speed\\n\\n    @property\\n    def jump_power(self):\\n        return self._jp\\n\\n    @property\\n    def gravity(self):\\n        return self._gr\\n\\n    def __setattr__(self, k, v):\\n        if k in ('speed', 'jump_power', 'gravity'):\\n            v = _num(v, k)\\n            key = {'speed': '_speed', 'jump_power': '_jp', 'gravity': '_gr'}[k]\\n            self.__dict__[key] = v\\n            _out.append({'c': {'speed': 'speed', 'jump_power': 'jumppow', 'gravity': 'grav'}[k], 'v': v})\\n        elif k in self.__dict__ and not k.startswith('_'):\\n            raise AttributeError(\\\"player.%s только для чтения. Для позиции: player.teleport(x, y, z)\\\" % k)\\n        else:\\n            self.__dict__[k] = v\\n\\n\\nplayer = _Player()\\n\\n\\ndef say(*a):\\n    \\\"\\\"\\\"Сообщение в чат (видите только вы).\\\"\\\"\\\"\\n    _out.append({'c': 'say', 'text': ' '.join(str(x) for x in a)[:200]})\\n\\n\\ndef banner(text, sec=3):\\n    \\\"\\\"\\\"Крупный текст по центру экрана.\\\"\\\"\\\"\\n    _out.append({'c': 'banner', 'text': str(text)[:80], 'sec': _num(sec, 'sec')})\\n\\n\\ndef hud(text=''):\\n    \\\"\\\"\\\"Постоянная строка вверху экрана. Пустая строка убирает её.\\\"\\\"\\\"\\n    _out.append({'c': 'hud', 'text': str(text)[:80]})\\n\\n\\ndef sound(name):\\n    \\\"\\\"\\\"Встроенный звук: jump, coin, win, bounce, checkpoint, click.\\\"\\\"\\\"\\n    _out.append({'c': 'sound', 'name': str(name)})\\n\\n\\ndef win():\\n    _out.append({'c': 'win'})\\n\\n\\ndef die():\\n    _out.append({'c': 'die'})\\n\\n\\ndef elapsed():\\n    \\\"\\\"\\\"Секунды с начала игры.\\\"\\\"\\\"\\n    return _clock[0]\\n\\n\\ndef get(name):\\n    \\\"\\\"\\\"Первый объект с таким именем (или None).\\\"\\\"\\\"\\n    for p in _list:\\n        if p.name == name:\\n            return p\\n    return None\\n\\n\\ndef get_all(name):\\n    return [p for p in _list if p.name == name]\\n\\n\\ndef find(type_):\\n    \\\"\\\"\\\"Все объекты типа: solid, kill, bounce, checkpoint, spawn, goal, coin, decor.\\\"\\\"\\\"\\n    return [p for p in _list if p.type == type_]\\n\\n\\ndef _argc(f):\\n    try:\\n        c = f.__code__\\n        n = c.co_argcount\\n        if getattr(f, '__self__', None) is not None:\\n            n -= 1\\n        return 99 if c.co_flags & 0x04 else n\\n    except Exception:\\n        return 99\\n\\n\\ndef _report(where, e):\\n    line = None\\n    for fr in traceback.extract_tb(e.__traceback__):\\n        if fr.filename == '<script>':\\n            line = fr.lineno\\n    if isinstance(e, SyntaxError):\\n        line = e.lineno\\n        msg = \\\"Синтаксическая ошибка: %s\\\" % (e.msg,)\\n    else:\\n        msg = \\\"%s: %s\\\" % (type(e).__name__, e)\\n    text = \\\"Ошибка\\\" + (\\\" в \\\" + where if where else \\\"\\\") + (\\\" (строка %d)\\\" % line if line else \\\"\\\") + \\\": \\\" + msg\\n    if text in _seen or len(_seen) > 40:\\n        return\\n    _seen.add(text)\\n    _out.append({'c': 'log', 'text': text[:300], 'err': 1})\\n\\n\\nasync def _guard(name, co):\\n    try:\\n        await co\\n    except BaseException as e:\\n        _report(name, e)\\n\\n\\ndef _fire(name, *args):\\n    f = _g.get(name)\\n    if not callable(f):\\n        return\\n    try:\\n        r = f(*args[:_argc(f)])\\n        if asyncio.iscoroutine(r):\\n            asyncio.ensure_future(_guard(name, r))\\n    except BaseException as e:\\n        _report(name, e)\\n\\n\\ndef _safe_import(name, globals=None, locals=None, fromlist=(), level=0):\\n    if name.split('.')[0] in _BLOCK:\\n        raise ImportError(\\\"Модуль «%s» в играх недоступен\\\" % name.split('.')[0])\\n    return _real_import(name, globals, locals, fromlist, level)\\n\\n\\ndef _nope(*a, **k):\\n    raise PermissionError(\\\"Эта функция в играх недоступна\\\")\\n\\n\\ndef _make_globals():\\n    b = dict(vars(builtins))\\n    b['__import__'] = _safe_import\\n    for k in ('open', 'input', 'breakpoint', 'exit', 'quit', 'help'):\\n        b[k] = _nope\\n    return {'__builtins__': b, '__name__': '__main__', 'math': math, 'random': random, 'player': player,\\n            'say': say, 'banner': banner, 'hud': hud, 'sound': sound, 'win': win, 'die': die,\\n            'elapsed': elapsed, 'get': get, 'get_all': get_all, 'find': find, 'sleep': asyncio.sleep}\\n\\n\\ndef _flush():\\n    out = []\\n    for i, ks in _dirty.items():\\n        p = _parts[i]\\n        c = {'c': 'set', 'id': i}\\n        for k in ks:\\n            c[k] = p._s[k]\\n        out.append(c)\\n    _dirty.clear()\\n    out.extend(_out)\\n    _out.clear()\\n    return json.dumps(out[:500])\\n\\n\\ndef _init(js):\\n    global _g\\n    m = json.loads(js)\\n    for d in m['parts']:\\n        p = Part(d)\\n        _parts[p._id] = p\\n        _list.append(p)\\n    player.__dict__.update(name=m.get('name', ''), coins_total=m.get('total', 0))\\n    _g = _make_globals()\\n    try:\\n        exec(compile(m['code'], '<script>', 'exec'), _g)\\n    except BaseException as e:\\n        _report('', e)\\n    else:\\n        _fire('on_start')\\n    return _flush()\\n\\n\\ndef _tick(js):\\n    m = json.loads(js)\\n    p = m['p']\\n    player.__dict__.update(x=p['x'], y=p['y'], z=p['z'], vx=p['vx'], vy=p['vy'], vz=p['vz'],\\n                           grounded=bool(p['g']), coins=p['c'], deaths=p['d'], time=p['t'])\\n    _clock[0] = p['t']\\n    for i, v in (m.get('mv') or {}).items():\\n        q = _parts.get(i)\\n        if q:\\n            s = q._s\\n            s['x'], s['y'], s['z'] = v\\n    for i in m.get('touch', []):\\n        if i in _parts:\\n            _fire('on_touch', _parts[i])\\n    for i in m.get('leave', []):\\n        if i in _parts:\\n            _fire('on_leave', _parts[i])\\n    for _ in range(min(5, m.get('coin', 0))):\\n        _fire('on_coin', player.coins)\\n    for _ in range(min(3, m.get('die', 0))):\\n        _fire('on_die')\\n    for c in m.get('chat', [])[:10]:\\n        _fire('on_chat', c[0], c[1])\\n    for k in m.get('keys', [])[:10]:\\n        _fire('on_key', k)\\n    _fire('on_update', m.get('dt', 0.0))\\n    return _flush()\\n\\n\\ndef _check(code):\\n    try:\\n        compile(code, '<script>', 'exec')\\n        return json.dumps({'ok': True})\\n    except SyntaxError as e:\\n        return json.dumps({'ok': False, 'line': e.lineno, 'msg': e.msg})\\n\");\n      tickFn=py.globals.get('_tick'); checkFn=py.globals.get('_check'); initFn=py.globals.get('_init');\n      for(const k of ['fetch','XMLHttpRequest','WebSocket','EventSource','Worker','SharedWorker','importScripts','indexedDB','caches','BroadcastChannel']){ try{ Object.defineProperty(self,k,{value:undefined,writable:false,configurable:false}); }catch(x){} }\n      post({t:'loaded'});\n    }else if(m.t==='check'){ post({t:'checked',r:JSON.parse(checkFn(m.code))}); }\n    else if(m.t==='init'){ post({t:'out',out:initFn(JSON.stringify(m.data))}); }\n    else if(m.t==='tick'){ post({t:'out',out:tickFn(m.json)}); }\n  }catch(err){ post({t:'fatal',text:String(err&&err.message||err)}); }\n};\n";
-const PY_EXAMPLES=[["Привет", "def on_start():\n    say(\"Добро пожаловать в игру!\")\n    banner(\"Собери все монеты!\", 4)\n"], ["Движущаяся платформа", "# Назовите блок «platform» (вкладка «Свойства»)\nimport math\nplat = get(\"platform\")\nstart_y = plat.y if plat else 0\n\ndef on_update(dt):\n    if plat:\n        plat.y = start_y + math.sin(elapsed() * 2) * 3\n"], ["Дверь открывается кнопкой", "# Назовите блоки «button» и «door»\ndoor = get(\"door\")\n\ndef on_touch(part):\n    if part.name == \"button\" and door:\n        door.visible = False\n        say(\"Дверь открыта!\")\n        sound(\"checkpoint\")\n"], ["Счётчик монет", "def on_start():\n    hud(\"Монеты: 0\")\n\ndef on_coin(total):\n    hud(f\"Монеты: {total}\")\n    if total == 3:\n        banner(\"Три монеты!\", 2)\n"], ["Прыжок растёт с монетами", "def on_coin(total):\n    player.jump_power = 1 + total * 0.15\n    say(f\"Сила прыжка: {player.jump_power:.2f}\")\n"], ["Команды в чате", "def on_chat(name, text):\n    if text == \"!старт\":\n        player.teleport(0, 5, 0)\n    elif text == \"!быстро\":\n        player.speed = 2\n        say(\"Скорость x2\")\n    elif text == \"!прыжок\":\n        player.jump(2)\n"], ["Радужный блок", "# Назовите блок «rainbow»\nimport math\nrb = get(\"rainbow\")\n\ndef on_update(dt):\n    if rb:\n        t = elapsed()\n        r = int(127 + 127 * math.sin(t))\n        g = int(127 + 127 * math.sin(t + 2))\n        b = int(127 + 127 * math.sin(t + 4))\n        rb.color = f\"#{r:02x}{g:02x}{b:02x}\"\n"], ["Отсчёт перед стартом", "async def on_start():\n    for i in (3, 2, 1):\n        banner(str(i), 1)\n        await sleep(1)\n    banner(\"Go!\", 1)\n"]];
-const PY_HELP="<p style=\"margin:.6em 0 .3em\"><b>События<\/b> — определите функции:<\/p><ul class=\"pyh\"><li><code>on_start()<\/code> — игра началась<\/li><li><code>on_update(dt)<\/code> — каждый кадр<\/li><li><code>on_touch(part)<\/code>, <code>on_leave(part)<\/code> — игрок коснулся блока с именем / ушёл<\/li><li><code>on_coin(total)<\/code> — собрана монета<\/li><li><code>on_die()<\/code> — падение<\/li><li><code>on_chat(name, text)<\/code> — сообщение в чате<\/li><li><code>on_key(key)<\/code> — клавиша, например 'KeyF'<\/li><\/ul><p style=\"margin:.6em 0 .3em\"><b>Команды<\/b><\/p><ul class=\"pyh\"><li><code>say(текст)<\/code> — в чат, <code>banner(текст, сек)<\/code> — по центру, <code>hud(текст)<\/code> — строка вверху, <code>sound('coin')<\/code><\/li><li><code>get('имя')<\/code> — блок по имени, <code>get_all('имя')<\/code>, <code>find('coin')<\/code> — по типу<\/li><li>У блока: <code>x y z sx sy sz ry color visible<\/code> и <code>move(dx, dy, dz)<\/code><\/li><li><code>player.x y z<\/code>, <code>player.teleport(x,y,z)<\/code>, <code>player.jump(сила)<\/code>, <code>player.speed<\/code>, <code>player.jump_power<\/code>, <code>player.gravity<\/code>, <code>player.coins<\/code><\/li><li><code>win()<\/code>, <code>die()<\/code>, <code>elapsed()<\/code>, <code>await sleep(сек)<\/code> (внутри <code>async def<\/code>), <code>math<\/code>, <code>random<\/code><\/li><\/ul><p class=\"muted\" style=\"font-size:.85em;margin:.5em 0 0\">Скрипт работает во время игры. Python скачивается из интернета (около 10 МБ) при первом запуске.<\/p>";
+const PY_WORKER_SRC="\nlet py=null,tickFn=null,checkFn=null,initFn=null;\nconst post=m=>self.postMessage(m);\nself.onmessage=async e=>{\n  const m=e.data;\n  try{\n    if(m.t==='load'){\n      importScripts(m.base+'pyodide.js');\n      py=await loadPyodide({indexURL:m.base});\n      py.setStdout({batched:s=>post({t:'log',text:s})}); py.setStderr({batched:s=>post({t:'log',text:s,err:1})});\n      py.runPython(\"import json, math, random, asyncio, traceback, builtins\\n\\n_PROPS = ('x', 'y', 'z', 'sx', 'sy', 'sz', 'ry', 'color', 'visible')\\n_NUM = ('x', 'y', 'z', 'sx', 'sy', 'sz', 'ry')\\n_parts = {}\\n_list = []\\n_out = []\\n_dirty = {}\\n_seen = set()\\n_g = {}\\n_clock = [0.0]\\n_BLOCK = {'js', 'pyodide', 'pyodide_js', '_pyodide', '_pyodide_core', 'micropip', 'ctypes', 'subprocess',\\n          'os', 'sys', 'importlib', 'socket', 'shutil', 'pathlib', 'multiprocessing', 'threading', '_thread',\\n          'webbrowser', 'urllib', 'http', 'ftplib', 'asyncio_http'}\\n_real_import = builtins.__import__\\n\\n\\ndef _num(v, k):\\n    try:\\n        f = float(v)\\n    except Exception:\\n        raise TypeError(\\\"%s должно быть числом\\\" % k)\\n    if f != f or f in (float('inf'), float('-inf')):\\n        raise ValueError(\\\"%s: недопустимое число\\\" % k)\\n    return f\\n\\n\\ndef _coerce(k, v):\\n    if k in _NUM:\\n        return _num(v, k)\\n    if k == 'visible':\\n        return bool(v)\\n    s = str(v)\\n    if len(s) in (4, 7) and s[0] == '#' and all(c in '0123456789abcdefABCDEF' for c in s[1:]):\\n        return s.lower()\\n    raise ValueError(\\\"Цвет задаётся строкой вида '#ff0000'\\\")\\n\\n\\nclass Part:\\n    \\\"\\\"\\\"Объект сцены с именем. Меняйте x, y, z, sx, sy, sz, ry, color, visible.\\\"\\\"\\\"\\n\\n    def __init__(self, d):\\n        s = {k: d.get(k) for k in _PROPS}\\n        self.__dict__.update(_id=d['id'], name=d.get('name', ''), type=d.get('type', ''), _s=s)\\n\\n    def __getattr__(self, k):\\n        s = self.__dict__['_s']\\n        if k in s:\\n            return s[k]\\n        raise AttributeError(k)\\n\\n    def __setattr__(self, k, v):\\n        if k in _PROPS:\\n            v = _coerce(k, v)\\n            s = self.__dict__['_s']\\n            if s[k] != v:\\n                s[k] = v\\n                _dirty.setdefault(self._id, set()).add(k)\\n        elif k in ('name', 'type', '_id', '_s'):\\n            raise AttributeError(\\\"«%s» нельзя менять\\\" % k)\\n        else:\\n            self.__dict__[k] = v\\n\\n    def move(self, dx=0, dy=0, dz=0):\\n        self.x = self.x + dx\\n        self.y = self.y + dy\\n        self.z = self.z + dz\\n\\n    def __repr__(self):\\n        return \\\"<Part %s %s (%.1f, %.1f, %.1f)>\\\" % (self.type, self.name, self.x, self.y, self.z)\\n\\n\\nclass _Player:\\n    def __init__(self):\\n        self.__dict__.update(x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, grounded=False, coins=0,\\n                             coins_total=0, deaths=0, time=0.0, name='', _speed=1.0, _jp=1.0, _gr=1.0)\\n\\n    def teleport(self, x, y, z):\\n        x, y, z = _num(x, 'x'), _num(y, 'y'), _num(z, 'z')\\n        _out.append({'c': 'tp', 'x': x, 'y': y, 'z': z})\\n        self.__dict__.update(x=x, y=y, z=z)\\n\\n    def jump(self, power=1.0):\\n        _out.append({'c': 'jump', 'v': _num(power, 'power')})\\n\\n    def distance_to(self, part):\\n        return math.sqrt((self.x - part.x) ** 2 + (self.y + 1.5 - part.y) ** 2 + (self.z - part.z) ** 2)\\n\\n    @property\\n    def speed(self):\\n        return self._speed\\n\\n    @property\\n    def jump_power(self):\\n        return self._jp\\n\\n    @property\\n    def gravity(self):\\n        return self._gr\\n\\n    def __setattr__(self, k, v):\\n        if k in ('speed', 'jump_power', 'gravity'):\\n            v = _num(v, k)\\n            key = {'speed': '_speed', 'jump_power': '_jp', 'gravity': '_gr'}[k]\\n            self.__dict__[key] = v\\n            _out.append({'c': {'speed': 'speed', 'jump_power': 'jumppow', 'gravity': 'grav'}[k], 'v': v})\\n        elif k in self.__dict__ and not k.startswith('_'):\\n            raise AttributeError(\\\"player.%s только для чтения. Для позиции: player.teleport(x, y, z)\\\" % k)\\n        else:\\n            self.__dict__[k] = v\\n\\n\\nplayer = _Player()\\n\\n_GP = ('text', 'visible', 'color', 'bg', 'x', 'y', 'w', 'h', 'size')\\n_GN = ('x', 'y', 'w', 'h', 'size')\\n_guis = {}\\n_gids = {}\\n_gdirty = {}\\n\\n\\ndef _gcoerce(k, v):\\n    if k in _GN:\\n        return _num(v, k)\\n    if k == 'visible':\\n        return bool(v)\\n    if k == 'text':\\n        return str(v)[:120]\\n    s = str(v)\\n    if len(s) in (4, 7) and s[0] == '#' and all(c in '0123456789abcdefABCDEF' for c in s[1:]):\\n        return s.lower()\\n    raise ValueError(\\\"Цвет задаётся строкой вида '#ff0000'\\\")\\n\\n\\nclass GuiEl:\\n    \\\"\\\"\\\"Элемент GUI с именем. Меняйте text, visible, color, bg, x, y, w, h, size.\\\"\\\"\\\"\\n\\n    def __init__(self, d):\\n        s = {k: d.get(k) for k in _GP}\\n        self.__dict__.update(_id=d['id'], name=d.get('name', ''), type=d.get('type', ''), _s=s)\\n\\n    def __getattr__(self, k):\\n        s = self.__dict__['_s']\\n        if k in s:\\n            return s[k]\\n        raise AttributeError(k)\\n\\n    def __setattr__(self, k, v):\\n        if k in _GP:\\n            v = _gcoerce(k, v)\\n            s = self.__dict__['_s']\\n            if s[k] != v:\\n                s[k] = v\\n                _gdirty.setdefault(self._id, set()).add(k)\\n        elif k in ('name', 'type', '_id', '_s'):\\n            raise AttributeError(\\\"«%s» нельзя менять\\\" % k)\\n        else:\\n            self.__dict__[k] = v\\n\\n\\ndef gui(name):\\n    \\\"\\\"\\\"Элемент GUI по имени (или None).\\\"\\\"\\\"\\n    return _guis.get(name)\\n\\n\\n\\ndef say(*a):\\n    \\\"\\\"\\\"Сообщение в чат (видите только вы).\\\"\\\"\\\"\\n    _out.append({'c': 'say', 'text': ' '.join(str(x) for x in a)[:200]})\\n\\n\\ndef banner(text, sec=3):\\n    \\\"\\\"\\\"Крупный текст по центру экрана.\\\"\\\"\\\"\\n    _out.append({'c': 'banner', 'text': str(text)[:80], 'sec': _num(sec, 'sec')})\\n\\n\\ndef hud(text=''):\\n    \\\"\\\"\\\"Постоянная строка вверху экрана. Пустая строка убирает её.\\\"\\\"\\\"\\n    _out.append({'c': 'hud', 'text': str(text)[:80]})\\n\\n\\ndef sound(name):\\n    \\\"\\\"\\\"Встроенный звук: jump, coin, win, bounce, checkpoint, click.\\\"\\\"\\\"\\n    _out.append({'c': 'sound', 'name': str(name)})\\n\\n\\ndef win():\\n    _out.append({'c': 'win'})\\n\\n\\ndef die():\\n    _out.append({'c': 'die'})\\n\\n\\ndef elapsed():\\n    \\\"\\\"\\\"Секунды с начала игры.\\\"\\\"\\\"\\n    return _clock[0]\\n\\n\\ndef get(name):\\n    \\\"\\\"\\\"Первый объект с таким именем (или None).\\\"\\\"\\\"\\n    for p in _list:\\n        if p.name == name:\\n            return p\\n    return None\\n\\n\\ndef get_all(name):\\n    return [p for p in _list if p.name == name]\\n\\n\\ndef find(type_):\\n    \\\"\\\"\\\"Все объекты типа: solid, kill, bounce, checkpoint, spawn, goal, coin, decor.\\\"\\\"\\\"\\n    return [p for p in _list if p.type == type_]\\n\\n\\ndef _argc(f):\\n    try:\\n        c = f.__code__\\n        n = c.co_argcount\\n        if getattr(f, '__self__', None) is not None:\\n            n -= 1\\n        return 99 if c.co_flags & 0x04 else n\\n    except Exception:\\n        return 99\\n\\n\\ndef _report(where, e):\\n    line = None\\n    for fr in traceback.extract_tb(e.__traceback__):\\n        if fr.filename == '<script>':\\n            line = fr.lineno\\n    if isinstance(e, SyntaxError):\\n        line = e.lineno\\n        msg = \\\"Синтаксическая ошибка: %s\\\" % (e.msg,)\\n    else:\\n        msg = \\\"%s: %s\\\" % (type(e).__name__, e)\\n    text = \\\"Ошибка\\\" + (\\\" в \\\" + where if where else \\\"\\\") + (\\\" (строка %d)\\\" % line if line else \\\"\\\") + \\\": \\\" + msg\\n    if text in _seen or len(_seen) > 40:\\n        return\\n    _seen.add(text)\\n    _out.append({'c': 'log', 'text': text[:300], 'err': 1})\\n\\n\\nasync def _guard(name, co):\\n    try:\\n        await co\\n    except BaseException as e:\\n        _report(name, e)\\n\\n\\ndef _fire(name, *args):\\n    f = _g.get(name)\\n    if not callable(f):\\n        return\\n    try:\\n        r = f(*args[:_argc(f)])\\n        if asyncio.iscoroutine(r):\\n            asyncio.ensure_future(_guard(name, r))\\n    except BaseException as e:\\n        _report(name, e)\\n\\n\\ndef _safe_import(name, globals=None, locals=None, fromlist=(), level=0):\\n    if name.split('.')[0] in _BLOCK:\\n        raise ImportError(\\\"Модуль «%s» в играх недоступен\\\" % name.split('.')[0])\\n    return _real_import(name, globals, locals, fromlist, level)\\n\\n\\ndef _nope(*a, **k):\\n    raise PermissionError(\\\"Эта функция в играх недоступна\\\")\\n\\n\\ndef _make_globals():\\n    b = dict(vars(builtins))\\n    b['__import__'] = _safe_import\\n    for k in ('open', 'input', 'breakpoint', 'exit', 'quit', 'help'):\\n        b[k] = _nope\\n    return {'__builtins__': b, '__name__': '__main__', 'math': math, 'random': random, 'player': player,\\n            'say': say, 'banner': banner, 'hud': hud, 'sound': sound, 'win': win, 'die': die,\\n            'elapsed': elapsed, 'gui': gui, 'get': get, 'get_all': get_all, 'find': find, 'sleep': asyncio.sleep}\\n\\n\\ndef _flush():\\n    out = []\\n    for i, ks in _dirty.items():\\n        p = _parts[i]\\n        c = {'c': 'set', 'id': i}\\n        for k in ks:\\n            c[k] = p._s[k]\\n        out.append(c)\\n    _dirty.clear()\\n    for i, ks in _gdirty.items():\\n        g = _gids[i]\\n        c = {'c': 'gui', 'id': i}\\n        for k in ks:\\n            c[k] = g._s[k]\\n        out.append(c)\\n    _gdirty.clear()\\n    out.extend(_out)\\n    _out.clear()\\n    return json.dumps(out[:500])\\n\\n\\ndef _init(js):\\n    global _g\\n    m = json.loads(js)\\n    for d in m['parts']:\\n        p = Part(d)\\n        _parts[p._id] = p\\n        _list.append(p)\\n    for d in m.get('gui', []):\\n        g = GuiEl(d)\\n        _gids[g._id] = g\\n        if g.name and g.name not in _guis:\\n            _guis[g.name] = g\\n    player.__dict__.update(name=m.get('name', ''), coins_total=m.get('total', 0))\\n    _g = _make_globals()\\n    try:\\n        exec(compile(m['code'], '<script>', 'exec'), _g)\\n    except BaseException as e:\\n        _report('', e)\\n    else:\\n        _fire('on_start')\\n    return _flush()\\n\\n\\ndef _tick(js):\\n    m = json.loads(js)\\n    p = m['p']\\n    player.__dict__.update(x=p['x'], y=p['y'], z=p['z'], vx=p['vx'], vy=p['vy'], vz=p['vz'],\\n                           grounded=bool(p['g']), coins=p['c'], deaths=p['d'], time=p['t'])\\n    _clock[0] = p['t']\\n    for i, v in (m.get('mv') or {}).items():\\n        q = _parts.get(i)\\n        if q:\\n            s = q._s\\n            s['x'], s['y'], s['z'] = v\\n    for i in m.get('touch', []):\\n        if i in _parts:\\n            _fire('on_touch', _parts[i])\\n    for i in m.get('leave', []):\\n        if i in _parts:\\n            _fire('on_leave', _parts[i])\\n    for _ in range(min(5, m.get('coin', 0))):\\n        _fire('on_coin', player.coins)\\n    for _ in range(min(3, m.get('die', 0))):\\n        _fire('on_die')\\n    for c in m.get('chat', [])[:10]:\\n        _fire('on_chat', c[0], c[1])\\n    for k in m.get('keys', [])[:10]:\\n        _fire('on_key', k)\\n    for n in m.get('gui', [])[:10]:\\n        _fire('on_gui_click', n)\\n    _fire('on_update', m.get('dt', 0.0))\\n    return _flush()\\n\\n\\ndef _check(code):\\n    try:\\n        compile(code, '<script>', 'exec')\\n        return json.dumps({'ok': True})\\n    except SyntaxError as e:\\n        return json.dumps({'ok': False, 'line': e.lineno, 'msg': e.msg})\\n\");\n      tickFn=py.globals.get('_tick'); checkFn=py.globals.get('_check'); initFn=py.globals.get('_init');\n      for(const k of ['fetch','XMLHttpRequest','WebSocket','EventSource','Worker','SharedWorker','importScripts','indexedDB','caches','BroadcastChannel']){ try{ Object.defineProperty(self,k,{value:undefined,writable:false,configurable:false}); }catch(x){} }\n      post({t:'loaded'});\n    }else if(m.t==='check'){ post({t:'checked',r:JSON.parse(checkFn(m.code))}); }\n    else if(m.t==='init'){ post({t:'out',out:initFn(JSON.stringify(m.data))}); }\n    else if(m.t==='tick'){ post({t:'out',out:tickFn(m.json)}); }\n  }catch(err){ post({t:'fatal',text:String(err&&err.message||err)}); }\n};\n";
+const PY_EXAMPLES=[["Привет", "def on_start():\n    say(\"Добро пожаловать в игру!\")\n    banner(\"Собери все монеты!\", 4)\n"], ["Движущаяся платформа", "# Назовите блок «platform» (вкладка «Свойства»)\nimport math\nplat = get(\"platform\")\nstart_y = plat.y if plat else 0\n\ndef on_update(dt):\n    if plat:\n        plat.y = start_y + math.sin(elapsed() * 2) * 3\n"], ["Дверь открывается кнопкой", "# Назовите блоки «button» и «door»\ndoor = get(\"door\")\n\ndef on_touch(part):\n    if part.name == \"button\" and door:\n        door.visible = False\n        say(\"Дверь открыта!\")\n        sound(\"checkpoint\")\n"], ["Счётчик монет", "def on_start():\n    hud(\"Монеты: 0\")\n\ndef on_coin(total):\n    hud(f\"Монеты: {total}\")\n    if total == 3:\n        banner(\"Три монеты!\", 2)\n"], ["Прыжок растёт с монетами", "def on_coin(total):\n    player.jump_power = 1 + total * 0.15\n    say(f\"Сила прыжка: {player.jump_power:.2f}\")\n"], ["Команды в чате", "def on_chat(name, text):\n    if text == \"!старт\":\n        player.teleport(0, 5, 0)\n    elif text == \"!быстро\":\n        player.speed = 2\n        say(\"Скорость x2\")\n    elif text == \"!прыжок\":\n        player.jump(2)\n"], ["Радужный блок", "# Назовите блок «rainbow»\nimport math\nrb = get(\"rainbow\")\n\ndef on_update(dt):\n    if rb:\n        t = elapsed()\n        r = int(127 + 127 * math.sin(t))\n        g = int(127 + 127 * math.sin(t + 2))\n        b = int(127 + 127 * math.sin(t + 4))\n        rb.color = f\"#{r:02x}{g:02x}{b:02x}\"\n"], ["Отсчёт перед стартом", "async def on_start():\n    for i in (3, 2, 1):\n        banner(str(i), 1)\n        await sleep(1)\n    banner(\"Go!\", 1)\n"], ["Кнопка GUI", "# Во вкладке «GUI» добавьте кнопку с именем «btn» и текст с именем «score»\nclicks = 0\n\ndef on_gui_click(name):\n    global clicks\n    if name == 'btn':\n        clicks += 1\n        gui('score').text = 'Нажатий: ' + str(clicks)\n        sound('click')\n"]];
+const PY_HELP="<p style=\"margin:.6em 0 .3em\"><b>События<\/b> — определите функции:<\/p><ul class=\"pyh\"><li><code>on_start()<\/code> — игра началась<\/li><li><code>on_update(dt)<\/code> — каждый кадр<\/li><li><code>on_touch(part)<\/code>, <code>on_leave(part)<\/code> — игрок коснулся блока с именем / ушёл<\/li><li><code>on_coin(total)<\/code> — собрана монета<\/li><li><code>on_die()<\/code> — падение<\/li><li><code>on_chat(name, text)<\/code> — сообщение в чате<\/li><li><code>on_key(key)<\/code> — клавиша, например 'KeyF'<\/li><li><code>on_gui_click(name)<\/code> — нажата кнопка GUI с таким именем<\/li><\/ul><p style=\"margin:.6em 0 .3em\"><b>Команды<\/b><\/p><ul class=\"pyh\"><li><code>say(текст)<\/code> — в чат, <code>banner(текст, сек)<\/code> — по центру, <code>hud(текст)<\/code> — строка вверху, <code>sound('coin')<\/code><\/li><li><code>get('имя')<\/code> — блок по имени, <code>get_all('имя')<\/code>, <code>find('coin')<\/code> — по типу<\/li><li>У блока: <code>x y z sx sy sz ry color visible<\/code> и <code>move(dx, dy, dz)<\/code><\/li><li><code>player.x y z<\/code>, <code>player.teleport(x,y,z)<\/code>, <code>player.jump(сила)<\/code>, <code>player.speed<\/code>, <code>player.jump_power<\/code>, <code>player.gravity<\/code>, <code>player.coins<\/code><\/li><li><code>win()<\/code>, <code>die()<\/code>, <code>elapsed()<\/code>, <code>await sleep(сек)<\/code> (внутри <code>async def<\/code>), <code>math<\/code>, <code>random<\/code><\/li><li>GUI (вкладка «GUI»): <code>gui('имя').text = 'Счёт 5'<\/code>, также <code>visible color bg x y w h size<\/code><\/li><\/ul><p class=\"muted\" style=\"font-size:.85em;margin:.5em 0 0\">Скрипт работает во время игры. Python скачивается из интернета (около 10 МБ) при первом запуске.<\/p>";
 let pyUrl=null;
 function pyWorker(onMsg){
   if(!pyUrl) pyUrl=URL.createObjectURL(new Blob([PY_WORKER_SRC],{type:'text/javascript'}));
   const w=new Worker(pyUrl); w.onmessage=e=>onMsg(e.data); w.onerror=e=>{ if(e.preventDefault) e.preventDefault(); onMsg({t:'fatal',text:'Не удалось запустить Python'}); };
   w.postMessage({t:'load',base:PY_BASE}); return w;
 }
+/* ============================================================
+   GUI: экранные элементы игры (текст, кнопка, панель)
+   ============================================================ */
+const GUI_MAX=40, GUI_TYPES=[['text','Текст'],['button','Кнопка'],['frame','Панель']];
+const GUI_DEF={
+  text:{text:'Текст',x:40,y:10,w:20,h:6,size:1.4,color:'#ffffff',bg:'#000000',alpha:0,radius:.4,align:'center'},
+  button:{text:'Кнопка',x:42,y:80,w:16,h:8,size:1.2,color:'#14161c',bg:'#59a8ff',alpha:1,radius:.6,align:'center'},
+  frame:{text:'',x:30,y:30,w:40,h:40,size:1.2,color:'#ffffff',bg:'#000000',alpha:.55,radius:.8,align:'center'}
+};
+function guiClean(e){
+  e=e&&typeof e==='object'?e:{}; const type=['text','button','frame'].includes(e.type)?e.type:'text', d=GUI_DEF[type];
+  const n=(v,lo,hi,df)=>{ v=+v; return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):df; };
+  const col=(v,df)=>typeof v==='string'&&/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)?v.toLowerCase():df;
+  return {id:String(e.id==null?'':e.id).replace(/[^\w\-]/g,'').slice(0,40)||uid(), type,
+    name:String(e.name==null?'':e.name).replace(/[\u0000-\u001f<>]/g,'').slice(0,24),
+    text:String(e.text==null?d.text:e.text).replace(/[\u0000-\u0008\u000b-\u001f]/g,'').slice(0,120),
+    x:n(e.x,-50,150,d.x), y:n(e.y,-50,150,d.y), w:n(e.w,1,100,d.w), h:n(e.h,1,100,d.h), size:n(e.size,.5,8,d.size),
+    color:col(e.color,d.color), bg:col(e.bg,d.bg), alpha:n(e.alpha,0,1,d.alpha), radius:n(e.radius,0,3,d.radius),
+    align:['left','center','right'].includes(e.align)?e.align:d.align, visible:e.visible!==false};
+}
+const hexA=(h,a)=>{ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const v=parseInt(h,16); return 'rgba('+(v>>16&255)+','+(v>>8&255)+','+(v&255)+','+a+')'; };
+function guiPaint(n,e){
+  const s=n.style; s.left=e.x+'%'; s.top=e.y+'%'; s.width=e.w+'%'; s.height=e.h+'%'; s.fontSize=e.size+'em'; s.color=e.color;
+  s.background=e.alpha>0?hexA(e.bg,e.alpha):'transparent'; s.borderRadius=e.radius+'em'; s.justifyContent=e.align==='left'?'flex-start':e.align==='right'?'flex-end':'center'; s.textAlign=e.align;
+  const t=n.querySelector('.gt'); if(t) t.textContent=e.text; n.style.display=e.visible||n.dataset.ed?'flex':'none';
+}
+function guiNode(e,edit){
+  const n=document.createElement('div'); n.className='gui-el '+e.type; n.dataset.id=e.id; if(edit) n.dataset.ed='1';
+  const t=document.createElement('span'); t.className='gt'; n.appendChild(t); guiPaint(n,e); return n;
+}
+
 const Play={
   on:false,paused:false,state:'play',keys:{},joy:{x:0,y:0},cam:mkCam(62),orb:{yaw:0,pitch:.38,dist:15,t:new THREE.Vector3()},drag:null,
   start(game,ret){
@@ -864,10 +978,10 @@ const Play={
       <button class="btn sm fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
       <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · Enter — чат · Esc — пауза</div>
       <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
-      <div class="phud" id="pHud"></div><div class="pban" id="pBan"></div>
+      <div class="guil" id="pGui"></div><div class="phud" id="pHud"></div><div class="pban" id="pBan"></div>
       <div class="chat" id="chat"><div class="clog" id="clog"></div><div class="cin"><input id="cIn" maxlength="140" autocomplete="off" placeholder="Сообщение… Enter — отправить, Esc — закрыть"></div></div>
       <div class="ov" id="pOv"></div>`;
-    $('#pPause').onclick=()=>this.pause(true); this.initChat(); this.pyStart();
+    $('#pPause').onclick=()=>this.pause(true); this.guiMount(); this.initChat(); this.pyStart();
     this.joy={x:0,y:0}; this.bindTouch();
     Snd.startMusic(game.sounds.music);
     go('play');
@@ -899,7 +1013,7 @@ const Play={
   pyLog(text,err){ this.chatAdd({sys:1,err:!!err,text:(err?'⚠ ':'🐍 ')+String(text).slice(0,300)}); },
   pyStart(){
     this.py=null; const code=String(this.game.script||'').slice(0,30000); if(!code.trim()) return;
-    const py=this.py={w:null,code,ready:false,loaded:false,pending:false,pt:0,t0:performance.now(),acc:0,ev:{touch:[],leave:[],chat:[],keys:[],coin:0,die:0}};
+    const py=this.py={w:null,code,ready:false,loaded:false,pending:false,pt:0,t0:performance.now(),acc:0,ev:{touch:[],leave:[],chat:[],keys:[],gui:[],coin:0,die:0}};
     this.pyStat('Загрузка Python…'); py.w=pyWorker(m=>this.pyMsg(m,py));
   },
   pyKill(){ const py=this.py; this.py=null; if(py&&py.w){ try{ py.w.terminate(); }catch(e){} } this.pyStat(''); },
@@ -907,7 +1021,7 @@ const Play={
     if(this.py!==py) return;
     if(m.t==='loaded'){
       py.loaded=true; py.pending=true; py.pt=performance.now();
-      py.w.postMessage({t:'init',data:{code:py.code,name:S.avatar.name||Acc.cur.name,total:this.coinsTotal,parts:this.game.parts.map(p=>({id:p.id,name:p.name||'',type:p.type,x:p.x,y:p.y,z:p.z,sx:p.sx,sy:p.sy,sz:p.sz,ry:p.ry,color:p.color,visible:true}))}});
+      py.w.postMessage({t:'init',data:{code:py.code,name:S.avatar.name||Acc.cur.name,total:this.coinsTotal,parts:this.game.parts.map(p=>({id:p.id,name:p.name||'',type:p.type,x:p.x,y:p.y,z:p.z,sx:p.sx,sy:p.sy,sz:p.sz,ry:p.ry,color:p.color,visible:true})),gui:this.guiInit()}});
     }else if(m.t==='out'){
       py.pending=false; if(!py.ready){ py.ready=true; this.pyStat(''); }
       let cmds=[]; try{ cmds=JSON.parse(m.out); }catch(e){} this.pyApply(cmds);
@@ -924,10 +1038,28 @@ const Play={
     if(active) for(const o of this.named){ const hit=!o.hidden&&this.overlap(pl,o,.3); if(hit&&!o.tc){ o.tc=true; py.ev.touch.push(o.p.id); } else if(!hit&&o.tc){ o.tc=false; py.ev.leave.push(o.p.id); } }
     py.acc+=dt;
     if(py.pending){ if(now-py.pt>5000){ this.pyLog('Скрипт завис (бесконечный цикл?) и был остановлен',true); this.pyKill(); } return; }
-    const ev=py.ev, msg={dt:py.acc,p:{x:pl.x,y:pl.y,z:pl.z,vx:pl.vx,vy:pl.vy,vz:pl.vz,g:pl.grounded?1:0,c:this.coins,d:this.deaths,t:this.t},touch:ev.touch,leave:ev.leave,coin:ev.coin,die:ev.die,chat:ev.chat,keys:ev.keys,mv:{}};
+    const ev=py.ev, msg={dt:py.acc,p:{x:pl.x,y:pl.y,z:pl.z,vx:pl.vx,vy:pl.vy,vz:pl.vz,g:pl.grounded?1:0,c:this.coins,d:this.deaths,t:this.t},touch:ev.touch,leave:ev.leave,coin:ev.coin,die:ev.die,chat:ev.chat,keys:ev.keys,gui:ev.gui,mv:{}};
     for(const o of this.mov) msg.mv[o.p.id]=[o.x,o.y,o.z];
-    py.ev={touch:[],leave:[],chat:[],keys:[],coin:0,die:0}; py.acc=0; py.pending=true; py.pt=now;
+    py.ev={touch:[],leave:[],chat:[],keys:[],gui:[],coin:0,die:0}; py.acc=0; py.pending=true; py.pt=now;
     py.w.postMessage({t:'tick',json:JSON.stringify(msg)});
+  },
+  guiMount(){
+    const lay=$('#pGui'); this.gui={map:new Map(),dom:new Map()}; if(!lay) return;
+    for(const raw of (Array.isArray(this.game.gui)?this.game.gui:[]).slice(0,GUI_MAX)){
+      const e=guiClean(raw), n=guiNode(e,false); this.gui.map.set(e.id,e); this.gui.dom.set(e.id,n);
+      if(e.type==='button') n.onclick=()=>this.guiClick(e.id);
+      lay.appendChild(n);
+    }
+  },
+  guiInit(){ return this.gui?[...this.gui.map.values()].filter(e=>e.name).map(e=>({id:e.id,name:e.name,type:e.type,text:e.text,visible:e.visible,color:e.color,bg:e.bg,x:e.x,y:e.y,w:e.w,h:e.h,size:e.size})):[]; },
+  guiSet(c){
+    const g=this.gui, e=g&&g.map.get(c.id), n=g&&g.dom.get(c.id); if(!e||!n) return; const t={...e};
+    for(const k of ['text','visible','color','bg','x','y','w','h','size']) if(k in c) t[k]=c[k];
+    Object.assign(e,guiClean(t)); guiPaint(n,e);
+  },
+  guiClick(id){
+    if(this.state!=='play'||this.paused||!this.gui) return; const e=this.gui.map.get(id); if(!e) return;
+    Snd.play('b:click'); if(e.name&&this.py&&this.py.ev.gui.length<20) this.py.ev.gui.push(e.name);
   },
   pyBanner(text,sec){ const e=$('#pBan'); if(!e) return; e.textContent=text; e.classList.add('on'); clearTimeout(this.pbT); this.pbT=setTimeout(()=>e.classList.remove('on'),sec*1000); },
   pyColor(it,p){
@@ -962,6 +1094,7 @@ const Play={
         case 'speed': { const v=num(c.v,.1,5); if(v!=null) this.pyS=v; break; }
         case 'jumppow': { const v=num(c.v,.1,5); if(v!=null) this.pyJ=v; break; }
         case 'grav': { const v=num(c.v,0,5); if(v!=null) this.pyG=v; break; }
+        case 'gui': this.guiSet(c); break;
         case 'win': this.win(); break;
         case 'die': this.die(); break;
       }
@@ -1114,6 +1247,7 @@ const Ed={
   resume(){ this.build(); go('editor'); this.renderBody(); },
   mount(){
     $('#editor').innerHTML=`
+    <div class="guil" id="edGui" style="display:none"></div>
     <div class="topbar">
       <button class="logo" id="edHome" title="Сохранить и выйти в меню">${LOGO}<span>Inblox</span></button>
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
@@ -1124,7 +1258,7 @@ const Ed={
       <button class="btn" id="edSave">Сохранить</button><button class="btn pri" id="edTest">▶ Тест</button>
     </div>
     <aside class="tools" id="edTools"><div class="row" style="padding:.2em .2em 0 .5em"><span class="lbl" style="margin:0">Добавить</span><button class="pclose" id="edToolsX" aria-label="Скрыть панель">✕</button></div>${KINDS.map((k,i)=>`<button class="tool" data-k="${i}"><i class="${k.shape==='cyl'?'cyl':''}" style="background:${k.c}"></i>${k.n}</button>`).join('')}</aside>
-    <aside class="rpanel"><nav class="tabs"><button class="tab" data-t="props">Свойства</button><button class="tab" data-t="game">Игра</button><button class="tab" data-t="sound">Звуки</button><button class="tab" data-t="script">Python</button><button class="pclose" id="edPanelX" aria-label="Скрыть панель">✕</button></nav><div id="edBody"></div></aside>
+    <aside class="rpanel"><nav class="tabs"><button class="tab" data-t="props">Свойства</button><button class="tab" data-t="game">Игра</button><button class="tab" data-t="sound">Звуки</button><button class="tab" data-t="gui">GUI</button><button class="tab" data-t="script">Python</button><button class="pclose" id="edPanelX" aria-label="Скрыть панель">✕</button></nav><div id="edBody"></div></aside>
     <div class="stat" id="edStat"></div>
     <button class="btn sm popen l" id="edToolsO" hidden>＋ Блоки</button><button class="btn sm popen r" id="edPanelO" hidden>⚙ Параметры</button>
     <div class="hint">ЛКМ — выбрать и двигать · Shift+ЛКМ — по высоте · ПКМ — вращать камеру · Колесо — зум · WASD — камера · Del — удалить · Ctrl+D — копия · R — повернуть</div>
@@ -1229,8 +1363,66 @@ const Ed={
   renderBody(){
     $$('#editor .tab').forEach(b=>b.classList.toggle('on',b.dataset.t===this.tab));
     const el=$('#edBody'); if(!el) return;
-    if(this.tab==='props') this.renderProps(el); else if(this.tab==='game') this.renderGame(el); else if(this.tab==='script') this.renderScript(el); else this.renderSound(el);
+    if(this.tab==='props') this.renderProps(el); else if(this.tab==='game') this.renderGame(el); else if(this.tab==='script') this.renderScript(el); else if(this.tab==='gui') this.renderGui(el); else this.renderSound(el);
+    this.guiShow();
     $('#edStat').textContent=this.game.parts.length+' объектов';
+  },
+  /* --- GUI --- */
+  guiGet(id){ return (this.game.gui||[]).find(e=>e.id===id)||null; },
+  guiShow(){
+    const lay=$('#edGui'); if(!lay) return; const on=this.tab==='gui'; lay.style.display=on?'block':'none'; lay.classList.toggle('edit',on); lay.innerHTML=''; if(!on) return;
+    for(const e of (this.game.gui||[])){
+      const n=guiNode(e,true); if(e.id===this.guiSelId) n.classList.add('sel'); if(!e.visible) n.classList.add('off');
+      n.onpointerdown=ev=>this.guiDown(ev,e.id,false);
+      if(e.id===this.guiSelId){ const h=document.createElement('div'); h.className='gui-rh'; h.onpointerdown=ev=>this.guiDown(ev,e.id,true); n.appendChild(h); }
+      lay.appendChild(n);
+    }
+  },
+  guiDown(ev,id,resize){
+    ev.preventDefault(); ev.stopPropagation(); if(!this.guiGet(id)) return;
+    if(this.guiSelId!==id){ this.guiSelId=id; this.renderBody(); }
+    const lay=$('#edGui'), e=this.guiGet(id), r=lay.getBoundingClientRect(); if(!e||!r.width) return;
+    const sx=ev.clientX, sy=ev.clientY, o={x:e.x,y:e.y,w:e.w,h:e.h}, snap=v=>Math.round(v*2)/2;
+    const mv=m=>{
+      const dx=(m.clientX-sx)/r.width*100, dy=(m.clientY-sy)/r.height*100;
+      if(resize){ e.w=clamp(snap(o.w+dx),1,100); e.h=clamp(snap(o.h+dy),1,100); } else { e.x=clamp(snap(o.x+dx),-50,150); e.y=clamp(snap(o.y+dy),-50,150); }
+      this.dirty=true; const n=lay.querySelector('[data-id="'+id+'"]'); if(n) guiPaint(n,e); this.guiSync();
+    };
+    const up=()=>{ removeEventListener('pointermove',mv); removeEventListener('pointerup',up); removeEventListener('pointercancel',up); };
+    addEventListener('pointermove',mv); addEventListener('pointerup',up); addEventListener('pointercancel',up);
+  },
+  guiSync(){ const e=this.guiGet(this.guiSelId); if(!e) return; $$('#edBody [data-gk]').forEach(i=>{ if(i.type!=='checkbox'&&document.activeElement!==i&&['x','y','w','h'].includes(i.dataset.gk)) i.value=e[i.dataset.gk]; }); },
+  guiUpd(k,v){
+    const e=this.guiGet(this.guiSelId); if(!e) return; e[k]=guiClean({...e,[k]:v})[k]; this.dirty=true;
+    const n=$('#edGui [data-id="'+e.id+'"]'); if(n){ guiPaint(n,e); n.classList.toggle('off',!e.visible); }
+  },
+  guiAdd(type){
+    const arr=this.game.gui=(this.game.gui||[]); if(arr.length>=GUI_MAX){ toast('Не больше '+GUI_MAX+' элементов GUI'); return; }
+    const pre={text:'text',button:'btn',frame:'panel'}[type]; let i=1; while(arr.some(e=>e.name===pre+i)) i++;
+    const e=guiClean({...GUI_DEF[type],id:uid(),type,name:pre+i}); arr.push(e); this.guiSelId=e.id; this.dirty=true; this.renderBody();
+  },
+  renderGui(el){
+    const arr=this.game.gui=(Array.isArray(this.game.gui)?this.game.gui:[]).slice(0,GUI_MAX).map(guiClean), sel=arr.find(e=>e.id===this.guiSelId)||null; if(!sel) this.guiSelId=null;
+    const tl=Object.fromEntries(GUI_TYPES), num=(k,l,st)=>`<label><span class="lbl">${l}</span><input type="number" data-gk="${k}" step="${st||.5}" value="${sel[k]}"></label>`, rng=(k,l,lo,hi,st)=>`<label><span class="lbl">${l}</span><input type="range" data-gk="${k}" min="${lo}" max="${hi}" step="${st}" value="${sel[k]}"></label>`;
+    el.innerHTML=`<div class="sec"><span class="lbl">Добавить на экран</span><div class="chips">${GUI_TYPES.map(([k,n])=>`<button class="chip" data-ga="${k}">+ ${n}</button>`).join('')}</div>
+      <p class="muted" style="margin:.5em 0 0;font-size:.85em">Элементы показываются поверх игры. Двигайте их мышью, размер — за правый нижний угол. Дайте имя и управляйте из Python: <code>gui('имя')</code>, <code>on_gui_click(имя)</code>.</p></div>
+      <div class="sec"><span class="lbl">Элементы (${arr.length}/${GUI_MAX})</span>${arr.length?`<div class="chips">${arr.map(e=>`<button class="chip ${e.id===this.guiSelId?'on':''}" data-gs="${e.id}">${esc(tl[e.type])} · ${esc(e.name||e.text||'—')}</button>`).join('')}</div>`:'<p class="muted" style="margin:0;font-size:.9em">Пока пусто.</p>'}</div>
+      ${sel?`<div class="sec"><span class="lbl">Выбрано: ${esc(tl[sel.type])}</span>
+        <label><span class="lbl">Имя для Python</span><input type="text" data-gk="name" maxlength="24" placeholder="например: score" value="${esc(sel.name)}"></label>
+        <label><span class="lbl" style="margin-top:.5em;display:block">Текст</span><input type="text" data-gk="text" maxlength="120" value="${esc(sel.text)}"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5em;margin-top:.5em">${num('x','X, %')}${num('y','Y, %')}${num('w','Ширина, %')}${num('h','Высота, %')}</div>
+        <div style="margin-top:.5em">${rng('size','Размер текста',.5,8,.1)}${rng('alpha','Прозрачность фона',0,1,.05)}${rng('radius','Скругление',0,3,.1)}</div>
+        <span class="lbl" style="margin-top:.5em;display:block">Выравнивание текста</span><div class="chips">${[['left','Слева'],['center','Центр'],['right','Справа']].map(([v,n])=>`<button class="chip ${sel.align===v?'on':''}" data-gal="${v}">${n}</button>`).join('')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5em;margin-top:.5em"><label><span class="lbl">Цвет текста</span><input type="color" data-gk="color" value="${sel.color}"></label><label><span class="lbl">Цвет фона</span><input type="color" data-gk="bg" value="${sel.bg}"></label></div>
+        <label class="row" style="gap:.5em;margin-top:.7em;justify-content:flex-start"><input type="checkbox" data-gk="visible" ${sel.visible?'checked':''}> Видно с начала игры</label>
+        <div class="chips" style="margin-top:.7em"><button class="chip" data-gdup>Копия</button><button class="chip" data-gz="-1" title="Назад (ниже других)">↓</button><button class="chip" data-gz="1" title="Вперёд (выше других)">↑</button><button class="chip" data-gdel style="color:#ff6b6b">Удалить</button></div></div>`:''}`;
+    $$('[data-ga]',el).forEach(b=>b.onclick=()=>this.guiAdd(b.dataset.ga));
+    $$('[data-gs]',el).forEach(b=>b.onclick=()=>{ this.guiSelId=b.dataset.gs; this.renderBody(); });
+    $$('[data-gk]',el).forEach(i=>i.addEventListener('input',()=>{ if((i.type==='number')&&i.value==='') return; this.guiUpd(i.dataset.gk,i.type==='checkbox'?i.checked:(i.type==='number'||i.type==='range')?+i.value:i.value); }));
+    $$('[data-gal]',el).forEach(b=>b.onclick=()=>{ this.guiUpd('align',b.dataset.gal); this.renderBody(); });
+    const d=$('[data-gdel]',el); if(d) d.onclick=()=>{ this.game.gui=arr.filter(e=>e.id!==this.guiSelId); this.guiSelId=null; this.dirty=true; this.renderBody(); };
+    const c=$('[data-gdup]',el); if(c) c.onclick=()=>{ if(arr.length>=GUI_MAX){ toast('Не больше '+GUI_MAX+' элементов GUI'); return; } const e=guiClean({...sel,id:uid(),name:(sel.name+'2').slice(0,24),x:sel.x+2,y:sel.y+2}); arr.push(e); this.guiSelId=e.id; this.dirty=true; this.renderBody(); };
+    $$('[data-gz]',el).forEach(b=>b.onclick=()=>{ const i=arr.findIndex(e=>e.id===this.guiSelId), j=i+(+b.dataset.gz); if(i<0||j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; this.dirty=true; this.renderBody(); });
   },
   renderProps(el){
     const p=this.part();
@@ -1320,13 +1512,13 @@ const Ed={
   },
   renderSound(el){
     const opts=(sel)=>`<option value="none">Нет</option><optgroup label="Встроенные">${SFX_LIST.concat(MUS_LIST).map(([v,n])=>`<option value="${v}" ${sel===v?'selected':''}>${n}</option>`).join('')}</optgroup>${S.sounds.length?`<optgroup label="Мои звуки">${S.sounds.map(x=>`<option value="s:${x.id}" ${sel==='s:'+x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`:''}`;
-    el.innerHTML=`<div class="sec"><label class="drop" id="sDrop">Добавить свой звук<br><span style="font-size:.85em">mp3, wav, ogg, m4a · до 10 МБ</span><input type="file" id="sFile" class="fileov" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" multiple></label>
+    el.innerHTML=`<div class="sec"><label class="drop" id="sDrop">Добавить свой звук<br><span style="font-size:.85em">mp3, wav, ogg, m4a · до 10 МБ · сохраняются на сервере</span><input type="file" id="sFile" class="fileov" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" multiple></label>
       ${S.sounds.length?S.sounds.map(x=>`<div class="srow"><span class="n" title="${esc(x.name)}">${esc(x.name)}</span><button class="btn sm" data-pv="s:${x.id}">▶</button><button class="btn sm danger" data-dl="${x.id}">✕</button></div>`).join(''):'<p class="muted" style="margin:0;font-size:.9em">Своих звуков пока нет.</p>'}</div>
       <div class="sec"><span class="lbl">События игры</span>${EVENTS.map(([k,n])=>`<div class="srow"><span class="n">${n}</span><select data-e="${k}">${opts(this.game.sounds[k])}</select><button class="btn sm" data-pe="${k}" title="Прослушать">▶</button></div>`).join('')}</div>`;
     const file=$('#sFile');
     file.onchange=async()=>{ for(const f of file.files) await addSoundFile(f); file.value=''; this.renderBody(); };
     $$('[data-pv]',el).forEach(b=>b.onclick=()=>Snd.play(b.dataset.pv));
-    $$('[data-dl]',el).forEach(b=>b.onclick=()=>{ const id=b.dataset.dl; S.sounds=S.sounds.filter(x=>x.id!==id); delete Snd.cache[id]; Media.del(Acc.cur.id+':s:'+id); saveSounds(); for(const k in this.game.sounds) if(this.game.sounds[k]==='s:'+id) this.game.sounds[k]='none'; this.dirty=true; this.renderBody(); });
+    $$('[data-dl]',el).forEach(b=>b.onclick=()=>{ const id=b.dataset.dl; S.sounds=S.sounds.filter(x=>x.id!==id); delete Snd.cache[id]; Media.del(Acc.cur.id+':s:'+id); SndSync.remove(id); saveSounds(); for(const k in this.game.sounds) if(this.game.sounds[k]==='s:'+id) this.game.sounds[k]='none'; this.dirty=true; this.renderBody(); });
     $$('[data-e]',el).forEach(s=>s.onchange=()=>{ this.game.sounds[s.dataset.e]=s.value; this.dirty=true; });
     $$('[data-pe]',el).forEach(b=>b.onclick=()=>{ const k=b.dataset.pe, v=this.game.sounds[k]; if(k==='music'){ if(this.musicOn){ this.stopMusicPreview(); } else { Snd.startMusic(v); this.musicOn=true; b.textContent='■'; } } else Snd.play(v); });
   },
@@ -1467,6 +1659,7 @@ const AvS={
       <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
       <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
       <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
+      <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
       <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
       ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}
     </aside><div class="ahint">Тяните, чтобы повернуть</div>`;
@@ -1477,7 +1670,7 @@ const AvS={
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avName').oninput=e=>{ S.avatar.name=e.target.value.trim()||'Игрок'; saveAvatar(); };
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
-    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
+    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
     if(sc) $('.apanel',el).scrollTop=sc;
   },
   pd(e){ this.drag=e.clientX; this.auto=false; canvas.setPointerCapture(e.pointerId); },
@@ -1527,9 +1720,10 @@ const Net={
   async publish(game,desc){
     const me=Acc.cur, g=clone(game); delete g.builtin; delete g._snd; const snd=[];
     for(const v of Object.values(g.sounds||{})){ if(typeof v!=='string'||!v.startsWith('s:')) continue; const id=v.slice(2); if(snd.find(q=>q.id===id)) continue;
-      const x=S.sounds.find(q=>q.id===id); if(!x) continue; if(!x.data&&x.stored) x.data=await Media.get(me.id+':s:'+x.id); if(x.data) snd.push({id,name:x.name,data:x.data}); }
+      const x=S.sounds.find(q=>q.id===id); if(!x) continue; const dd=await sndData(x); if(dd) snd.push({id,name:x.name,data:dd}); }
     const r=await Api.call('POST','pub',{game:g,desc:desc==null?null:desc,sounds:snd}); return r.ok?null:r.error;
   },
+  async setName(id,name){ const r=await Api.call('PATCH','pub/'+encodeURIComponent(id),{name}); if(!r.ok) toast(r.error); },
   async setDesc(id,desc){ const r=await Api.call('PATCH','pub/'+encodeURIComponent(id),{desc}); if(!r.ok) toast(r.error); },
   async unpublish(id){ const r=await Api.call('DELETE','pub/'+encodeURIComponent(id)); if(!r.ok) toast(r.error); },
   async like(id){ const r=await Api.call('POST','pub/'+encodeURIComponent(id)+'/like'); return r.ok?r.d:null; },
@@ -1594,9 +1788,20 @@ const Home={
   card(g,builtin){
     const k=SKIES[g.settings&&g.settings.sky]||SKIES.day, n=g.parts.filter(p=>p.type!=='coin').length, c=g.parts.filter(p=>p.type==='coin').length;
     return `<article class="card"><div class="thumb" style="background:linear-gradient(${k.top},${k.bot})">${g.cover?`<img src="${esc(g.cover)}" alt="">`:this.minimap(g)}</div>
-      <div class="meta"><b title="${esc(g.name)}">${esc(g.name)}</b><span>${builtin?'Встроенная':'Ваша'} · ${n} блоков${c?' · '+c+' монет':''}</span></div>
+      <div class="meta"><b title="${esc(g.name)}${builtin?'':' — двойной клик: переименовать'}" data-nm="${g.id}">${esc(g.name)}</b><span>${builtin?'Встроенная':'Ваша'} · ${n} блоков${c?' · '+c+' монет':''}</span></div>
       <div class="acts"><button class="btn pri sm" data-play="${g.id}">Играть</button><button class="btn sm" data-edit="${g.id}">${builtin?'Копия':'Править'}</button>
-      ${builtin?'':`<button class="btn sm" data-pub="${g.id}">${this.pub.some(e=>e.id===g.id)?'Страница':'Опубликовать'}</button><button class="btn sm" data-exp="${g.id}" title="Экспорт в файл">Экспорт</button><button class="btn sm danger" data-del="${g.id}">${this.confirm===g.id?'Точно?':'✕'}</button>`}</div></article>`;
+      ${builtin?'':`<button class="btn sm" data-ren="${g.id}" title="Переименовать" aria-label="Переименовать">✎</button><button class="btn sm" data-pub="${g.id}">${this.pub.some(e=>e.id===g.id)?'Страница':'Опубликовать'}</button><button class="btn sm" data-exp="${g.id}" title="Экспорт в файл">Экспорт</button><button class="btn sm danger" data-del="${g.id}">${this.confirm===g.id?'Точно?':'✕'}</button>`}</div></article>`;
+  },
+  /* быстрое переименование прямо на карточке: Enter — сохранить, Esc — отмена */
+  rename(id){
+    const g=S.games.find(x=>x.id===id), b=$('[data-nm="'+id+'"]'); if(!g||!b||b.querySelector('input')) return;
+    const inp=document.createElement('input'); inp.type='text'; inp.className='rn'; inp.maxLength=40; inp.value=g.name; inp.setAttribute('aria-label','Название игры');
+    b.textContent=''; b.appendChild(inp); inp.focus(); inp.select(); let done=false;
+    const fin=ok=>{ if(done) return; done=true; const v=inp.value.replace(/\s+/g,' ').trim().slice(0,40);
+      if(ok&&v&&v!==g.name){ g.name=v; saveGames(); const e=this.pub.find(q=>q.id===id&&Acc.cur&&q.authorId===Acc.cur.id); if(e){ e.name=v; Net.setName(id,v); } toast('Переименовано: '+v); }
+      this.render(); };
+    inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter'){ e.preventDefault(); fin(true); } else if(e.key==='Escape') fin(false); };
+    inp.onblur=()=>fin(true); inp.onclick=e=>e.stopPropagation();
   },
   render(){
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
@@ -1620,6 +1825,8 @@ const Home={
     $('#cNew').onkeydown=e=>{ if(e.key==='Enter') Ed.open(newGame('Моя игра '+(S.games.length+1))); };
     $$('[data-play]',el).forEach(b=>b.onclick=()=>{ const g=clone(byId(b.dataset.play)); g.settings={...DEF_SET,...g.settings}; g.sounds={...DEF_SND,...g.sounds}; Play.start(g,'home'); });
     $$('[data-edit]',el).forEach(b=>b.onclick=()=>Ed.open(byId(b.dataset.edit)));
+    $$('[data-ren]',el).forEach(b=>b.onclick=()=>this.rename(b.dataset.ren));
+    $$('[data-nm]',el).forEach(b=>b.ondblclick=()=>this.rename(b.dataset.nm));
     $$('[data-exp]',el).forEach(b=>b.onclick=()=>this.exportGame(byId(b.dataset.exp)));
     $$('[data-del]',el).forEach(b=>b.onclick=()=>{ const id=b.dataset.del; if(this.confirm===id){ S.games=S.games.filter(g=>g.id!==id); saveGames(); this.confirm=null; toast('Игра удалена'); } else { this.confirm=id; setTimeout(()=>{ if(this.confirm===id){ this.confirm=null; if(Home.on) this.render(); } },2500); } this.render(); });
     $$('[data-pub]',el).forEach(b=>b.onclick=()=>{ const g=byId(b.dataset.pub); if(this.pub.some(e=>e.id===g.id&&Acc.cur&&e.authorId===Acc.cur.id)) this.openPage(g.id); else this.pubDialog(g); });
@@ -1711,7 +1918,7 @@ const Home={
   },
   async exportGame(g){
     const used=new Set(Object.values(g.sounds||{}).filter(v=>typeof v==='string'&&v.startsWith('s:')).map(v=>v.slice(2)));
-    const us=S.sounds.filter(x=>used.has(x.id)); for(const x of us) if(!x.data&&x.stored) x.data=await Media.get(Acc.cur.id+':s:'+x.id);
+    const us=S.sounds.filter(x=>used.has(x.id)); for(const x of us) await sndData(x);
     const json=JSON.stringify({inblox:1,game:g,sounds:us.map(x=>({id:x.id,name:x.name,data:x.data}))});
     const fn=(g.name.replace(/[^\wЀ-ӿ -]+/g,'').trim()||'game')+'.inblox.json';
     let dl=null; try{ dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null; }catch(e){}
