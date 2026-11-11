@@ -273,7 +273,7 @@ async function imgData(f,w,h,q=.85){
 }
 
 /* ---------- данные ---------- */
-const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo',head:'cube'};
+const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo',head:'cube',build:'normal'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
@@ -674,23 +674,37 @@ function makeWorld(game,editor){
       }
       if(editor){ grid=new THREE.GridHelper(200,100,0xffffff,0xffffff); grid.material.transparent=true; grid.material.opacity=.12; grid.position.y=.02; scene.add(grid); }
     },
+    texMat(p,o,ax){
+      const t=btex(p.tex).clone(); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.userData={keep:false}; t.needsUpdate=true;
+      const m=new THREE.MeshLambertMaterial({...o,color:new THREE.Color(p.color).lerp(new THREE.Color(1,1,1),.8),map:t}); m.userData.rep=ax; return m;
+    },
+    texRep(p,mesh){   /* повтор текстуры зависит от размера грани (один тайл ≈ 2 единицы) */
+      const ms=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+      for(const m of ms){ const a=m.userData&&m.userData.rep; if(!a||!m.map) continue;
+        const r=a==='x'?[p.sz,p.sy]:a==='y'?[p.sx,p.sz]:a==='z'?[p.sx,p.sy]:[Math.PI*p.sx*.5,p.sy];
+        m.map.repeat.set(Math.max(.25,r[0]/2),Math.max(.25,r[1]/2)); }
+    },
     matsFor(p){
       const o={color:new THREE.Color(p.color)};
       if(p.type==='kill') o.emissive=new THREE.Color(p.color).multiplyScalar(.45);
       else if(p.type==='bounce'||p.type==='goal') o.emissive=new THREE.Color(p.color).multiplyScalar(.25);
       else if(p.type==='coin'){ o.emissive=new THREE.Color(p.color).multiplyScalar(.5); }
-      const side=new THREE.MeshLambertMaterial(o);
+      const cyl=p.shape==='cyl', tx=!!(p.tex&&p.type!=='coin'&&BTEX_IDS.has(p.tex)); let plain=null;
+      const sd=ax=>tx?W.texMat(p,o,ax):(plain||(plain=new THREE.MeshLambertMaterial(o)));
+      const A=cyl?[sd('c'),sd('y'),sd('y')]:[sd('x'),sd('x'),sd('y'),sd('y'),sd('z'),sd('z')];
       const im=p.img&&p.type!=='coin'&&game.images&&game.images[p.img];
       if(im&&imgOk(im.data)){
         const pic=new THREE.MeshLambertMaterial({map:imgTex(p.img,im.data),alphaTest:.05}), f=p.imgFace||'all';
-        if(p.shape==='cyl') return f==='top'?[side,pic,side]:f==='z'?[pic,side,side]:[pic,pic,pic];
+        if(cyl){ if(f==='all') return [pic,pic,pic]; if(f==='top') A[1]=pic; else A[0]=pic; return A; }
         if(f==='all') return [pic,pic,pic,pic,pic,pic];
-        const A=[side,side,side,side,side,side]; if(f==='top') A[2]=pic; else { A[4]=pic; A[5]=pic; } return A;
+        if(f==='top') A[2]=pic; else { A[4]=pic; A[5]=pic; } return A;
       }
-      if(p.type==='decor'||p.type==='kill'||p.type==='solid'||p.type==='coin') return p.shape==='cyl'?[side,side,side]:[side,side,side,side,side,side];
-      const top=new THREE.MeshLambertMaterial({...o,map:iconTex(p.type,p.color)});
-      if(p.type==='goal'){ return p.shape==='cyl'?[top,top,top]:[top,top,top,top,top,top]; }
-      return p.shape==='cyl'?[side,top,side]:[side,side,top,side,side,side];
+      if(!(p.type==='decor'||p.type==='kill'||p.type==='solid'||p.type==='coin')){
+        const top=new THREE.MeshLambertMaterial({...o,map:iconTex(p.type,p.color)});
+        if(p.type==='goal') return cyl?[top,top,top]:[top,top,top,top,top,top];
+        if(cyl) A[1]=top; else A[2]=top;
+      }
+      return A;
     },
     add(p){
       const grp=new THREE.Group(); grp.userData.pid=p.id; let mesh;
@@ -707,6 +721,7 @@ function makeWorld(game,editor){
       const it=items.get(p.id); if(!it) return;
       it.grp.position.set(p.x,p.y,p.z); it.grp.rotation.y=p.type==='coin'?it.grp.rotation.y:p.ry*DEG;
       if(p.type==='coin') it.mesh.scale.set(p.sx,p.sx,p.sx); else it.mesh.scale.set(p.sx,p.sy,p.sz);
+      if(p.tex) W.texRep(p,it.mesh);
     },
     update(p){ W.remove(p.id); W.add(p); },
     remove(id){ const it=items.get(id); if(!it) return; root.remove(it.grp); disposeObj(it.grp); items.delete(id); },
@@ -728,8 +743,9 @@ const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очк
 const HEADS=[['cube','Куб'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
-function headGeo(id){
-  const s=HEAD_DEF[id]||HEAD_DEF.cube, n=s.k?12:1, geo=new THREE.BoxGeometry(s.w,s.h,s.d,n,n,n);
+function headGeo(id){ const s=HEAD_DEF[id]||HEAD_DEF.cube; return softGeo(s.w,s.h,s.d,s.k); }
+function softGeo(w,h,d,k){
+  const s={w,h,d,k}, n=s.k?12:1, geo=new THREE.BoxGeometry(s.w,s.h,s.d,n,n,n);
   if(s.k){
     const p=geo.attributes.position, nr=geo.attributes.normal, hx=s.w/2, hy=s.h/2, hz=s.d/2, c=new THREE.Vector3(), sp=new THREE.Vector3(), nn=new THREE.Vector3();
     for(let i=0;i<p.count;i++){
@@ -741,6 +757,8 @@ function headGeo(id){
   }
   return geo;
 }
+const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот']];
+const BUILD_DEF={normal:{tw:1.2,td:.6,k:0,aw:.4,lw:.55,cyl:0},slim:{tw:1,td:.5,k:0,aw:.32,lw:.44,cyl:0},wide:{tw:1.55,td:.75,k:0,aw:.5,lw:.62,cyl:0},round:{tw:1.4,td:.85,k:.55,aw:.38,lw:.5,cyl:0},stick:{tw:.8,td:.4,k:0,aw:.22,lw:.28,cyl:0},chunky:{tw:1.45,td:.7,k:0,aw:.62,lw:.7,cyl:0},robot:{tw:1.2,td:.6,k:0,aw:.36,lw:.45,cyl:1}};
 const EMBLEMS=[['none','Нет'],['logo','Inblox'],['stripe','Полоса'],['star','Звезда']];
 
 function drawHeart(g,x,y,s,c){ g.fillStyle=c; g.beginPath(); g.moveTo(x,y+s*.55); g.bezierCurveTo(x-s*1.1,y-s*.1,x-s*.6,y-s*.9,x,y-s*.4); g.bezierCurveTo(x+s*.6,y-s*.9,x+s*1.1,y-s*.1,x,y+s*.55); g.fill(); }
@@ -824,13 +842,16 @@ function buildAvatar(cfg){
   const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), shirtM=vs?suitM:shirt, pantsM=vs?suitM:pants;
   const box=(w,h,d,m,x,y,z,parent)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); b.castShadow=true; b.receiveShadow=true; (parent||body).add(b); return b; };
   const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
-  box(1.2,1.2,.6,[shirtM,shirtM,shirtM,shirtM,front,shirtM],0,1.6,0);
+  const bd=BUILD_DEF[cfg.build]||BUILD_DEF.normal, tm=[shirtM,shirtM,shirtM,shirtM,front,shirtM];
+  if(bd.k){ const t=new THREE.Mesh(softGeo(bd.tw,1.2,bd.td,bd.k),tm); t.position.set(0,1.6,0); t.castShadow=true; t.receiveShadow=true; body.add(t); } else box(bd.tw,1.2,bd.td,tm,0,1.6,0);
+  const cx=(w,h,d,m,x,y,z,parent)=>{ if(!bd.cyl) return box(w,h,d,m,x,y,z,parent); const c=new THREE.Mesh(new THREE.CylinderGeometry(w/2,w/2,h,14),m); c.position.set(x,y,z); c.castShadow=true; c.receiveShadow=true; (parent||body).add(c); return c; };
+  if(bd.cyl){ box(bd.tw*.55,.34,.04,M('#c9ced6'),0,1.7,bd.td/2+.015); box(.26,.12,.05,new THREE.MeshLambertMaterial({color:'#35e0a1',emissive:'#0e5a40'}),0,1.7,bd.td/2+.03); }
   const faceM=new THREE.MeshLambertMaterial({map:faceTex(cfg)});
   const hs=HEAD_DEF[cfg.head]||HEAD_DEF.cube, head=new THREE.Mesh(headGeo(cfg.head),[skin,skin,skin,skin,faceM,skin]); head.position.set(0,2.2+hs.h/2,0); head.castShadow=true; head.receiveShadow=true; body.add(head);
   const limb=(x,y)=>{ const p=new THREE.Group(); p.position.set(x,y,0); body.add(p); return p; };
-  const armL=limb(-.8,2.15), armR=limb(.8,2.15), legL=limb(-.3,1), legR=limb(.3,1);
-  [armL,armR].forEach(a=>{ box(.4,.7,.4,shirtM,0,-.35,0,a); box(.4,.45,.4,skin,0,-.925,0,a); if(vs) box(.43,.09,.43,M('#f4f4f6'),0,-.66,0,a); });
-  [legL,legR].forEach(l=>{ box(.55,.8,.55,pantsM,0,-.4,0,l); box(.55,.2,.62,shoe,0,-.9,.03,l); if(vs) box(.03,.8,.2,M('#2c2e3a'),l===legL?-.285:.285,-.4,0,l); });
+  const ax=bd.tw/2+bd.aw/2+.02, lx=bd.lw/2+.025, armL=limb(-ax,2.15), armR=limb(ax,2.15), legL=limb(-lx,1), legR=limb(lx,1);
+  [armL,armR].forEach(a=>{ cx(bd.aw,.7,bd.aw,shirtM,0,-.35,0,a); cx(bd.aw,.45,bd.aw,skin,0,-.925,0,a); if(vs) cx(bd.aw+.03,.09,bd.aw+.03,M('#f4f4f6'),0,-.66,0,a); });
+  [legL,legR].forEach(l=>{ cx(bd.lw,.8,bd.lw,pantsM,0,-.4,0,l); box(bd.lw,.2,bd.lw+.07,shoe,0,-.9,.03,l); if(vs) box(.03,.8,.2,M('#2c2e3a'),(l===legL?-1:1)*(bd.lw/2+.01),-.4,0,l); });
   const hm=M(cfg.hatColor), hat=new THREE.Group(); body.add(hat); hat.position.y=hs.h-.8-.11*hs.k; hat.scale.set(hs.w/.8,1,hs.d/.8);
   const add=(geo,x,y,z,rx=0,rz=0)=>{ const m=new THREE.Mesh(geo,hm); m.position.set(x,y,z); m.rotation.set(rx,0,rz); m.castShadow=true; hat.add(m); return m; };
   switch(cfg.hat){
@@ -871,15 +892,16 @@ function animAvatar(av,t,speed,air,vy){
 }
 const PICS={};
 function avatarPic(look){
-  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.head,L.vipSuit,L.vipShades]);
+  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.head,L.build,L.vipSuit,L.vipShades]);
   if(PICS[key]) return PICS[key];
   const c=document.createElement('canvas'); c.width=c.height=160; const g=c.getContext('2d');
   const bg=g.createLinearGradient(0,0,0,160); bg.addColorStop(0,'#2b3050'); bg.addColorStop(1,'#171a28'); g.fillStyle=bg; g.fillRect(0,0,160,160);
   const rr=(x,y,w,h,r)=>{ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); };
   /* туловище */
-  g.save(); rr(20,112,120,70,18); g.clip();
-  if(L.vipSuit){ const t=suitTex(); g.drawImage(t.image,0,0,128,64,20,112,120,60); t.dispose(); }
-  else{ g.fillStyle=L.shirt; g.fillRect(20,112,120,60); const d=L.shirtTex&&String(L.shirtTex).startsWith('p:')&&TEXS.find(x=>x[0]===L.shirtTex.slice(2)); if(d){ const t=document.createElement('canvas'); t.width=t.height=128; d[2](t.getContext('2d'),128,128); g.drawImage(t,0,0,128,64,20,112,120,60); } }
+  const BD=BUILD_DEF[L.build]||BUILD_DEF.normal, tw=120*BD.tw/1.2, tx=80-tw/2;
+  g.save(); rr(tx,112,tw,70,BD.k?32:18); g.clip();
+  if(L.vipSuit){ const t=suitTex(); g.drawImage(t.image,0,0,128,64,tx,112,tw,60); t.dispose(); }
+  else{ g.fillStyle=L.shirt; g.fillRect(tx,112,tw,60); const d=L.shirtTex&&String(L.shirtTex).startsWith('p:')&&TEXS.find(x=>x[0]===L.shirtTex.slice(2)); if(d){ const t=document.createElement('canvas'); t.width=t.height=128; d[2](t.getContext('2d'),128,128); g.drawImage(t,0,0,128,64,tx,112,tw,60); } }
   g.restore();
   /* шея и голова */
   g.fillStyle=L.skin; g.fillRect(68,102,24,14); g.fillStyle='rgba(0,0,0,.2)'; g.fillRect(68,102,24,14);
@@ -938,6 +960,26 @@ function pyWorker(onMsg){
 /* ============================================================
    GUI: экранные элементы игры (текст, кнопка, панель)
    ============================================================ */
+/* ---------- Текстуры блоков ---------- */
+const BTEXS=[
+['brick','Кирпич',(g,w,h)=>{ g.fillStyle='#b9b0a2'; g.fillRect(0,0,w,h); const r=seeded(3); for(let y=0;y<8;y++) for(let i=-1;i<5;i++){ const x=i*32+(y%2?-16:0); g.fillStyle='hsl('+(10+r()*10)+','+(40+r()*18)+'%,'+(36+r()*14)+'%)'; g.fillRect(x+1,y*16+1,30,14); } }],
+['planks','Доски',(g,w,h)=>{ const r=seeded(5); for(let j=0;j<4;j++) for(let i=-1;i<3;i++){ const x=i*64+(j%2?32:0), y=j*32; g.fillStyle='hsl('+(26+r()*8)+',45%,'+(34+r()*12)+'%)'; g.fillRect(x,y,64,32); g.fillStyle='rgba(60,30,10,.22)'; for(let k=0;k<4;k++) g.fillRect(x+r()*60,y+4+r()*24,10+r()*40,1); g.fillStyle='rgba(40,20,5,.6)'; g.fillRect(x,y+30,64,2); g.fillRect(x,y,2,32); } }],
+['grass','Трава',(g,w,h)=>{ g.fillStyle='#4a9a38'; g.fillRect(0,0,w,h); const r=seeded(9), cs=['#5fb84a','#3c8a2e','#77c95d','#2f7a28']; for(let i=0;i<520;i++){ g.fillStyle=cs[i%4]; g.fillRect(r()*w,r()*h,2,3+r()*4); } }],
+['stone','Булыжник',(g,w,h)=>{ g.fillStyle='#4e5057'; g.fillRect(0,0,w,h); const r=seeded(13); for(let y=0;y<4;y++) for(let x=0;x<4;x++){ const v=105+r()*45|0; g.fillStyle='rgb('+v+','+v+','+(v+6)+')'; g.beginPath(); g.roundRect?g.roundRect(x*32+2,y*32+2,28,28,7):g.rect(x*32+2,y*32+2,28,28); g.fill(); } }],
+['sand','Песок',(g,w,h)=>{ g.fillStyle='#e0c88c'; g.fillRect(0,0,w,h); const r=seeded(17); for(let i=0;i<700;i++){ g.fillStyle=r()>.5?'rgba(255,240,200,.55)':'rgba(160,120,60,.35)'; g.fillRect(r()*w,r()*h,2,2); } }],
+['metal','Металл',(g,w,h)=>{ g.fillStyle='#9aa3ad'; g.fillRect(0,0,w,h); const r=seeded(19); for(let i=0;i<90;i++){ g.fillStyle=r()>.5?'rgba(255,255,255,.12)':'rgba(0,0,0,.10)'; g.fillRect(0,r()*h,w,1); } g.strokeStyle='rgba(40,46,56,.7)'; g.lineWidth=3; g.strokeRect(1.5,1.5,w-3,h-3); g.fillStyle='#5c6470'; for(const [x,y] of [[12,12],[116,12],[12,116],[116,116]]){ g.beginPath(); g.arc(x,y,4,0,7); g.fill(); } }],
+['ice','Лёд',(g,w,h)=>{ const gr=g.createLinearGradient(0,0,w,h); gr.addColorStop(0,'#bfe8f7'); gr.addColorStop(1,'#8fcbe6'); g.fillStyle=gr; g.fillRect(0,0,w,h); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=2; const r=seeded(23); for(let i=0;i<7;i++){ g.beginPath(); const x=r()*w, y=r()*h; g.moveTo(x,y); g.lineTo(x+20+r()*30,y+10+r()*30); g.stroke(); } }],
+['tiles','Плитка',(g,w,h)=>{ for(let y=0;y<4;y++) for(let x=0;x<4;x++){ g.fillStyle=(x+y)%2?'#d9dde3':'#f1f3f6'; g.fillRect(x*32,y*32,32,32); } g.fillStyle='#9aa0aa'; for(let i=0;i<4;i++){ g.fillRect(i*32,0,2,h); g.fillRect(0,i*32,w,2); } }],
+['dirt','Земля',(g,w,h)=>{ g.fillStyle='#7b5535'; g.fillRect(0,0,w,h); const r=seeded(29); for(let i=0;i<500;i++){ g.fillStyle=r()>.5?'rgba(40,24,10,.4)':'rgba(190,140,90,.35)'; g.fillRect(r()*w,r()*h,2+r()*3,2+r()*2); } for(let i=0;i<10;i++){ g.fillStyle='#9a9288'; g.fillRect(r()*w,r()*h,4,3); } }],
+['snow','Снег',(g,w,h)=>{ g.fillStyle='#f2f6fb'; g.fillRect(0,0,w,h); const r=seeded(31); for(let i=0;i<300;i++){ g.fillStyle=r()>.5?'rgba(190,210,235,.55)':'rgba(255,255,255,.9)'; g.fillRect(r()*w,r()*h,2,2); } }],
+['lava','Лавовый камень',(g,w,h)=>{ g.fillStyle='#2a1b19'; g.fillRect(0,0,w,h); const r=seeded(37); g.lineJoin='round'; for(const [c,lw] of [['rgba(255,110,30,.55)',5],['#ff8a2a',2.5],['#ffd27a',1]]){ g.strokeStyle=c; g.lineWidth=lw; const q=seeded(41); for(let i=0;i<9;i++){ let x=q()*w, y=q()*h; g.beginPath(); g.moveTo(x,y); for(let k=0;k<4;k++){ x+=(q()-.5)*40; y+=(q()-.3)*34; g.lineTo(x,y); } g.stroke(); } } }],
+['hazard','Предупреждение',(g,w,h)=>{ g.fillStyle='#f2c230'; g.fillRect(0,0,w,h); g.fillStyle='#17181c'; for(let k=-4;k<8;k++){ g.beginPath(); g.moveTo(32*k,0); g.lineTo(32*k+16,0); g.lineTo(32*k+16-h,h); g.lineTo(32*k-h,h); g.closePath(); g.fill(); } }],
+['neon','Неон',(g,w,h)=>{ g.fillStyle='#0f1220'; g.fillRect(0,0,w,h); g.fillStyle='rgba(53,224,230,.25)'; for(let i=0;i<4;i++){ g.fillRect(i*32-2,0,5,h); g.fillRect(0,i*32-2,w,5); } g.fillStyle='#35e0e6'; for(let i=0;i<4;i++){ g.fillRect(i*32-1,0,2,h); g.fillRect(0,i*32-1,w,2); } }]
+];
+const BTEX_IDS=new Set(BTEXS.map(x=>x[0])), BTEXC={}, BTEXT={};
+const btex=id=>BTEXC[id]||(BTEXC[id]=canvasTex(128,128,BTEXS.find(x=>x[0]===id)[2],true));
+function btexThumb(id){ if(BTEXT[id]) return BTEXT[id]; const c=document.createElement('canvas'); c.width=c.height=128; BTEXS.find(x=>x[0]===id)[2](c.getContext('2d'),128,128); const t=document.createElement('canvas'); t.width=t.height=56; t.getContext('2d').drawImage(c,0,0,56,56); return BTEXT[id]=t.toDataURL('image/png'); }
+
 /* ---------- Изображения игры: хранятся внутри игры (game.images = {id:{name,data}}) ---------- */
 const IMG_MAX=12, IMG_ONE=140000, IMG_TOTAL=600000;
 const imgOk=d=>typeof d==='string'&&d.length<=IMG_ONE+2000&&/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(d);
@@ -1014,7 +1056,7 @@ const Play={
     this.pl={x:0,y:0,z:0,vx:0,vy:0,vz:0,grounded:false,gp:null,face:Math.PI,coy:0,jb:0,bcd:0,wt:0};
     this.respawn(true); this.orb.yaw=0; this.orb.pitch=.38; this.orb.dist=15; this.orb.t.set(this.pl.x,this.pl.y+2,this.pl.z);
     $('#play').innerHTML=`<div class="hud"><div class="pill"><b>${esc(game.name)}</b></div><div class="sp"></div>
-      <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill">Время <b id="ht">0:00.0</b></div><div class="pill">Падения <b id="hd">0</b></div><div class="pill" id="pyStat" hidden></div>
+      <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill">Падения <b id="hd">0</b></div><div class="pill" id="pyStat" hidden></div>
       <button class="btn sm fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
       <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · Enter — чат · Esc — пауза</div>
       <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
@@ -1172,7 +1214,7 @@ const Play={
   },
   win(){
     if(this.state!=='play') return; this.state='won'; Snd.play(this.game.sounds.win); const tt=this.t;
-    const ov=$('#pOv'); ov.innerHTML=`<div class="box"><h2>Победа</h2><p class="muted">Время ${fmtT(tt)} · монеты ${this.coins}/${this.coinsTotal} · падения ${this.deaths}</p>
+    const ov=$('#pOv'); ov.innerHTML=`<div class="box"><h2>Победа</h2><p class="muted">Монеты ${this.coins}/${this.coinsTotal} · падения ${this.deaths}</p>
       <div class="btns"><button class="btn pri" id="oAgain">Играть снова</button><button class="btn" id="oExit">${this.ret==='editor'?'Назад в редактор':'В меню'}</button></div></div>`;
     ov.classList.add('on'); $('#oAgain').onclick=()=>this.restart(); $('#oExit').onclick=()=>this.stop();
   },
@@ -1263,7 +1305,6 @@ const Play={
       if(hs>.6){ let d=Math.atan2(pl.vx,pl.vz)-pl.face; d=Math.atan2(Math.sin(d),Math.cos(d)); pl.face+=d*Math.min(1,dt*14); }
       this.av.group.position.set(pl.x,pl.y,pl.z); this.av.body.rotation.y=pl.face; animAvatar(this.av,this.clock,hs,!pl.grounded,pl.vy);
       if(this.pop!=null){ this.pop+=dt; const kk=Math.min(1,this.pop/.3); this.av.group.scale.setScalar(.2+.8*(1-Math.pow(1-kk,3))); if(kk>=1) this.pop=null; }
-      const ht=$('#ht'); if(ht) ht.textContent=fmtT(this.t);
     }
     const tg=o.t, f=Math.min(1,dt*10); tg.x+=(pl.x-tg.x)*f; tg.y+=(pl.y+2-tg.y)*f; tg.z+=(pl.z-tg.z)*f;
     orbitPlace(this.cam,o); if(set.baseplate&&this.cam.position.y<.4){ this.cam.position.y=.4; this.cam.lookAt(tg); }
@@ -1293,6 +1334,7 @@ const Ed={
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
       <span class="sp"></span>
       <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
+      <button class="btn sm" id="edVert" title="Режим: тянуть блок вверх и вниз" style="flex:none">↕ Высота</button>
       <label class="row" style="flex:none;gap:.5em"><span class="muted">Сетка</span>
         <select id="edSnap" style="width:5.2em"><option value="0">Выкл</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label>
       <button class="btn" id="edSave">Сохранить</button><button class="btn pri" id="edTest">▶ Тест</button>
@@ -1301,8 +1343,8 @@ const Ed={
     <aside class="rpanel"><nav class="tabs"><button class="tab" data-t="props">Свойства</button><button class="tab" data-t="game">Игра</button><button class="tab" data-t="sound">Звуки</button><button class="tab" data-t="gui">GUI</button><button class="tab" data-t="script">Python</button><button class="pclose" id="edPanelX" aria-label="Скрыть панель">✕</button></nav><div id="edBody"></div></aside>
     <div class="stat" id="edStat"></div>
     <button class="btn sm popen l" id="edToolsO" hidden>＋ Блоки</button><button class="btn sm popen r" id="edPanelO" hidden>⚙ Параметры</button>
-    <div class="hint">ЛКМ — выбрать и двигать · Shift+ЛКМ — по высоте · ПКМ — вращать камеру · Колесо — зум · WASD — камера · Del — удалить · Ctrl+D — копия · R — повернуть</div>
-    <div class="thint">Касание — выбрать и двигать · Пустое место — вращать камеру · Два пальца — зум</div>
+    <div class="hint">ЛКМ — выбрать и двигать · Shift+ЛКМ или жёлтые стрелки — по высоте · ПКМ — вращать камеру · Колесо — зум · WASD — камера · Del — удалить · Ctrl+D — копия · R — повернуть</div>
+    <div class="thint">Касание — выбрать и двигать · Жёлтые стрелки или «↕ Высота» — вверх и вниз · Пустое место — вращать камеру · Два пальца — зум</div>
     <div class="flybar" id="flyBar" style="display:none"><button class="btn sm" data-go="start">⌂ Старт</button><button class="btn sm" data-go="center">◎ Центр</button><button class="btn sm" data-go="top">⬆ Сверху</button><button class="btn sm" data-go="sel">▣ Блок</button><button class="btn sm" data-go="nw" title="Северо-запад">↖</button><button class="btn sm" data-go="ne" title="Северо-восток">↗</button><button class="btn sm" data-go="sw" title="Юго-запад">↙</button><button class="btn sm" data-go="se" title="Юго-восток">↘</button><select id="flySp" style="width:7em"><option value="8">Медленно</option><option value="20" selected>Средне</option><option value="55">Быстро</option><option value="140">Супер</option></select></div>
     <div class="touch" id="edTouch" style="display:none"><div class="joy" id="edJoy"><i id="edJoyK"></i></div><button class="jbtn" id="edUp" style="bottom:12em">▲</button><button class="jbtn" id="edDn">▼</button></div>`;
     $('#edName').value=this.game.name; $('#edName').oninput=e=>{ this.game.name=e.target.value||'Без названия'; this.dirty=true; };
@@ -1310,6 +1352,7 @@ const Ed={
     $('#edSave').onclick=()=>this.save();
     $('#edTest').onclick=()=>{ this.save(true); this.stopMusicPreview(); Play.start(this.game,'editor'); };
     $('#edUndo').onclick=()=>this.doUndo(); $('#edRedo').onclick=()=>this.doRedo();
+    this.vmode=false; $('#edVert').onclick=()=>{ this.vmode=!this.vmode; $('#edVert').classList.toggle('pri',this.vmode); toast(this.vmode?'Тяните блок вверх и вниз':'Обычное перемещение',1300); };
     $('#edSnap').onchange=e=>{ this.snapV=parseFloat(e.target.value); }; $('#edSnap').value=String(this.snapV);
     $$('#edTools .tool').forEach(b=>b.onclick=()=>this.addKind(KINDS[+b.dataset.k]));
     $$('#editor .tab').forEach(b=>b.onclick=()=>{ this.tab=b.dataset.t; this.renderBody(); });
@@ -1333,6 +1376,7 @@ const Ed={
     [['x',0xff5a4d],['y',0x35e0a1],['z',0x59a8ff]].forEach(([ax,col])=>[-1,1].forEach(sg=>{
       const m=new THREE.Mesh(GBOX,new THREE.MeshBasicMaterial({color:col,depthTest:false,transparent:true,opacity:.95})); m.renderOrder=1000; m.userData.handle={ax,sg}; m.visible=false; this.handles.add(m); this.hl.push(m);
     }));
+    this.mvh=[1,-1].map(sg=>{ const m=new THREE.Mesh(new THREE.ConeGeometry(.5,1,18),new THREE.MeshBasicMaterial({color:0xffd23d,depthTest:false,transparent:true,opacity:.95})); m.renderOrder=1001; m.visible=false; m.userData.mv=sg; if(sg<0) m.rotation.x=Math.PI; this.handles.add(m); return m; });
     const lm=new THREE.LineBasicMaterial({color:0x59a8ff,depthTest:false}); this.oB=new THREE.LineSegments(EBOX,lm); this.oC=new THREE.LineSegments(ECYL,lm);
     [this.oB,this.oC].forEach(o=>{ o.renderOrder=999; o.visible=false; this.world.scene.add(o); });
     if(this.sel&&!this.part()) this.sel=null;
@@ -1514,9 +1558,11 @@ const Ed={
     <div class="sec"><div class="row field"><div><span class="lbl">Тип</span><select data-k="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
       <div><span class="lbl">Форма</span><select data-k="shape"><option value="box">Блок</option><option value="cyl">Цилиндр</option></select></div></div>
       <span class="lbl">Цвет</span><input type="color" data-k="color"><div class="swr">${CLOTHES.concat(['#9aa0aa','#79c267','#ff4d3d','#8b5a2b']).map(c=>`<button class="sw" style="background:${c}" data-c="${c}" aria-label="${c}"></button>`).join('')}</div></div>
-    ${p.type==='coin'?'':`<div class="sec">${this.imgPickHTML(p.img||'')}<label style="display:block;margin-top:.6em"><span class="lbl">Где показывать</span><select data-k="imgFace"><option value="all">На всех гранях</option><option value="z">Спереди и сзади</option><option value="top">Сверху</option></select></label></div>`}
+    ${p.type==='coin'?'':`<div class="sec"><span class="lbl">Текстура блока</span><div class="sws imgs"><button class="sw ${!p.tex?'on':''}" data-bt="" title="Без текстуры" style="background:#222;color:#aaa">✕</button>${BTEXS.map(([id,n])=>`<button class="sw ${p.tex===id?'on':''}" data-bt="${id}" title="${n}" style="background:url(${btexThumb(id)}) center/cover"></button>`).join('')}</div><p class="muted" style="margin:.4em 0 0;font-size:.8em">Цвет блока слегка подкрашивает текстуру.</p></div>
+    <div class="sec">${this.imgPickHTML(p.img||'')}<label style="display:block;margin-top:.6em"><span class="lbl">Где показывать</span><select data-k="imgFace"><option value="all">На всех гранях</option><option value="z">Спереди и сзади</option><option value="top">Сверху</option></select></label></div>`}
     <div class="sec"><span class="lbl">Имя для скрипта Python</span><input type="text" data-k="name" maxlength="24" placeholder="например: door"></div>
     <div class="sec"><span class="lbl">Позиция</span><div class="g3">${num('x','X')}${num('y','Y')}${num('z','Z')}</div>
+      <div class="chips" style="margin-top:.5em"><button class="chip" data-yy="up">▲ Выше</button><button class="chip" data-yy="dn">▼ Ниже</button><button class="chip" data-yy="gr">⤓ На землю</button></div>
       <span class="lbl" style="margin-top:.8em">Размер</span><div class="g3">${num('sx','X')}${num('sy','Y')}${num('sz','Z')}</div>
       <span class="lbl" style="margin-top:.8em">Поворот (°)</span><div class="g3">${num('ry','Y',15)}</div></div>
     <div class="sec"><span class="lbl">Движение</span><div class="g3"><label><span>Ось</span><select data-k="mvaxis"><option value="">Нет</option><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>${num('mvdist','Размах',1)}${num('mvspeed','Скорость',.2)}</div></div>
@@ -1528,6 +1574,8 @@ const Ed={
     $$('.sw',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); this.setProp('color',b.dataset.c); this.fillProps(); });
     $('#pDup').onclick=()=>this.dup(); $('#pRot').onclick=()=>this.rot(); $('#pDel').onclick=()=>this.del();
     this.imgBind(el,id=>{ this.pushUndo(); this.setProp('img',id); this.renderProps(el); });
+    $$('[data-bt]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); this.setProp('tex',b.dataset.bt); this.renderProps(el); });
+    $$('[data-yy]',el).forEach(b=>b.onclick=()=>{ const q=this.part(); if(!q) return; this.pushUndo(); const st=this.snapV||1, k=b.dataset.yy; if(k==='up') q.y+=st; else if(k==='dn') q.y-=st; else q.y=(q.type==='coin'?q.sx:q.sy)/2; this.world.xform(q); this.fillProps(); });
     this.fillProps();
   },
   fillProps(){
@@ -1545,7 +1593,7 @@ const Ed={
     if(k==='shape'&&v==='cyl') p.sz=p.sx;
     if(k==='type'&&v==='coin'){ p.shape='cyl'; p.sx=p.sy=p.sz=1.2; }
     this.dirty=true;
-    if(['type','shape','color','img','imgFace'].includes(k)){ this.world.update(p); this.fillProps(); } else this.world.xform(p);
+    if(['type','shape','color','img','imgFace','tex'].includes(k)){ this.world.update(p); this.fillProps(); } else this.world.xform(p);
     this.fillProps();
   },
   renderGame(el){
@@ -1615,9 +1663,9 @@ const Ed={
     if(e.button===1||(e.button===2&&e.shiftKey)){ this.drag={k:'pan',...d}; return; }
     if(e.button===2){ this.drag={k:'orbit',...d}; return; }
     const rc=this.ray(e);
-    if(this.sel){ const hh=rc.intersectObjects(this.hl.filter(h=>h.visible),false)[0]; if(hh){ this.startResize(hh.object.userData.handle,rc); return; } }
+    if(this.sel){ const va=rc.intersectObjects(this.mvh.filter(h=>h.visible),false)[0]; if(va){ this.startMove(rc,true); return; } const hh=rc.intersectObjects(this.hl.filter(h=>h.visible),false)[0]; if(hh){ this.startResize(hh.object.userData.handle,rc); return; } }
     const hit=rc.intersectObjects([...this.world.items.values()].map(i=>i.mesh),false)[0];
-    if(hit){ const id=hit.object.userData.pid; if(this.sel!==id) this.select(id); this.startMove(rc,e.shiftKey); }
+    if(hit){ const id=hit.object.userData.pid; if(this.sel!==id) this.select(id); this.startMove(rc,e.shiftKey||this.vmode); }
     else{ if(this.sel){ this.sel=null; this.renderBody(); } this.drag={k:this.fly.on?'look':'orbit',...d}; }
   },
   startMove(rc,vert){
@@ -1688,10 +1736,12 @@ const Ed={
       orbitPlace(this.cam,o); this.world.follow(o.t);
     }
     const p=this.part();
-    this.oB.visible=this.oC.visible=false; this.hl.forEach(h=>h.visible=false);
+    this.oB.visible=this.oC.visible=false; this.hl.forEach(h=>h.visible=false); this.mvh.forEach(h=>h.visible=false);
     if(p){
       const coin=p.type==='coin', ol=!coin&&p.shape==='cyl'?this.oC:this.oB; ol.visible=true; ol.position.set(p.x,p.y,p.z);
       if(coin){ const it=this.world.items.get(p.id); ol.rotation.y=it?it.grp.rotation.y:0; ol.scale.set(p.sx*1.08,p.sx*1.08,p.sx*.25); } else { ol.rotation.y=p.ry*DEG; ol.scale.set(p.sx*1.01,p.sy*1.01,p.sz*1.01); }
+      { const pv=this._pv||(this._pv=new THREE.Vector3()); pv.set(p.x,p.y,p.z); const sc=Math.max(.45,this.cam.position.distanceTo(pv)*.04), top=(p.type==='coin'?p.sx:p.sy)/2;
+        for(const h of this.mvh){ h.position.set(p.x,p.y+h.userData.mv*(top+sc*.9),p.z); h.scale.set(sc*.8,sc*1.2,sc*.8); h.visible=true; } }
       if(p.type!=='coin') for(const h of this.hl){
         const {ax,sg}=h.userData.handle, key={x:'sx',y:'sy',z:'sz'}[ax], u=this.axisVec(p,ax).multiplyScalar(sg*p[key]/2);
         h.position.set(p.x+u.x,p.y+u.y,p.z+u.z); h.rotation.y=p.ry*DEG; const sc=Math.max(.3,this.cam.position.distanceTo(h.position)*.028); h.scale.set(sc,sc,sc); h.visible=true;
@@ -1742,6 +1792,7 @@ const AvS={
       <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
       <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
       <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
+      <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
       <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
       <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
       ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}
@@ -1752,7 +1803,7 @@ const AvS={
     $$('[data-tk]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.tk,b.dataset.tv));
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
-    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
+    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
     if(sc) $('.apanel',el).scrollTop=sc;
   },
   pd(e){ this.drag=e.clientX; this.auto=false; canvas.setPointerCapture(e.pointerId); },
