@@ -58,7 +58,7 @@ const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
 function lookOf(a,role){
   if(!a||typeof a!=='object') return null;
   const c=v=>typeof v==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(v)?v:undefined, id=v=>typeof v==='string'&&/^[\w\-]{1,20}$/.test(v)?v:undefined;
-  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),head:id(a.head),build:id(a.build),outfit:id(a.outfit),outfitColor:c(a.outfitColor),emblem:id(a.emblem)};
+  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),head:id(a.head),build:id(a.build),outfit:id(a.outfit),outfitColor:c(a.outfitColor),hair:id(a.hair),hairColor:c(a.hairColor),emblem:id(a.emblem)};
   if(typeof a.shirtTex==='string'&&/^p:[a-z]{1,12}$/.test(a.shirtTex)) o.shirtTex=a.shirtTex;
   if(role==='admin'){ if(a.vipSuit) o.vipSuit=1; if(a.vipShades) o.vipShades=1; }
   for(const k of Object.keys(o)) if(o[k]===undefined) delete o[k];
