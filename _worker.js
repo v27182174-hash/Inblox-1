@@ -58,7 +58,7 @@ const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
 function lookOf(a,role){
   if(!a||typeof a!=='object') return null;
   const c=v=>typeof v==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(v)?v:undefined, id=v=>typeof v==='string'&&/^[\w\-]{1,20}$/.test(v)?v:undefined;
-  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),head:id(a.head),build:id(a.build),emblem:id(a.emblem)};
+  const o={skin:c(a.skin),shirt:c(a.shirt),hat:id(a.hat),hatColor:c(a.hatColor),face:id(a.face),head:id(a.head),build:id(a.build),outfit:id(a.outfit),outfitColor:c(a.outfitColor),emblem:id(a.emblem)};
   if(typeof a.shirtTex==='string'&&/^p:[a-z]{1,12}$/.test(a.shirtTex)) o.shirtTex=a.shirtTex;
   if(role==='admin'){ if(a.vipSuit) o.vipSuit=1; if(a.vipShades) o.vipShades=1; }
   for(const k of Object.keys(o)) if(o[k]===undefined) delete o[k];
@@ -75,6 +75,9 @@ async function ensureSchema(db){
   try{
     await db.batch([
       db.prepare('CREATE TABLE IF NOT EXISTS snd(owner TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,got INTEGER NOT NULL DEFAULT 0,ts INTEGER NOT NULL,PRIMARY KEY(owner,id))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS friend(a TEXT NOT NULL,b TEXT NOT NULL,ts INTEGER NOT NULL,PRIMARY KEY(a,b))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS freq(src TEXT NOT NULL,dst TEXT NOT NULL,ts INTEGER NOT NULL,PRIMARY KEY(src,dst))'),
+      db.prepare('CREATE INDEX IF NOT EXISTS freq_dst ON freq(dst)'),
       db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))')
     ]);
   }catch(e){ console.error(e); }
@@ -125,6 +128,15 @@ async function api(req,env,url){
   /* ---- дальше нужен вход ---- */
   const u=await auth(req,db); if(!u) return err('Войдите в аккаунт',401);
   const bi=banInfo(u); if(bi) return err('Аккаунт заблокирован',403,bi);
+
+  /* отношение текущего игрока к другому: self | friend | out (я отправил заявку) | in (мне отправили) | none */
+  const relOf=async id=>{
+    if(id===u.id) return 'self';
+    if(await db.prepare('SELECT 1 x FROM friend WHERE a=? AND b=?').bind(u.id,id).first()) return 'friend';
+    if(await db.prepare('SELECT 1 x FROM freq WHERE src=? AND dst=?').bind(u.id,id).first()) return 'out';
+    if(await db.prepare('SELECT 1 x FROM freq WHERE src=? AND dst=?').bind(id,u.id).first()) return 'in';
+    return 'none';
+  };
 
   if(p==='me'&&m==='GET') return me(db,u,null);
   if(p==='logout'&&m==='POST'){ await db.prepare('DELETE FROM sessions WHERE token=?').bind(u.token).run(); return J({ok:1}); }
@@ -255,12 +267,57 @@ async function api(req,env,url){
       const r=await db.prepare('SELECT id,name,role,created,bio,look FROM users WHERE id=?').bind(id).first(); if(!r) return err('Игрок не найден',404);
       const gs=(await db.prepare('SELECT p.id,p.name,p.descr,p.ts,p.plays,p.thumb,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p WHERE p.owner=? ORDER BY p.ts DESC LIMIT 40').bind(u.id,id).all()).results||[];
       const look=parse(r.look), games=gs.map(g=>({id:g.id,name:g.name,desc:g.descr,authorId:r.id,authorName:r.name,authorRole:r.role,look,ts:g.ts,plays:g.plays,likes:g.likes,liked:!!g.liked,game:parse(g.thumb)||{parts:[]}}));
-      return J({profile:{id:r.id,name:r.name,role:r.role,created:r.created,bio:r.bio||'',look,games,stats:{games:games.length,likes:games.reduce((a,g)=>a+g.likes,0),plays:games.reduce((a,g)=>a+(g.plays||0),0)}}});
+      return J({profile:{id:r.id,name:r.name,role:r.role,created:r.created,bio:r.bio||'',rel:await relOf(r.id),look,games,stats:{games:games.length,likes:games.reduce((a,g)=>a+g.likes,0),plays:games.reduce((a,g)=>a+(g.plays||0),0)}}});
     }
     if(seg.length===1&&m==='PATCH'){
       const b=await body(); if(!b) return err('Неверные данные');
       const bio=String(b.bio==null?'':b.bio).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,'').replace(/\r/g,'').trim().slice(0,300);
       await db.prepare('UPDATE users SET bio=? WHERE id=?').bind(bio,u.id).run(); return J({ok:1,bio});
+    }
+  }
+
+  /* ---- друзья ---- */
+  if(seg[0]==='friends'){
+    const fmt=r=>({id:r.id,name:r.name,role:r.role,look:parse(r.look)});
+    if(seg.length===1&&m==='GET'){
+      const fr=(await db.prepare('SELECT u.id,u.name,u.role,u.look FROM friend f JOIN users u ON u.id=f.b WHERE f.a=? ORDER BY u.name_lc LIMIT 200').bind(u.id).all()).results||[];
+      const inc=(await db.prepare('SELECT u.id,u.name,u.role,u.look FROM freq q JOIN users u ON u.id=q.src WHERE q.dst=? ORDER BY q.ts DESC LIMIT 100').bind(u.id).all()).results||[];
+      const out=(await db.prepare('SELECT u.id,u.name,u.role,u.look FROM freq q JOIN users u ON u.id=q.dst WHERE q.src=? ORDER BY q.ts DESC LIMIT 100').bind(u.id).all()).results||[];
+      return J({friends:fr.map(fmt),incoming:inc.map(fmt),outgoing:out.map(fmt)});
+    }
+    if(seg.length===2&&seg[1]==='find'&&m==='GET'){
+      if(!await throttle(db,'ffind:'+u.id,60,600000)) return err('Слишком много поисков, подождите немного',429);
+      const q=String(url.searchParams.get('q')||'').toLowerCase().replace(/[%_\\]/g,'').trim().slice(0,16); if(!q) return J({users:[]});
+      const rs=(await db.prepare('SELECT id,name,role,look FROM users WHERE name_lc LIKE ? AND id<>? ORDER BY (name_lc=?) DESC,name_lc LIMIT 12').bind(q+'%',u.id,q).all()).results||[];
+      const outl=[]; for(const r of rs) outl.push({...fmt(r),rel:await relOf(r.id)});
+      return J({users:outl});
+    }
+    if(seg.length===2&&m==='POST'){
+      const act=seg[1]; if(!['add','accept','decline','cancel','remove'].includes(act)) return err('Неизвестное действие',404);
+      const b=await body(), id=String(b&&b.id||''); if(!ID_RE.test(id)) return err('Неверный id');
+      if(id===u.id) return err('Это вы сами');
+      if(!await db.prepare('SELECT 1 x FROM users WHERE id=?').bind(id).first()) return err('Игрок не найден',404);
+      const r0=await relOf(id), now=Date.now();
+      const makeFriends=async()=>{
+        const c1=(await db.prepare('SELECT COUNT(*) c FROM friend WHERE a=?').bind(u.id).first()).c, c2=(await db.prepare('SELECT COUNT(*) c FROM friend WHERE a=?').bind(id).first()).c;
+        if(c1>=200) return 'У вас уже 200 друзей (максимум)'; if(c2>=200) return 'У этого игрока уже максимум друзей';
+        await db.batch([
+          db.prepare('DELETE FROM freq WHERE (src=? AND dst=?) OR (src=? AND dst=?)').bind(u.id,id,id,u.id),
+          db.prepare('INSERT OR IGNORE INTO friend(a,b,ts) VALUES(?,?,?)').bind(u.id,id,now),
+          db.prepare('INSERT OR IGNORE INTO friend(a,b,ts) VALUES(?,?,?)').bind(id,u.id,now)
+        ]); return null;
+      };
+      if(act==='add'){
+        if(r0==='friend'||r0==='out') return J({ok:1,rel:r0});
+        if(!await throttle(db,'freq:'+u.id,30,600000)) return err('Слишком много заявок, подождите немного',429);
+        if(r0==='in'){ const e=await makeFriends(); return e?err(e):J({ok:1,rel:'friend'}); }
+        const no=(await db.prepare('SELECT COUNT(*) c FROM freq WHERE src=?').bind(u.id).first()).c; if(no>=40) return err('Слишком много неотвеченных заявок (максимум 40)');
+        await db.prepare('INSERT OR IGNORE INTO freq(src,dst,ts) VALUES(?,?,?)').bind(u.id,id,now).run(); return J({ok:1,rel:'out'});
+      }
+      if(act==='accept'){ if(r0!=='in') return err('Заявки нет',404); const e=await makeFriends(); return e?err(e):J({ok:1,rel:'friend'}); }
+      if(act==='decline'){ await db.prepare('DELETE FROM freq WHERE src=? AND dst=?').bind(id,u.id).run(); return J({ok:1,rel:'none'}); }
+      if(act==='cancel'){ await db.prepare('DELETE FROM freq WHERE src=? AND dst=?').bind(u.id,id).run(); return J({ok:1,rel:'none'}); }
+      if(act==='remove'){ await db.batch([db.prepare('DELETE FROM friend WHERE a=? AND b=?').bind(u.id,id),db.prepare('DELETE FROM friend WHERE a=? AND b=?').bind(id,u.id)]); return J({ok:1,rel:'none'}); }
     }
   }
 
