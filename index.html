@@ -781,7 +781,7 @@ function makeWorld(game,editor){
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
 const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
-const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики']];
+const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза']];
 const HEADS=[['cube','Куб'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
@@ -820,8 +820,8 @@ function femGeo(bd,y0,y1,pad=0){
   for(let i=0;i<P.count;i++){ const a=acc.get(P.getX(i).toFixed(3)+','+P.getY(i).toFixed(3)+','+P.getZ(i).toFixed(3)), l=Math.hypot(a[0],a[1],a[2])||1; N.setXYZ(i,a[0]/l,a[1]/l,a[2]/l); }
   geo.computeBoundingSphere(); return geo;
 }
-const HAIRS=[['none','Без волос'],['short','Короткие'],['spiky','Ёжик'],['long','Длинные'],['ponytail','Хвост'],['twin','Хвостики'],['bob','Каре'],['bun','Пучок'],['afro','Афро'],['mohawk','Ирокез'],['braid','Коса'],['curly','Кудри']];
-const HAIR_COLORS=['#1b1b1b','#2b2118','#5a3a22','#8a5a2b','#c9a26a','#e8d28a','#d9d9de','#b3262d','#e86aa5','#6a5acd','#35c0c0','#3fae5a'];
+const HAIRS=[['none','Без волос'],['short','Короткие'],['spiky','Ёжик'],['long','Длинные'],['ponytail','Хвост'],['twin','Хвостики'],['bob','Каре'],['bun','Пучок'],['afro','Афро'],['mohawk','Ирокез'],['braid','Коса'],['curly','Кудри'],['bangs','Чёлка и длинные'],['wavy','Волнистые'],['highponytail','Высокий хвост'],['sidebraid','Боковая коса'],['twinbraids','Две косы'],['twinbuns','Два пучка'],['lob','Удлинённое каре'],['pixie','Пикси'],['halfup','Полу-хвост'],['ringlets','Локоны'],['sidetail','Боковой хвост']];
+const HAIR_COLORS=['#1b1b1b','#2b2118','#5a3a22','#8a5a2b','#c9a26a','#e8d28a','#d9d9de','#b3262d','#e86aa5','#6a5acd','#35c0c0','#3fae5a','#f5e6b3','#ff8fb8','#8a2be2','#1f6fd6','#ff9a3d','#7a4a3a'];
 /* волосы строятся от размеров головы (hs), поэтому подходят к любой форме головы */
 function buildHair(id,cfg,hs,body){
   const m=new THREE.MeshLambertMaterial({color:cfg.hairColor||'#2b2118'}), hc=2.2+hs.h/2, W=hs.w, H=hs.h, D=hs.d;
@@ -839,6 +839,17 @@ function buildHair(id,cfg,hs,body){
     case 'afro': ball(.68,0,.3,-.26,1,1,.95); hb(1.0,.12,.1,0,.47,.45); break;
     case 'mohawk': hb(.16,.34,1.0,0,.56,0); hb(.14,.5,.14,0,.2,-.5); break;
     case 'braid': cap(); for(let i=0;i<4;i++) hb(.26,.34,.24,i%2?.05:-.05,-.1-i*.3,-.62); break;
+    case 'bangs': cap(); hb(1.1,.3,.14,0,.33,.5); hb(1.1,1.5,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.3,.75,s*.52,-.2,-.05); break;
+    case 'wavy': cap(); hb(1.16,1.4,.2,0,-.2,-.48); for(const s of [-1,1]){ for(let i=0;i<4;i++) hb(.2,.3,.8,s*(.54+(i%2?.05:-.03)),-.05-i*.3,-.05); ball(.16,s*.56,-1.25,-.05,1,.8,1); } break;
+    case 'highponytail': cap(); ball(.2,0,.55,-.38); hb(.3,1.3,.26,0,-.15,-.72,.12); hb(.1,.12,.1,0,.52,-.4); break;
+    case 'sidebraid': cap(); hb(1.1,.9,.18,0,-.05,-.47); hb(.12,.7,.7,-.52,-.1,-.05); for(let i=0;i<5;i++) hb(.24,.32,.24,.56+(i%2?.02:-.02),-.25-i*.28,.42); ball(.14,.57,-1.6,.42); break;
+    case 'twinbraids': cap(); hb(1.1,.8,.18,0,-.05,-.47); for(const s of [-1,1]){ for(let i=0;i<5;i++) hb(.22,.32,.22,s*(.56+(i%2?.02:-.02)),-.25-i*.28,.42); ball(.13,s*.57,-1.6,.42); } break;
+    case 'twinbuns': cap(); for(const s of [-1,1]) ball(.28,s*.42,.68,-.02); break;
+    case 'lob': cap(); hb(1.12,.3,.14,0,.33,.5); hb(1.16,1.1,.2,0,-.25,-.47); for(const s of [-1,1]) hb(.14,1.0,.8,s*.55,-.2,-.02); break;
+    case 'pixie': cap(); hb(1.08,.5,.16,0,.1,-.47); for(const s of [-1,1]) hb(.12,.5,.6,s*.52,.05,-.05); hb(.55,.26,.14,.25,.36,.5,0,-.3); break;
+    case 'halfup': cap(); hb(1.1,1.4,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.2,.75,s*.52,-.1,-.05); ball(.22,0,.64,-.1); break;
+    case 'ringlets': cap(); hb(1.1,1.0,.18,0,-.1,-.47); for(const s of [-1,1]) for(let i=0;i<4;i++) ball(.17,s*.56,.05-i*.3,.02+(i%2?.06:0)); for(let i=0;i<5;i++) ball(.16,-.4+i*.2,-.7,-.5); break;
+    case 'sidetail': cap(); hb(.2,.2,.2,.5,.3,-.1); hb(.28,1.1,.28,.64,-.25,-.1,0,-.15); ball(.14,.58,.2,-.1); break;
     case 'curly': cap(); for(const [x,y,z] of [[-.45,.35,0],[.45,.35,0],[-.3,.5,-.3],[.3,.5,-.3],[0,.55,-.1],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.55]]) ball(.2,x,y,z); break;
   }
 }
@@ -901,6 +912,52 @@ function buildOutfit(id,cfg,c){
 const EMBLEMS=[['none','Нет'],['logo','Inblox'],['stripe','Полоса'],['star','Звезда']];
 
 function drawHeart(g,x,y,s,c){ g.fillStyle=c; g.beginPath(); g.moveTo(x,y+s*.55); g.bezierCurveTo(x-s*1.1,y-s*.1,x-s*.6,y-s*.9,x,y-s*.4); g.bezierCurveTo(x+s*.6,y-s*.9,x+s*1.1,y-s*.1,x,y+s*.55); g.fill(); }
+
+/* Аниме-лица, нарисованные по присланным картинкам (рисуются поверх цвета кожи) */
+function drawAnime1(g){
+  g.save(); g.scale(128/500,128/500); g.lineCap='round'; g.lineJoin='round';
+  const mir=f=>{ g.save(); g.translate(500,0); g.scale(-1,1); f(); g.restore(); };
+  const side=()=>{
+    g.fillStyle='#111'; g.beginPath(); g.moveTo(20,131); g.bezierCurveTo(60,92,110,60,152,66); g.bezierCurveTo(182,68,196,82,191,94); g.bezierCurveTo(186,102,170,94,148,93); g.bezierCurveTo(100,92,62,114,20,131); g.fill();
+    g.fillStyle='#f7c999'; g.beginPath(); g.moveTo(32,215); g.bezierCurveTo(26,185,60,165,120,166); g.bezierCurveTo(140,167,150,172,152,178); g.bezierCurveTo(120,176,80,182,50,222); g.closePath(); g.fill();
+    g.strokeStyle='#111'; g.lineWidth=13; g.beginPath(); g.moveTo(58,196); g.bezierCurveTo(95,172,160,168,192,212); g.stroke();
+    g.lineWidth=7; for(const [x,y,dx,dy] of [[58,190,-18,-6],[64,202,-18,2],[74,212,-16,8],[88,206,-4,14]]){ g.beginPath(); g.moveTo(x,y); g.lineTo(x+dx,y+dy); g.stroke(); }
+    g.lineWidth=5; g.beginPath(); g.moveTo(76,218); g.quadraticCurveTo(86,212,95,216); g.stroke();
+    g.lineWidth=9; for(const [a,b,c,d] of [[36,283,48,272],[58,296,78,274],[94,293,112,276]]){ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.stroke(); }
+  };
+  side(); mir(side);
+  g.fillStyle='#111'; g.beginPath(); g.ellipse(264,296,8,11,.4,0,7); g.fill();
+  g.fillStyle='#111'; g.beginPath(); g.moveTo(192,343); g.quadraticCurveTo(250,350,304,343); g.bezierCurveTo(302,395,282,432,250,433); g.bezierCurveTo(218,432,196,395,192,343); g.fill();
+  g.save(); g.beginPath(); g.moveTo(205,372); g.quadraticCurveTo(244,360,284,372); g.bezierCurveTo(286,400,270,430,244,432); g.bezierCurveTo(222,430,206,400,205,372); g.clip();
+  g.fillStyle='#e8606c'; g.beginPath(); g.ellipse(244,415,48,50,0,0,7); g.fill(); g.fillStyle='#c94a58'; g.beginPath(); g.ellipse(246,378,38,12,0,0,7); g.fill(); g.restore();
+  g.restore();
+}
+function drawAnime2(g){
+  g.save(); g.scale(128/1453,.105); g.translate(0,58);
+  const brown='#6b1d17', mir=f=>{ g.save(); g.translate(1453,0); g.scale(-1,1); f(); g.restore(); };
+  /* брови */
+  g.fillStyle=brown; g.beginPath(); g.moveTo(165,110); g.bezierCurveTo(215,40,300,5,370,42); g.bezierCurveTo(300,45,240,75,165,110); g.fill();
+  g.beginPath(); g.moveTo(1013,15); g.bezierCurveTo(1100,-5,1200,30,1234,115); g.bezierCurveTo(1170,60,1100,30,1013,15); g.fill();
+  const eye=()=>{
+    const gr=g.createLinearGradient(0,380,0,760); gr.addColorStop(0,'#000'); gr.addColorStop(.5,'#2a0c0a'); gr.addColorStop(1,'#5a1a14');
+    g.save(); g.beginPath(); g.ellipse(337,572,177,200,0,0,7); g.clip(); g.fillStyle=gr; g.fillRect(100,350,500,450);
+    g.fillStyle='#fff'; g.beginPath(); g.arc(235,447,132,0,7); g.fill(); g.restore();
+    g.fillStyle='#0a0302'; g.beginPath(); g.ellipse(344,612,60,67,0,0,7); g.fill();
+    g.fillStyle='#fff'; g.beginPath(); g.moveTo(459,545); g.quadraticCurveTo(466,585,483,592); g.quadraticCurveTo(450,605,442,625); g.quadraticCurveTo(436,595,418,577); g.quadraticCurveTo(450,570,459,545); g.fill();
+    g.beginPath(); g.arc(411,638,8,0,7); g.fill();
+    g.strokeStyle=brown; g.lineCap='round'; g.lineJoin='round';
+    g.lineWidth=34; g.beginPath(); g.moveTo(22,470); g.bezierCurveTo(60,385,150,325,300,332); g.bezierCurveTo(400,336,480,385,512,420); g.stroke();
+    g.lineWidth=7; g.beginPath(); g.moveTo(30,420); g.bezierCurveTo(130,290,330,230,508,348); g.stroke();
+    g.lineWidth=16; g.beginPath(); g.moveTo(35,430); g.bezierCurveTo(20,540,50,620,65,655); g.stroke();
+    g.fillStyle=brown; g.beginPath(); g.moveTo(208,757); g.bezierCurveTo(300,770,400,760,440,735); g.lineTo(432,780); g.bezierCurveTo(410,790,395,765,370,770); g.bezierCurveTo(350,775,345,805,330,800); g.bezierCurveTo(300,790,260,765,240,790); g.lineTo(232,808); g.closePath(); g.fill();
+  };
+  eye(); mir(eye);
+  /* рот-капелька */
+  g.beginPath(); g.moveTo(725,845); g.bezierCurveTo(770,865,782,920,778,945); g.bezierCurveTo(770,978,680,985,672,945); g.bezierCurveTo(668,915,690,865,725,845); g.closePath();
+  g.fillStyle='#ff3b55'; g.fill(); g.save(); g.clip(); g.fillStyle='#ffb0a8'; g.fillRect(660,830,130,76); g.restore();
+  g.lineWidth=15; g.strokeStyle=brown; g.stroke();
+  g.restore();
+}
 function faceTex(cfg){
   return canvasTex(128,128,(g,w,h)=>{
     g.fillStyle=cfg.skin; g.fillRect(0,0,w,h); g.fillStyle='#1b1b22'; g.strokeStyle='#1b1b22'; g.lineCap='round'; g.lineWidth=7;
@@ -922,6 +979,8 @@ function faceTex(cfg){
       case 'glasses': g.lineWidth=6; g.beginPath(); g.arc(38,56,19,0,7); g.stroke(); g.beginPath(); g.arc(90,56,19,0,7); g.stroke(); g.beginPath(); g.moveTo(57,56); g.lineTo(71,56); g.stroke(); g.beginPath(); g.arc(38,58,5,0,7); g.fill(); g.beginPath(); g.arc(90,58,5,0,7); g.fill(); g.beginPath(); g.arc(64,86,16,.3,Math.PI-.3); g.stroke(); break;
       case 'smirk': eyes((x,y)=>{g.beginPath();g.ellipse(x,y,8,9,0,0,7);g.fill();}); g.lineWidth=7; g.beginPath(); g.moveTo(24,42); g.lineTo(52,42); g.moveTo(76,42); g.lineTo(104,42); g.stroke(); g.beginPath(); g.moveTo(44,88); g.quadraticCurveTo(78,102,96,78); g.stroke(); break;
       case 'dead': g.lineWidth=7; [[38,54],[90,54]].forEach(([x,y])=>{ g.beginPath(); g.moveTo(x-12,y-12); g.lineTo(x+12,y+12); g.moveTo(x+12,y-12); g.lineTo(x-12,y+12); g.stroke(); }); g.beginPath(); g.moveTo(44,94); g.lineTo(56,88); g.lineTo(68,96); g.lineTo(84,88); g.stroke(); break;
+      case 'anime1': drawAnime1(g); break;
+      case 'anime2': drawAnime2(g); break;
       default: eyes((x,y)=>{g.beginPath();g.ellipse(x,y,8,12,0,0,7);g.fill();}); g.beginPath(); g.arc(64,72,26,.25,Math.PI-.25); g.stroke();
     }
   });
@@ -990,8 +1049,30 @@ function buildAvatar(cfg){
   const hs=HEAD_DEF[cfg.head]||HEAD_DEF.cube, head=new THREE.Mesh(headGeo(cfg.head),[skin,skin,skin,skin,faceM,skin]); head.position.set(0,2.2+hs.h/2,0); head.castShadow=true; head.receiveShadow=true; body.add(head);
   const limb=(x,y)=>{ const p=new THREE.Group(); p.position.set(x,y,0); body.add(p); return p; };
   const ax=bd.tw/2+bd.aw/2+.02, lx=bd.lw/2+.025, armL=limb(-ax,2.15), armR=limb(ax,2.15), legL=limb(-lx,1), legR=limb(lx,1);
+  const rcyl=(rt,rb,h,m,x,y,z,parent)=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,18),m); c.position.set(x,y,z); c.castShadow=true; c.receiveShadow=true; (parent||body).add(c); return c; };
+  const rsph=(r,m,x,y,z,parent,sy=1)=>{ const c=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),m); c.position.set(x,y,z); c.scale.y=sy; c.castShadow=true; c.receiveShadow=true; (parent||body).add(c); return c; };
+  if(bd.fem){
+    /* Женские руки: округлые, сужаются к запястью, маленькая кисть */
+    [armL,armR].forEach(a=>{
+      const w=bd.aw/2;
+      rsph(w*1.05,shirtM,0,-.02,0,a); rcyl(w*1.0,w*.82,.62,shirtM,0,-.33,0,a);
+      rsph(w*.8,skin,0,-.66,0,a); rcyl(w*.78,w*.56,.42,skin,0,-.86,0,a);
+      rsph(w*.66,skin,0,-1.1,.01,a,1.25);
+      if(vs) rcyl(w*.9,w*.9,.09,M('#f4f4f6'),0,-.66,0,a);
+    });
+    /* Женские ноги: стройное бедро, плавная икра, тонкая лодыжка, туфелька на каблучке */
+    [legL,legR].forEach(l=>{
+      const w=bd.lw/2, sd=(l===legL?-1:1);
+      rcyl(w*1.0,w*.82,.48,pantsM,0,-.24,0,l); rsph(w*.88,pantsM,0,-.5,0,l,1.0);
+      rcyl(w*.82,w*.55,.36,pantsM,0,-.62,0,l);
+      rcyl(w*.5,w*.44,.1,skin,0,-.82,0,l);
+      box(w*1.45,.13,bd.lw+.14,shoe,0,-.935,.07,l); box(w*1.0,.12,.12,shoe,0,-.87,-.1,l); rsph(w*.62,shoe,0,-.93,.2,l,.7);
+      if(vs) box(.03,.8,.2,M('#2c2e3a'),sd*(w+.01),-.4,0,l);
+    });
+  } else {
   [armL,armR].forEach(a=>{ cx(bd.aw,.7,bd.aw,shirtM,0,-.35,0,a); cx(bd.aw,.45,bd.aw,skin,0,-.925,0,a); if(vs) cx(bd.aw+.03,.09,bd.aw+.03,M('#f4f4f6'),0,-.66,0,a); });
   [legL,legR].forEach(l=>{ cx(bd.lw,.8,bd.lw,pantsM,0,-.4,0,l); box(bd.lw,.2,bd.lw+.07,shoe,0,-.9,.03,l); if(vs) box(.03,.8,.2,M('#2c2e3a'),(l===legL?-1:1)*(bd.lw/2+.01),-.4,0,l); });
+  }
   if(!vs&&cfg.outfit&&cfg.outfit!=='none') buildOutfit(cfg.outfit,cfg,{body,box,cx,bd,armL,armR,legL,legR,limb,skin});
   if(cfg.hair&&cfg.hair!=='none') buildHair(cfg.hair,cfg,hs,body);
   const hm=M(cfg.hatColor), hat=new THREE.Group(); body.add(hat); hat.position.y=hs.h-.8-.11*hs.k; hat.scale.set(hs.w/.8,1,hs.d/.8);
@@ -1077,6 +1158,16 @@ function avatarPic(look){
     case 'ponytail': HR(hx+hw-4,hy+hh*.2,16,hh,7); break;
     case 'twin': HR(hx-14,hy+hh*.25,16,hh*.95,7); HR(hx+hw-2,hy+hh*.25,16,hh*.95,7); break;
     case 'braid': for(let i=0;i<4;i++) HR(hx+hw-6+(i%2?2:-2),hy+hh*.25+i*14,14,15,5); break;
+    case 'bangs': HR(hx-5,hy+4,hw+10,hh*1.45,8); break;
+    case 'wavy': HR(hx-6,hy+4,hw+12,hh*1.4,10); for(let i=0;i<3;i++){ HC(hx-4,hy+hh*(.6+i*.28),9); HC(hx+hw+4,hy+hh*(.6+i*.28),9); } break;
+    case 'highponytail': HR(hx+hw/2-8,hy-6,16,hh*1.3,7); break;
+    case 'sidebraid': HR(hx-4,hy+4,hw+8,hh*.9,8); break;
+    case 'twinbraids': HR(hx-4,hy+4,hw+8,hh*.8,8); break;
+    case 'lob': HR(hx-6,hy+2,hw+12,hh*1.1,10); break;
+    case 'pixie': HR(hx-3,hy+2,hw+6,hh*.55,6); break;
+    case 'halfup': HR(hx-5,hy+4,hw+10,hh*1.4,8); break;
+    case 'ringlets': HR(hx-4,hy+4,hw+8,hh*1.0,8); for(let i=0;i<4;i++){ HC(hx-4,hy+hh*(.4+i*.28),11); HC(hx+hw+4,hy+hh*(.4+i*.28),11); } break;
+    case 'sidetail': HR(hx+hw-4,hy+hh*.1,18,hh*1.1,8); break;
     case 'afro': HC(hx+hw/2,hy+hh*.25,hw*.78); break;
     case 'curly': for(const [a,b] of [[-4,.2],[hw+4,.2],[-2,.6],[hw+2,.6],[hw/2,-.1]]) HC(hx+a,hy+hh*b,13); break;
   } };
@@ -1085,6 +1176,15 @@ function avatarPic(look){
     case 'mohawk': HR(hx+hw/2-7,hy-16,14,hh*.45,5); break;
     case 'afro': HR(hx-2,hy-6,hw+4,hh*.2,6); break;
     case 'spiky': HR(hx-3,hy-4,hw+6,hh*.26,4); g.fillStyle=hcol; for(let i=0;i<5;i++){ const x=hx+4+i*(hw-8)/4; g.beginPath(); g.moveTo(x-7,hy-3); g.lineTo(x,hy-16-(i%2)*4); g.lineTo(x+7,hy-3); g.fill(); } break;
+    case 'bangs': case 'lob': HR(hx-3,hy-5,hw+6,hh*.34,5); HR(hx-4,hy,10,hh*.6,4); HR(hx+hw-6,hy,10,hh*.6,4); break;
+    case 'twinbuns': HR(hx-3,hy-5,hw+6,hh*.26,5); HC(hx+hw*.2,hy-10,11); HC(hx+hw*.8,hy-10,11); break;
+    case 'halfup': HR(hx-3,hy-5,hw+6,hh*.26,5); HC(hx+hw/2,hy-12,10); HR(hx-4,hy,10,hh*.55,4); HR(hx+hw-6,hy,10,hh*.55,4); break;
+    case 'highponytail': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.5,4); HR(hx+hw-6,hy,10,hh*.5,4); HC(hx+hw/2,hy-8,8); break;
+    case 'sidebraid': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.55,4); for(let i=0;i<4;i++) HR(hx+hw-4+(i%2?1:-1),hy+hh*.5+i*14,13,15,5); break;
+    case 'twinbraids': HR(hx-3,hy-5,hw+6,hh*.28,5); for(let i=0;i<4;i++){ HR(hx-9+(i%2?1:-1),hy+hh*.5+i*14,13,15,5); HR(hx+hw-4+(i%2?1:-1),hy+hh*.5+i*14,13,15,5); } break;
+    case 'pixie': HR(hx-3,hy-5,hw+6,hh*.3,5); HR(hx-3,hy,8,hh*.35,3); HR(hx+hw-5,hy,8,hh*.35,3); break;
+    case 'sidetail': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.55,4); HC(hx+hw+2,hy+hh*.1,9); break;
+    case 'wavy': case 'ringlets': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.55,4); HR(hx+hw-6,hy,10,hh*.55,4); break;
     case 'bun': HR(hx-3,hy-5,hw+6,hh*.26,5); HC(hx+hw/2,hy-12,12); break;
     case 'curly': HR(hx-3,hy-5,hw+6,hh*.26,5); for(let i=0;i<5;i++) HC(hx+6+i*(hw-12)/4,hy-4,9); break;
     default: HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.55,4); HR(hx+hw-6,hy,10,hh*.55,4);
