@@ -284,6 +284,9 @@ async function imgData(f,w,h,q=.85){
 /* ---------- данные ---------- */
 /* ===== NPC: персонаж в игре. Данные лежат в part.npc: имя, реплики, внешность (look) ===== */
 const NPC_H=3.4, NPC_W=1.2, NPC_MAX=30;
+const NPC_SND=[['sndNear','Приветствие (игрок подошёл)'],['sndTalk','Начало разговора'],['sndLine','Каждая реплика (голос)'],['sndBye','Конец разговора']];
+const npcSnd=(n,k)=>{ const v=n&&n[k]; return typeof v==='string'&&/^(b:[\w\-]{1,30}|s:[\w\-]{1,40})$/.test(v)?v:'none'; };
+const sndOptsHTML=sel=>`<option value="none">Нет</option><optgroup label="Встроенные">${SFX_LIST.concat(MUS_LIST).map(([v,n])=>`<option value="${v}" ${sel===v?'selected':''}>${n}</option>`).join('')}</optgroup>${S.sounds.length?`<optgroup label="Мои звуки">${S.sounds.map(x=>`<option value="s:${x.id}" ${sel==='s:'+x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`:''}`;
 function npcDefault(){ return {name:'Житель',say:'Привет! Рад тебя видеть.\nЗаходи ещё!',turn:true,solid:true,look:{skin:'#f1c27d',shirt:'#ff8fb8',pants:'#2b2f3a',hat:'none',hatColor:'#ff5a4d',face:'smile',emblem:'none',head:'cube',build:'normal',hair:'short',hairColor:'#5a3a22',outfit:'none',outfitColor:'#e8433f'}}; }
 function npcLook(n){
   const l=(n&&n.look)||{}, o=Object.assign({},npcDefault().look);
@@ -847,37 +850,62 @@ function femGeo(bd,y0,y1,pad=0){
 const HAIRS=[['none','Без волос'],['short','Короткие'],['spiky','Ёжик'],['long','Длинные'],['ponytail','Хвост'],['twin','Хвостики'],['bob','Каре'],['bun','Пучок'],['afro','Афро'],['mohawk','Ирокез'],['braid','Коса'],['curly','Кудри'],['bangs','Чёлка и длинные'],['wavy','Волнистые'],['highponytail','Высокий хвост'],['sidebraid','Боковая коса'],['twinbraids','Две косы'],['twinbuns','Два пучка'],['lob','Удлинённое каре'],['pixie','Пикси'],['halfup','Полу-хвост'],['ringlets','Локоны'],['sidetail','Боковой хвост']];
 const HAIR_COLORS=['#1b1b1b','#2b2118','#5a3a22','#8a5a2b','#c9a26a','#e8d28a','#d9d9de','#b3262d','#e86aa5','#6a5acd','#35c0c0','#3fae5a','#f5e6b3','#ff8fb8','#8a2be2','#1f6fd6','#ff9a3d','#7a4a3a'];
 /* волосы строятся от размеров головы (hs), поэтому подходят к любой форме головы */
+/* текстура волос: тонкие пряди + затемнение у корней; цвет волос умножается на неё */
+let HAIRTEX=null;
+function hairTex(){
+  if(HAIRTEX) return HAIRTEX;
+  const t=canvasTex(128,128,(g,w,h)=>{
+    g.fillStyle='#ececec'; g.fillRect(0,0,w,h);
+    let seed=11; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+    for(let i=0;i<110;i++){
+      const x=rnd()*w, dark=rnd()<.5, wd=1+rnd()*3;
+      g.strokeStyle=dark?'rgba(0,0,0,'+(.07+rnd()*.15)+')':'rgba(255,255,255,'+(.3+rnd()*.5)+')'; g.lineWidth=wd;
+      g.beginPath(); g.moveTo(x,0); g.bezierCurveTo(x+rnd()*10-5,h*.33,x+rnd()*10-5,h*.66,x+rnd()*8-4,h); g.stroke();
+    }
+    const gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'rgba(0,0,0,.2)'); gr.addColorStop(.35,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.12)'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+  },true);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; return HAIRTEX=t;
+}
+/* Причёски собираются из округлых «прядей»: череп-купол, виски, затылок, чёлка и сужающиеся к концам пряди — как гладкие волосы в Роблоксе */
 function buildHair(id,cfg,hs,body){
-  const m=new THREE.MeshLambertMaterial({color:cfg.hairColor||'#2b2118'}), hc=2.2+hs.h/2, W=hs.w, H=hs.h, D=hs.d;
-  const V=1.12, VH=1.06;   /* объём: волосы шире и толще головы */
-  const hb=(w,h,d,x,y,z,rx=0,rz=0,k=.55)=>{ const b=new THREE.Mesh(softGeo(w*W*V,h*H*VH,d*D*V,k),m); b.position.set(x*W*V,hc+y*H,z*D*V); b.rotation.set(rx,0,rz); b.castShadow=true; body.add(b); return b; };
-  const ball=(r,x,y,z,sx=1,sy=1,sz=1)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(r*W*V,16,12),m); b.position.set(x*W*V,hc+y*H,z*D*V); b.scale.set(sx,sy,sz); b.castShadow=true; body.add(b); return b; };
-  const cap=()=>{ hb(1.08,.26,1.08,0,.45,0,0,0,.35); hb(1.0,.22,1.0,0,.57,0,0,0,.85); hb(1.08,.66,.18,0,.2,-.46,0,0,.3); hb(1.08,.12,.16,0,.37,.47,0,0,.45); for(const s of [-1,1]) hb(.12,.44,.64,s*.5,.25,-.1,0,0,.4); };
-  /* коса — цепочка перекрывающихся «звеньев», начинается внутри основной массы волос и не отрывается от неё */
-  const plait=(x,z,y0,n,r)=>{ for(let i=0;i<n;i++) ball(r*(1-i*.05),x+(i%2?.045:-.045),y0-i*.19,z,1,1.35,1); ball(r*.55,x,y0-n*.19,z,1,1.1,1); };
+  const m=new THREE.MeshPhongMaterial({color:cfg.hairColor||'#2b2118',map:hairTex(),specular:new THREE.Color(0x2c2c2c),shininess:26}), hc=2.2+hs.h/2, W=hs.w, H=hs.h, D=hs.d;
+  const hb=(w,h,d,x,y,z,rx=0,rz=0,k=.6,ry=0)=>{ const b=new THREE.Mesh(softGeo(w*W,h*H,d*D,k),m); b.position.set(x*W,hc+y*H,z*D); b.rotation.set(rx,ry,rz); b.castShadow=true; body.add(b); return b; };
+  const ball=(r,x,y,z,sx=1,sy=1,sz=1)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(r*W,18,14),m); b.position.set(x*W,hc+y*H,z*D); b.scale.set(sx,sy,sz); b.castShadow=true; body.add(b); return b; };
+  const scalp=()=>{ hb(1.2,.64,1.2,0,.27,0,0,0,.45); hb(1.0,.22,1.0,0,.6,0,0,0,.9); hb(1.2,.4,.3,0,.1,-.46,0,0,.55); };
+  const sides=(top,bot,off=.54)=>{ const cy=(top+bot)/2, h=top-bot; for(const q of [-1,1]) hb(.24,h,.84,q*off,cy,-.04,0,0,.7); };
+  const back=(top,bot,t=.4)=>{ hb(1.22,top-bot,t,0,(top+bot)/2,-.42,0,0,.6); };
+  /* прядь: цепочка сужающихся кусков вниз от точки (x,y,z) */
+  const strand=(x,y,z,w,len,d,n=3,wob=0)=>{ const sl=len/n; for(let i=0;i<n;i++){ const f=1-i*.2, o=Math.sin(i*1.7)*wob; hb(w*f,sl*1.3,d*f,x+o,y-(i+.5)*sl,z,0,o*.8,.92); } };
+  /* коса: цепочка перекрывающихся звеньев, начинается внутри основной массы волос */
+  const plait=(x,z,y0,n,r)=>{ for(let i=0;i<n;i++) ball(r*(1-i*.05),x+(i%2?.045:-.045),y0-i*.19,z,1,1.4,1); ball(r*.55,x,y0-n*.19,z,1,1.15,1); };
+  const fringe=kind=>{
+    if(kind==='full'){ for(let i=-2;i<=2;i++) hb(.3,.3,.16,i*.22,.43-Math.abs(i)*.015,.52,-.12,i*.03,.9); }
+    else if(kind==='side'){ hb(.62,.3,.16,-.1,.44,.52,-.15,.28,.9); hb(.5,.26,.16,.24,.46,.52,-.15,.12,.9); hb(.3,.3,.16,-.4,.38,.5,-.1,.4,.9); }
+    else if(kind==='part'){ for(const q of [-1,1]){ hb(.5,.34,.16,q*.27,.42,.52,-.12,-q*.3,.9); hb(.22,.46,.14,q*.46,.3,.5,-.05,-q*.1,.9); } }
+  };
   switch(id){
-    case 'short': cap(); break;
-    case 'spiky': cap(); for(const [x,z] of [[-.3,-.25],[0,-.25],[.3,-.25],[-.3,.1],[0,.1],[.3,.1],[0,.38]]) hb(.2,.32,.2,x,.64,z,z*.5,-x*.7); break;
-    case 'long': cap(); hb(1.1,1.5,.24,0,-.2,-.48,0,0,.45); for(const s of [-1,1]) hb(.14,1.2,.78,s*.52,-.1,-.05); break;
-    case 'ponytail': cap(); hb(.22,.22,.22,0,.32,-.5); hb(.3,1.2,.3,0,-.15,-.6,.06); break;
-    case 'twin': cap(); for(const s of [-1,1]){ hb(.3,1.1,.3,s*.58,-.1,-.2); hb(.22,.16,.22,s*.56,.42,-.2); } break;
-    case 'bob': cap(); hb(1.16,.85,.2,0,-.05,-.46); for(const s of [-1,1]) hb(.14,.85,.8,s*.55,-.05,-.02); break;
-    case 'bun': cap(); ball(.3,0,.72,-.05); break;
-    case 'afro': ball(.78,0,.3,-.26,1,1,.95); hb(1.0,.12,.1,0,.47,.5); break;
-    case 'mohawk': hb(.16,.34,1.0,0,.56,0); hb(.14,.5,.14,0,.2,-.5); break;
-    case 'braid': cap(); hb(1.1,.95,.22,0,-.05,-.48,0,0,.45); plait(0,-.55,-.2,7,.15); break;
-    case 'bangs': cap(); hb(1.1,.3,.14,0,.33,.5); hb(1.1,1.5,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.3,.75,s*.52,-.2,-.05); break;
-    case 'wavy': cap(); hb(1.16,1.4,.2,0,-.2,-.48); for(const s of [-1,1]){ for(let i=0;i<4;i++) hb(.2,.3,.8,s*(.54+(i%2?.05:-.03)),-.05-i*.3,-.05); ball(.16,s*.56,-1.25,-.05,1,.8,1); } break;
-    case 'highponytail': cap(); ball(.22,0,.6,-.4); hb(.32,1.3,.3,0,-.02,-.6,.2); break;
-    case 'sidebraid': cap(); hb(1.1,.95,.22,0,-.05,-.48,0,0,.45); for(const s of [-1,1]) hb(.14,.9,.8,s*.53,-.1,-.02); plait(.5,-.5,-.35,6,.14); break;
-    case 'twinbraids': cap(); hb(1.1,.9,.22,0,-.05,-.48,0,0,.45); for(const s of [-1,1]){ hb(.14,.9,.8,s*.53,-.1,-.02); plait(s*.42,-.5,-.35,6,.13); } break;
-    case 'twinbuns': cap(); for(const s of [-1,1]) ball(.28,s*.42,.68,-.02); break;
-    case 'lob': cap(); hb(1.12,.3,.14,0,.33,.5); hb(1.16,1.1,.2,0,-.25,-.47); for(const s of [-1,1]) hb(.14,1.0,.8,s*.55,-.2,-.02); break;
-    case 'pixie': cap(); hb(1.08,.5,.16,0,.1,-.47); for(const s of [-1,1]) hb(.12,.5,.6,s*.52,.05,-.05); hb(.55,.26,.14,.25,.36,.5,0,-.3); break;
-    case 'halfup': cap(); hb(1.1,1.4,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.2,.75,s*.52,-.1,-.05); ball(.22,0,.64,-.1); break;
-    case 'ringlets': cap(); hb(1.1,1.0,.18,0,-.1,-.47); for(const s of [-1,1]) for(let i=0;i<4;i++) ball(.17,s*.56,.05-i*.3,.02+(i%2?.06:0)); for(let i=0;i<5;i++) ball(.16,-.4+i*.2,-.7,-.5); break;
-    case 'sidetail': cap(); hb(.22,.22,.22,.5,.3,-.1); hb(.3,1.1,.3,.58,-.25,-.1,0,-.1); break;
-    case 'curly': cap(); for(const [x,y,z] of [[-.45,.35,0],[.45,.35,0],[-.3,.5,-.3],[.3,.5,-.3],[0,.55,-.1],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.55]]) ball(.2,x,y,z); break;
+    case 'short': scalp(); sides(.42,-.02); fringe('side'); hb(.5,.2,.5,.12,.68,.08,0,.2,.9); break;
+    case 'spiky': scalp(); sides(.42,.05); for(const [x,z] of [[-.34,-.28],[0,-.3],[.34,-.28],[-.34,.05],[0,.05],[.34,.05],[0,.34]]) hb(.26,.46,.26,x,.74,z,z*.7,-x*.9,.85); for(const x of [-.3,0,.3]) hb(.22,.3,.16,x,.46,.52,-.5,x*.5,.85); break;
+    case 'long': scalp(); sides(.42,-.78); back(.35,-1.2,.42); for(const x of [-.38,-.13,.13,.38]) strand(x,-.7,-.42,.3,.55,.3,3,.015); fringe('part'); break;
+    case 'ponytail': scalp(); sides(.42,0); fringe('side'); ball(.17,0,.28,-.56); strand(0,.2,-.66,.38,1.35,.36,4,.02); break;
+    case 'twin': scalp(); sides(.42,0); fringe('full'); for(const q of [-1,1]){ ball(.15,q*.6,.2,-.12); strand(q*.68,.14,-.14,.34,1.2,.32,4,.02); } break;
+    case 'bob': scalp(); back(.3,-.55,.42); sides(.42,-.5,.55); for(const q of [-1,1]) hb(.3,.2,.44,q*.52,-.55,.02,0,q*.1,.9); hb(1.1,.2,.3,0,-.58,-.4,0,0,.9); fringe('full'); break;
+    case 'bun': scalp(); sides(.42,.02); fringe('side'); ball(.3,0,.78,-.1); ball(.2,0,.66,-.1); break;
+    case 'afro': ball(.78,0,.28,-.08,1,1.02,.96); ball(.4,-.52,0,-.18); ball(.4,.52,0,-.18); ball(.42,0,-.1,-.5); hb(1.0,.14,.1,0,.48,.52,0,0,.8); break;
+    case 'mohawk': hb(.22,.5,1.05,0,.58,0,0,0,.85); hb(.2,.6,.22,0,.12,-.5,0,0,.85); hb(.2,.3,.2,0,.5,.45,-.3,0,.85); break;
+    case 'braid': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('part'); plait(0,-.55,-.28,7,.15); break;
+    case 'curly': scalp(); sides(.42,-.1); for(const [x,y,z] of [[-.45,.4,.05],[.45,.4,.05],[-.3,.62,-.28],[.3,.62,-.28],[0,.68,-.05],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.58],[-.3,-.12,-.5],[.3,-.12,-.5],[-.55,-.14,-.05],[.55,-.14,-.05],[0,.62,.28]]) ball(.2,x,y,z); break;
+    case 'bangs': scalp(); sides(.42,-.82); back(.35,-1.0,.42); fringe('full'); for(const x of [-.36,-.12,.12,.36]) strand(x,-.65,-.42,.3,.5,.3,3); break;
+    case 'wavy': scalp(); sides(.42,-.2); back(.35,-.9,.42); for(const q of [-1,1]) for(let i=0;i<4;i++) ball(.2,q*(.55+(i%2?.04:-.03)),-.15-i*.22,-.04,1,1.15,1.1); for(const x of [-.35,0,.35]) for(let i=0;i<3;i++) ball(.22,x+(i%2?.05:-.05),-.55-i*.18,-.45); fringe('part'); break;
+    case 'highponytail': scalp(); sides(.42,.02); fringe('part'); ball(.2,0,.62,-.4); strand(0,.42,-.62,.38,1.45,.36,4,.02); break;
+    case 'sidebraid': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('side'); plait(.5,-.5,-.3,6,.14); break;
+    case 'twinbraids': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('part'); for(const q of [-1,1]) plait(q*.42,-.5,-.3,6,.13); break;
+    case 'twinbuns': scalp(); sides(.42,0); fringe('full'); for(const q of [-1,1]){ ball(.28,q*.46,.7,-.04); ball(.16,q*.46,.55,-.04); } break;
+    case 'lob': scalp(); back(.3,-.7,.42); sides(.42,-.62,.55); for(const q of [-1,1]) hb(.3,.22,.5,q*.54,-.66,0,0,q*.1,.9); hb(1.1,.22,.3,0,-.72,-.4,0,0,.9); fringe('part'); break;
+    case 'pixie': hb(1.16,.58,1.16,0,.26,0,0,0,.5); hb(.96,.2,.96,0,.56,0,0,0,.9); hb(1.14,.36,.28,0,.08,-.46,0,0,.6); sides(.34,.08); fringe('side'); break;
+    case 'halfup': scalp(); sides(.42,-.92); back(.35,-1.05,.42); fringe('part'); ball(.22,0,.7,-.12); ball(.14,0,.55,-.12); break;
+    case 'ringlets': scalp(); back(.35,-.3,.4); sides(.42,-.05); for(const q of [-1,1]) for(let i=0;i<5;i++) ball(.17-i*.008,q*(.57+(i%2?.04:-.02)),-.12-i*.22,i%2?.05:0); for(let i=0;i<5;i++) for(const x of [-.3,0,.3]) ball(.15,x+(i%2?.06:-.06),-.3-i*.2,-.5); fringe('part'); break;
+    case 'sidetail': scalp(); sides(.42,0); fringe('side'); ball(.15,.58,.28,-.1); strand(.64,.2,-.1,.36,1.2,.34,4,.02); break;
   }
 }
 const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье']];
@@ -1567,16 +1595,17 @@ const Play={
     go('play');
   },
   /* --- диалоги с NPC --- */
-  talkStart(n){ if(this.talk||this.state!=='play') return; this.talk={n,i:0}; this.keys={}; this.joy={x:0,y:0}; if(this.py&&n.p.name&&this.py.ev.touch.length<20) this.py.ev.touch.push(n.p.id); this.talkShow(); },
+  npcPlay(n,k){ const v=npcSnd(n.p.npc,k); if(v!=='none') Snd.play(v); },
+  talkStart(n){ if(this.talk||this.state!=='play') return; this.talk={n,i:0}; this.npcPlay(n,'sndTalk'); this.keys={}; this.joy={x:0,y:0}; if(this.py&&n.p.name&&this.py.ev.touch.length<20) this.py.ev.touch.push(n.p.id); this.talkShow(); },
   talkShow(){
     const t=this.talk, b=$('#npcB'); if(!t||!b) return; const L=t.n.lines.length?t.n.lines:['…'], last=t.i>=L.length-1;
-    b.hidden=false; b.innerHTML='<b>'+esc(t.n.name||'Персонаж')+'</b><p>'+esc(L[t.i])+'</p><span class="nx">'+(last?'Закрыть ✕':'Далее ▶')+' · F</span>'; const e=$('#npcP'); if(e) e.hidden=true;
+    this.npcPlay(t.n,'sndLine'); b.hidden=false; b.innerHTML='<b>'+esc(t.n.name||'Персонаж')+'</b><p>'+esc(L[t.i])+'</p><span class="nx">'+(last?'Закрыть ✕':'Далее ▶')+' · F</span>'; const e=$('#npcP'); if(e) e.hidden=true;
   },
   talkNext(){ const t=this.talk; if(!t) return; const L=t.n.lines.length?t.n.lines:['…']; if(t.i>=L.length-1) this.talkEnd(); else { t.i++; this.talkShow(); } },
-  talkEnd(){ this.talk=null; this.near=null; const b=$('#npcB'); if(b) b.hidden=true; },
+  talkEnd(quiet){ if(this.talk&&!quiet) this.npcPlay(this.talk.n,'sndBye'); this.talk=null; this.near=null; const b=$('#npcB'); if(b) b.hidden=true; },
   npcTick(dt,active){
     const pl=this.pl; let best=null, bd=1e9;
-    if(this.talk&&(!active||Math.hypot(pl.x-this.talk.n.o.x,pl.z-this.talk.n.o.z)>9)) this.talkEnd();
+    if(this.talk&&(!active||Math.hypot(pl.x-this.talk.n.o.x,pl.z-this.talk.n.o.z)>9)) this.talkEnd(true);
     for(const n of this.npcs){
       const m=n.o, p=n.p, hs=Math.hypot(m.dx,m.dz)/Math.max(dt,1e-3), dx=pl.x-m.x, dz=pl.z-m.z, d=Math.hypot(dx,dz);
       let want=0;
@@ -1584,6 +1613,7 @@ const Play={
       else if((this.talk&&this.talk.n===n)||(d<9&&p.npc&&p.npc.turn!==false)) want=Math.atan2(dx,dz)-p.ry*DEG;
       let df=want-n.face; df=Math.atan2(Math.sin(df),Math.cos(df)); n.face+=df*Math.min(1,dt*8);
       n.av.body.rotation.y=n.face; animAvatar(n.av,this.clock+n.ph,hs>.5?Math.min(hs,8):0,false,0);
+      if(active){ if(d<5&&!n.gr){ n.gr=true; this.npcPlay(n,'sndNear'); } else if(d>9) n.gr=false; }
       if(active&&!this.talk&&d<3.4&&Math.abs(pl.y-(m.y-m.hy))<3.5&&d<bd){ best=n; bd=d; }
     }
     if(best!==this.near){ this.near=best; const e=$('#npcP'); if(e){ if(best){ e.hidden=false; e.textContent='💬 F — поговорить'+(best.name?' с «'+best.name+'»':''); } else e.hidden=true; } }
@@ -2150,6 +2180,7 @@ const Ed={
       <label class="row" style="justify-content:flex-start"><input type="checkbox" data-nf="solid" ${n.solid!==false?'checked':''} style="flex:none"><span style="flex:none">Твёрдый (нельзя пройти насквозь)</span></label>
       <p class="muted" style="margin:.5em 0 0;font-size:.85em">В игре: подойти и нажать F (или кнопку на экране). Чтобы NPC ходил, задайте «Движение» ниже.</p>
       <div class="chips" style="margin-top:.6em"><button class="chip" id="npcMine">👤 Мой аватар</button><button class="chip" id="npcRnd">🎲 Случайный</button></div></div>
+    <div class="sec"><span class="lbl">Звуки NPC</span>${NPC_SND.map(([k,t])=>`<div class="srow" style="flex-wrap:wrap"><span class="n" style="flex-basis:100%">${t}</span><select data-ns="${k}" style="flex:1;min-width:0">${sndOptsHTML(npcSnd(n,k))}</select><button class="btn sm" data-nsp="${k}" title="Прослушать">▶</button></div>`).join('')}<p class="muted" style="margin:.4em 0 0;font-size:.85em">Свои звуки загружаются во вкладке «Звуки».</p></div>
     <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
     <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}${col('shirt')}<span class="lbl" style="margin-top:.7em;display:block">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
     <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}${col('pants')}</div>
@@ -2166,6 +2197,8 @@ const Ed={
     $$('[data-nf]',el).forEach(i=>{ i.addEventListener('focus',()=>this.pushUndo()); i.addEventListener('input',()=>{ const k=i.dataset.nf; p.npc[k]=i.type==='checkbox'?i.checked:i.value; this.dirty=true; if(k==='name') this.world.update(p); }); });
     $$('[data-nk]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[b.dataset.nk]=b.dataset.nv; upd(); });
     $$('[data-nc]',el).forEach(i=>i.addEventListener('change',()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[i.dataset.nc]=i.value; upd(); }));
+    $$('[data-ns]',el).forEach(i=>i.onchange=()=>{ this.pushUndo(); p.npc[i.dataset.ns]=i.value; this.dirty=true; });
+    $$('[data-nsp]',el).forEach(b=>b.onclick=()=>{ const v=$(`[data-ns="${b.dataset.nsp}"]`,el).value; Snd.init(); if(v&&v!=='none') Snd.play(v); });
     $('#npcMine').onclick=()=>{ this.pushUndo(); p.npc.look=npcLook({look:S.avatar}); upd(); toast('Внешность скопирована с вашего аватара'); };
     $('#npcRnd').onclick=()=>{ this.pushUndo(); const r=a=>a[Math.floor(Math.random()*a.length)]; p.npc.look=npcLook({look:{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0],outfit:Math.random()<.4?r(OUTFITS)[0]:'none',outfitColor:r(CLOTHES)}}); upd(); };
   },
@@ -2436,7 +2469,8 @@ const Net={
   },
   async publish(game,desc){
     const me=Acc.cur, g=clone(game); delete g.builtin; delete g._snd; const snd=[];
-    for(const v of Object.values(g.sounds||{})){ if(typeof v!=='string'||!v.startsWith('s:')) continue; const id=v.slice(2); if(snd.find(q=>q.id===id)) continue;
+    const npcS=[]; for(const q of (g.parts||[])) if(q&&q.npc) for(const [k] of NPC_SND){ const v=npcSnd(q.npc,k); if(v!=='none') npcS.push(v); }
+    for(const v of Object.values(g.sounds||{}).concat(npcS)){ if(typeof v!=='string'||!v.startsWith('s:')) continue; const id=v.slice(2); if(snd.find(q=>q.id===id)) continue;
       const x=S.sounds.find(q=>q.id===id); if(!x) continue;
       if(!x.remote){ const dd=await sndData(x); if(!dd) continue; const sr=await SndSync.send(x.id,x.name,dd); if(!sr.ok) return 'Звук «'+x.name+'» не загрузился на сервер: '+(sr.error||'ошибка сети'); x.remote=true; const ok=SndSync.okGet(); ok.add(x.id); SndSync.okSet(ok); }
       snd.push({id,name:x.name}); }
