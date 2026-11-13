@@ -120,6 +120,10 @@ input[type=checkbox]{accent-color:#fff;width:1.1em;height:1.1em}
 .hud>*{pointer-events:auto}
 .pill{background:rgba(10,10,12,.6);border:1px solid var(--line);border-radius:99em;padding:.4em .95em;backdrop-filter:blur(6px);font-variant-numeric:tabular-nums;font-weight:500;pointer-events:none}
 .pill b{font-family:var(--display)}
+.npcp{position:absolute;left:50%;bottom:6.5em;transform:translateX(-50%);background:rgba(10,10,14,.78);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:2em;padding:.55em 1.1em;font:inherit;cursor:pointer;pointer-events:auto!important;z-index:3}
+.npcb{position:absolute;left:50%;bottom:2.2em;transform:translateX(-50%);width:min(92%,38em);background:rgba(10,10,14,.88);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:1em;padding:.8em 1.1em;pointer-events:auto!important;cursor:pointer;z-index:4;text-align:left}
+.npcb b{display:block;color:#ffd23d;margin-bottom:.25em}.npcb p{margin:0 0 .5em;line-height:1.4;font-size:1.05em;word-break:break-word}.npcb .nx{display:block;text-align:right;font-size:.8em;color:rgba(255,255,255,.6)}
+.npcp[hidden],.npcb[hidden]{display:none}
 .hintp{position:absolute;left:0;right:0;bottom:1em;text-align:center;color:rgba(255,255,255,.6);font-size:.85em;pointer-events:none!important;text-shadow:0 1px 3px #000}
 .ov{position:absolute;inset:0;background:rgba(5,5,8,.62);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .ov.on{display:flex}
@@ -278,6 +282,18 @@ async function imgData(f,w,h,q=.85){
 }
 
 /* ---------- данные ---------- */
+/* ===== NPC: персонаж в игре. Данные лежат в part.npc: имя, реплики, внешность (look) ===== */
+const NPC_H=3.4, NPC_W=1.2, NPC_MAX=30;
+function npcDefault(){ return {name:'Житель',say:'Привет! Рад тебя видеть.\nЗаходи ещё!',turn:true,solid:true,look:{skin:'#f1c27d',shirt:'#ff8fb8',pants:'#2b2f3a',hat:'none',hatColor:'#ff5a4d',face:'smile',emblem:'none',head:'cube',build:'normal',hair:'short',hairColor:'#5a3a22',outfit:'none',outfitColor:'#e8433f'}}; }
+function npcLook(n){
+  const l=(n&&n.look)||{}, o=Object.assign({},npcDefault().look);
+  for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['hat','face','head','build','hair','outfit','emblem']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['shirtTex','pantsTex']) if(typeof l[k]==='string'&&/^p:[a-z]{1,12}$/.test(l[k])) o[k]=l[k];
+  return o;
+}
+const npcText=n=>String(n&&n.say!=null?n.say:'').replace(/[\u0000-\u0009\u000b-\u001f]/g,'').slice(0,600).split('\n').map(t=>t.trim().slice(0,200)).filter(Boolean).slice(0,12);
+const npcName=n=>String(n&&n.name!=null?n.name:'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24);
 const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
@@ -460,7 +476,7 @@ const Cloud={db:null,uid:null,ok:false,ro:false,txt:'',docs:new Map(),sent:{},ac
   }
 };
 
-const TYPES={solid:'Блок',kill:'Лава',bounce:'Батут',checkpoint:'Чекпоинт',spawn:'Старт',goal:'Финиш',coin:'Монета',decor:'Декор (без коллизии)'};
+const TYPES={solid:'Блок',kill:'Лава',bounce:'Батут',checkpoint:'Чекпоинт',spawn:'Старт',goal:'Финиш',coin:'Монета',decor:'Декор (без коллизии)',npc:'NPC (персонаж)'};
 const SOLID_T=new Set(['solid','spawn','checkpoint','bounce']);
 const KINDS=[
   {n:'Блок',shape:'box',type:'solid',c:'#9aa0aa',s:[4,1,4]},
@@ -479,6 +495,7 @@ const KINDS=[
   {n:'Монета',shape:'cyl',type:'coin',c:'#ffcc33',s:[1.2,1.2,1.2]},
   {n:'Декор',shape:'box',type:'decor',c:'#79c267',s:[2,2,2]},
   {n:'Картинка',shape:'box',type:'decor',c:'#eeeeee',s:[4,3,.2],face:'z'},
+  {n:'NPC',shape:'box',type:'npc',c:'#59a8ff',s:[1.2,3.4,1.2]},
 ];
 const mk=(shape,type,x,y,z,sx,sy,sz,color,ry=0,mv=null)=>({id:uid(),shape,type,x,y,z,sx,sy,sz,ry,color,mv:mv||{axis:'',dist:4,speed:1}});
 
@@ -749,20 +766,26 @@ function makeWorld(game,editor){
       return A;
     },
     add(p){
-      const grp=new THREE.Group(); grp.userData.pid=p.id; let mesh;
+      const grp=new THREE.Group(); grp.userData.pid=p.id; let mesh, av=null;
       if(p.type==='coin'){ mesh=new THREE.Mesh(GCOIN,W.matsFor(p)[0]); }
+      else if(p.type==='npc'){
+        /* невидимая «коробка» для выбора и столкновений + настоящая модель аватара с ником */
+        mesh=new THREE.Mesh(GBOX,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+        av=buildAvatar(npcLook(p.npc)); const nm=npcName(p.npc); if(nm){ av.tag=nameSprite(nm); av.group.add(av.tag); } grp.add(av.group);
+      }
       else{
         const sg=SHAPE_GEO[p.shape]||SHAPE_GEO.box, ms=W.matsFor(p); mesh=new THREE.Mesh(sg[0],(!SHAPE_GEO[p.shape]||p.shape==='box'||p.shape==='cyl')?ms:ms[0]);
         const e=new THREE.LineSegments(sg[1],EDGE_MAT); mesh.add(e);
       }
-      mesh.castShadow=p.type!=='kill'||true; mesh.receiveShadow=true; mesh.userData.pid=p.id; grp.add(mesh); root.add(grp);
+      mesh.castShadow=p.type!=='kill'||true; mesh.receiveShadow=true; if(p.type==='npc'){ mesh.castShadow=false; mesh.receiveShadow=false; } mesh.userData.pid=p.id; grp.add(mesh); root.add(grp);
       if(p.type==='decor'&&!editor){ /* без изменений */ }
-      items.set(p.id,{grp,mesh,p}); W.xform(p); return grp;
+      items.set(p.id,{grp,mesh,p,av}); W.xform(p); return grp;
     },
     xform(p){
       const it=items.get(p.id); if(!it) return;
       it.grp.position.set(p.x,p.y,p.z); it.grp.rotation.y=p.type==='coin'?it.grp.rotation.y:p.ry*DEG;
       if(p.type==='coin') it.mesh.scale.set(p.sx,p.sx,p.sx); else it.mesh.scale.set(p.sx,p.sy,p.sz);
+      if(p.type==='npc'&&it.av){ const k=Math.max(.3,p.sy/NPC_H); it.av.group.scale.setScalar(k); it.av.group.position.y=-p.sy/2; }
       if(p.tex) W.texRep(p,it.mesh);
     },
     update(p){ W.remove(p.id); W.add(p); },
@@ -1513,11 +1536,12 @@ const Play={
   start(game,ret){
     if(!Acc.cur){ Auth.show(); return; } this.game=game; this.ret=ret; Snd.init(); if(game._snd) for(const x of game._snd) if(!S.sounds.find(q=>q.id===x.id)) S.sounds.push({id:x.id,name:x.name,data:x.data,tmp:true}); this.on=true; this.paused=false; this.state='play';
     const w=this.world=makeWorld(game,false), set=game.settings;
-    this.pop=null; this.debris=[]; this.rt=[]; this.cols=[]; this.trig=[]; this.mov=[]; this.omap=new Map(); this.named=[]; this.pyS=this.pyJ=this.pyG=1; this.coins=0; this.coinsTotal=0; this.deaths=0; this.t=0; this.clock=0;
+    this.pop=null; this.npcs=[]; this.talk=null; this.near=null; this.debris=[]; this.rt=[]; this.cols=[]; this.trig=[]; this.mov=[]; this.omap=new Map(); this.named=[]; this.pyS=this.pyJ=this.pyG=1; this.coins=0; this.coinsTotal=0; this.deaths=0; this.t=0; this.clock=0;
     for(const p of game.parts){
       const it=w.items.get(p.id), o={p,grp:it.grp,x:p.x,y:p.y,z:p.z,bx:p.x,by:p.y,bz:p.z,dx:0,dy:0,dz:0,hx:p.sx/2,hy:p.sy/2,hz:p.sz/2,cs:Math.cos(p.ry*DEG),sn:Math.sin(p.ry*DEG),cyl:ROUND.has(p.shape),shape:p.shape,got:false};
       this.omap.set(p.id,o); if(p.name) this.named.push(o);
       if(SOLID_T.has(p.type)) this.cols.push(o);
+      if(p.type==='npc'){ this.npcs.push({o,p,av:it.av,face:0,ph:Math.random()*6,lines:npcText(p.npc),name:npcName(p.npc)}); if(!p.npc||p.npc.solid!==false) this.cols.push(o); }
       if(p.type==='kill'||p.type==='goal'||p.type==='checkpoint') this.trig.push(o);
       if(p.type==='coin'){ this.trig.push(o); this.coinsTotal++; o.coin=true; }
       if(p.mv&&p.mv.axis&&p.mv.dist>0) this.mov.push(o);
@@ -1531,15 +1555,38 @@ const Play={
     $('#play').innerHTML=`<div class="hud"><div class="pill"><b>${esc(game.name)}</b></div><div class="sp"></div>
       <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill">Падения <b id="hd">0</b></div><div class="pill" id="pyStat" hidden></div>
       <button class="btn sm fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
-      <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · Enter — чат · Esc — пауза</div>
+      <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · F — поговорить с NPC · Enter — чат · Esc — пауза</div>
       <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
       <div class="guil" id="pGui"></div><div class="phud" id="pHud"></div><div class="pban" id="pBan"></div>
       <div class="chat" id="chat"><div class="clog" id="clog"></div><div class="cin"><input id="cIn" maxlength="140" autocomplete="off" placeholder="Сообщение… Enter — отправить, Esc — закрыть"></div></div>
+      <button class="npcp" id="npcP" hidden></button><div class="npcb" id="npcB" hidden></div>
       <div class="ov" id="pOv"></div>`;
-    $('#pPause').onclick=()=>this.pause(true); this.guiMount(); this.initChat(); this.pyStart();
+    $('#pPause').onclick=()=>this.pause(true); $('#npcP').onclick=()=>{ if(this.near&&!this.talk) this.talkStart(this.near); }; $('#npcB').onclick=()=>this.talkNext(); this.guiMount(); this.initChat(); this.pyStart();
     this.joy={x:0,y:0}; this.bindTouch();
     Snd.startMusic(game.sounds.music);
     go('play');
+  },
+  /* --- диалоги с NPC --- */
+  talkStart(n){ if(this.talk||this.state!=='play') return; this.talk={n,i:0}; this.keys={}; this.joy={x:0,y:0}; if(this.py&&n.p.name&&this.py.ev.touch.length<20) this.py.ev.touch.push(n.p.id); this.talkShow(); },
+  talkShow(){
+    const t=this.talk, b=$('#npcB'); if(!t||!b) return; const L=t.n.lines.length?t.n.lines:['…'], last=t.i>=L.length-1;
+    b.hidden=false; b.innerHTML='<b>'+esc(t.n.name||'Персонаж')+'</b><p>'+esc(L[t.i])+'</p><span class="nx">'+(last?'Закрыть ✕':'Далее ▶')+' · F</span>'; const e=$('#npcP'); if(e) e.hidden=true;
+  },
+  talkNext(){ const t=this.talk; if(!t) return; const L=t.n.lines.length?t.n.lines:['…']; if(t.i>=L.length-1) this.talkEnd(); else { t.i++; this.talkShow(); } },
+  talkEnd(){ this.talk=null; this.near=null; const b=$('#npcB'); if(b) b.hidden=true; },
+  npcTick(dt,active){
+    const pl=this.pl; let best=null, bd=1e9;
+    if(this.talk&&(!active||Math.hypot(pl.x-this.talk.n.o.x,pl.z-this.talk.n.o.z)>9)) this.talkEnd();
+    for(const n of this.npcs){
+      const m=n.o, p=n.p, hs=Math.hypot(m.dx,m.dz)/Math.max(dt,1e-3), dx=pl.x-m.x, dz=pl.z-m.z, d=Math.hypot(dx,dz);
+      let want=0;
+      if(hs>.5) want=Math.atan2(m.dx,m.dz)-p.ry*DEG;
+      else if((this.talk&&this.talk.n===n)||(d<9&&p.npc&&p.npc.turn!==false)) want=Math.atan2(dx,dz)-p.ry*DEG;
+      let df=want-n.face; df=Math.atan2(Math.sin(df),Math.cos(df)); n.face+=df*Math.min(1,dt*8);
+      n.av.body.rotation.y=n.face; animAvatar(n.av,this.clock+n.ph,hs>.5?Math.min(hs,8):0,false,0);
+      if(active&&!this.talk&&d<3.4&&Math.abs(pl.y-(m.y-m.hy))<3.5&&d<bd){ best=n; bd=d; }
+    }
+    if(best!==this.near){ this.near=best; const e=$('#npcP'); if(e){ if(best){ e.hidden=false; e.textContent='💬 F — поговорить'+(best.name?' с «'+best.name+'»':''); } else e.hidden=true; } }
   },
   initChat(){
     const room=this.game.id, ch=$('#chat'), inp=$('#cIn'), log=$('#clog'); this.cseen=new Set(); this.clast=0;
@@ -1701,8 +1748,10 @@ const Play={
   teardown(){ this.pyKill(); if(this.chatOff){ this.chatOff(); this.chatOff=null; } clearInterval(this.ctimer); if(S.sounds.some(x=>x.tmp)){ for(const x of S.sounds) if(x.tmp) delete Snd.cache[x.id]; S.sounds=S.sounds.filter(x=>!x.tmp); } Snd.stopMusic(); this.on=false; this.joy={x:0,y:0}; if(this.world){ this.world.dispose(); this.world=null; } this.keys={}; $('#play').innerHTML=''; this.cpPos=null; },
   stop(){ const r=this.ret; this.teardown(); if(r==='editor') Ed.resume(); else go('home'); },
   key(e,down){
+    if(this.talk&&down&&!e.repeat&&(e.code==='KeyF'||e.code==='Space'||e.code==='Enter')){ e.preventDefault(); this.talkNext(); return; }
+    if(down&&!e.repeat&&e.code==='KeyF'&&this.near&&!this.talk&&this.state==='play'&&!this.paused){ e.preventDefault(); this.talkStart(this.near); return; }
     if(e.code==='Enter'){ if(down&&!e.repeat&&this.state==='play'&&!this.paused){ e.preventDefault(); this.chatFocus(); } return; }
-    if(e.code==='Escape'&&down&&!e.repeat){ if(this.state==='play') this.pause(!this.paused); return; }
+    if(e.code==='Escape'&&down&&!e.repeat){ if(this.talk){ this.talkEnd(); return; } if(this.state==='play') this.pause(!this.paused); return; }
     this.keys[e.code]=down; if(down&&e.code==='Space'){ this.pl.jb=.12; }
     if(down&&!e.repeat&&this.py&&this.py.ev.keys.length<20) this.py.ev.keys.push(e.code);
     if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
@@ -1760,14 +1809,15 @@ const Play={
         m.dx=nx-m.x; m.dy=ny-m.y; m.dz=nz-m.z; m.x=nx; m.y=ny; m.z=nz; m.grp.position.set(nx,ny,nz);
         if(pl.gp===m){ pl.x+=m.dx; pl.y+=m.dy; pl.z+=m.dz; } }
       for(const [id,it] of w.items) if(it.p.type==='coin'&&it.grp.visible) it.grp.rotation.y+=dt*2.6;
-      const active=this.state==='play';
+      const active=this.state==='play', ctl=active&&!this.talk;
+      if(this.npcs.length) this.npcTick(dt,active);
       if(k.KeyQ) o.yaw+=dt*1.8; if(k.KeyE) o.yaw-=dt*1.8;
-      const ix=active?clamp((k.KeyD||k.ArrowRight?1:0)-(k.KeyA||k.ArrowLeft?1:0)+this.joy.x,-1,1):0, iz=active?clamp((k.KeyW||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0)+this.joy.y,-1,1):0;
+      const ix=ctl?clamp((k.KeyD||k.ArrowRight?1:0)-(k.KeyA||k.ArrowLeft?1:0)+this.joy.x,-1,1):0, iz=ctl?clamp((k.KeyW||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0)+this.joy.y,-1,1):0;
       const cs=Math.cos(o.yaw), sn=Math.sin(o.yaw); let mx=cs*ix-sn*iz, mz=-sn*ix-cs*iz; const ml=Math.hypot(mx,mz); if(ml>1){mx/=ml;mz/=ml;}
       const sp=PH.SPEED*set.speed*(this.pyS||1), a=1-Math.exp(-(pl.grounded?22:7)*dt);
       pl.vx+=(mx*sp-pl.vx)*a; pl.vz+=(mz*sp-pl.vz)*a;
       pl.jb-=dt; pl.bcd-=dt; if(pl.grounded) pl.coy=.1; else pl.coy-=dt;
-      if(active&&(k.Space||pl.jb>0)&&pl.coy>0){ pl.vy=PH.JUMP*set.jump*(this.pyJ||1); pl.coy=0; pl.jb=0; pl.grounded=false; pl.gp=null; Snd.play(this.game.sounds.jump); }
+      if(ctl&&(k.Space||pl.jb>0)&&pl.coy>0){ pl.vy=PH.JUMP*set.jump*(this.pyJ||1); pl.coy=0; pl.jb=0; pl.grounded=false; pl.gp=null; Snd.play(this.game.sounds.jump); }
       const n=Math.max(1,Math.ceil(dt/(1/90))), h=dt/n, G=this.state==='dying'?0:PH.G*set.gravity*(this.pyG||1); pl.bounce=false;
       for(let i=0;i<n;i++){
         pl.vy=Math.max(-90,pl.vy-G*h); pl.x+=pl.vx*h; pl.y+=pl.vy*h; pl.z+=pl.vz*h; pl.grounded=false; pl.gp=null;
@@ -1920,8 +1970,10 @@ const Ed={
   snap(v){ return this.snapV?Math.round(v/this.snapV)*this.snapV:v; },
   addKind(k){
     this.pushUndo(); const t=this.orb.t, s=k.s;
+    if(k.type==='npc'&&this.game.parts.filter(q=>q.type==='npc').length>=NPC_MAX){ toast('Не больше '+NPC_MAX+' NPC в игре'); return; }
     const p=mk(k.shape,k.type,this.snap(t.x),s[1]/2,this.snap(t.z),s[0],s[1],s[2],k.c);
     if(k.face) p.imgFace=k.face;
+    if(k.type==='npc') p.npc=npcDefault();
     this.game.parts.push(p); this.world.add(p); this.select(p.id); Snd.play('b:click');
   },
   select(id){ this.sel=id; if(this.tab!=='props'&&id) this.tab='props'; this.renderBody(); },
@@ -2042,12 +2094,13 @@ const Ed={
     <div class="sec"><div class="row field"><div><span class="lbl">Тип</span><select data-k="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
       <div><span class="lbl">Форма</span><select data-k="shape">${SHAPES.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></div></div>
       <span class="lbl">Цвет</span><input type="color" data-k="color"><div class="swr">${CLOTHES.concat(['#9aa0aa','#79c267','#ff4d3d','#8b5a2b']).map(c=>`<button class="sw" style="background:${c}" data-c="${c}" aria-label="${c}"></button>`).join('')}</div></div>
-    ${p.type==='coin'?'':`<div class="sec"><span class="lbl">Текстура блока</span><div class="sws imgs"><button class="sw ${!p.tex?'on':''}" data-bt="" title="Без текстуры" style="background:#222;color:#aaa">✕</button>${BTEXS.map(([id,n])=>`<button class="sw ${p.tex===id?'on':''}" data-bt="${id}" title="${n}" style="background:url(${btexThumb(id)}) center/cover"></button>`).join('')}</div><p class="muted" style="margin:.4em 0 0;font-size:.8em">Цвет блока слегка подкрашивает текстуру.</p></div>
+    ${p.type==='coin'||p.type==='npc'?'':`<div class="sec"><span class="lbl">Текстура блока</span><div class="sws imgs"><button class="sw ${!p.tex?'on':''}" data-bt="" title="Без текстуры" style="background:#222;color:#aaa">✕</button>${BTEXS.map(([id,n])=>`<button class="sw ${p.tex===id?'on':''}" data-bt="${id}" title="${n}" style="background:url(${btexThumb(id)}) center/cover"></button>`).join('')}</div><p class="muted" style="margin:.4em 0 0;font-size:.8em">Цвет блока слегка подкрашивает текстуру.</p></div>
     <div class="sec">${this.imgPickHTML(p.img||'')}<label style="display:block;margin-top:.6em"><span class="lbl">Где показывать</span><select data-k="imgFace"><option value="all">На всех гранях</option><option value="z">Спереди и сзади</option><option value="top">Сверху</option></select></label></div>`}
+    ${p.type==='npc'?this.npcHTML(p):''}
     <div class="sec"><span class="lbl">Имя для скрипта Python</span><input type="text" data-k="name" maxlength="24" placeholder="например: door"></div>
     <div class="sec"><span class="lbl">Позиция</span><div class="g3">${num('x','X')}${num('y','Y')}${num('z','Z')}</div>
       <div class="chips" style="margin-top:.5em"><button class="chip" data-yy="up">▲ Выше</button><button class="chip" data-yy="dn">▼ Ниже</button><button class="chip" data-yy="gr">⤓ На землю</button></div>
-      <span class="lbl" style="margin-top:.8em">Размер</span><div class="g3">${num('sx','X')}${num('sy','Y')}${num('sz','Z')}</div>
+      ${p.type==='npc'?`<span class="lbl" style="margin-top:.8em">Рост (масштаб)</span><div class="g3">${num('sy','Высота',.2)}</div>`:`<span class="lbl" style="margin-top:.8em">Размер</span><div class="g3">${num('sx','X')}${num('sy','Y')}${num('sz','Z')}</div>`}
       <span class="lbl" style="margin-top:.8em">Поворот (°)</span><div class="g3">${num('ry','Y',15)}</div></div>
     <div class="sec"><span class="lbl">Движение</span><div class="g3"><label><span>Ось</span><select data-k="mvaxis"><option value="">Нет</option><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>${num('mvdist','Размах',1)}${num('mvspeed','Скорость',.2)}</div></div>
     <div class="sec row"><button class="btn sm" id="pDup">Копия</button><button class="btn sm" id="pRot">Повернуть</button><button class="btn sm danger" id="pDel">Удалить</button></div>`;
@@ -2058,6 +2111,7 @@ const Ed={
     $$('.sw',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); this.setProp('color',b.dataset.c); this.fillProps(); });
     $('#pDup').onclick=()=>this.dup(); $('#pRot').onclick=()=>this.rot(); $('#pDel').onclick=()=>this.del();
     this.imgBind(el,id=>{ this.pushUndo(); this.setProp('img',id); this.renderProps(el); });
+    if(p.type==='npc') this.npcBind(el,p);
     $$('[data-bt]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); this.setProp('tex',b.dataset.bt); this.renderProps(el); });
     $$('[data-yy]',el).forEach(b=>b.onclick=()=>{ const q=this.part(); if(!q) return; this.pushUndo(); const st=this.snapV||1, k=b.dataset.yy; if(k==='up') q.y+=st; else if(k==='dn') q.y-=st; else q.y=(q.type==='coin'?q.sx:q.sy)/2; this.world.xform(q); this.fillProps(); });
     this.fillProps();
@@ -2072,13 +2126,48 @@ const Ed={
   setProp(k,v){
     const p=this.part(); if(!p) return; if(typeof v==='number'&&isNaN(v)) return;
     if(k==='mvaxis') p.mv.axis=v; else if(k==='mvdist') p.mv.dist=Math.max(0,v); else if(k==='mvspeed') p.mv.speed=Math.max(0,v);
+    else if(['sx','sy','sz'].includes(k)&&p.type==='npc'){ const q=Math.max(.3,v/(k==='sy'?NPC_H:NPC_W)); p.sx=NPC_W*q; p.sy=NPC_H*q; p.sz=NPC_W*q; }
     else if(['sx','sy','sz'].includes(k)){ p[k]=Math.max(.1,v); if(ROUND.has(p.shape)&&k==='sx') p.sz=p.sx; if(ROUND.has(p.shape)&&k==='sz') p.sx=p.sz; }
     else p[k]=v;
     if(k==='shape'&&ROUND.has(v)) p.sz=p.sx;
     if(k==='type'&&v==='coin'){ p.shape='cyl'; p.sx=p.sy=p.sz=1.2; }
+    if(k==='type'&&v==='npc'){ p.npc=p.npc||npcDefault(); p.shape='box'; p.sx=p.sz=NPC_W; p.sy=NPC_H; p.y=Math.max(p.y,NPC_H/2); p.tex=''; delete p.img; }
     this.dirty=true;
     if(['type','shape','color','img','imgFace','tex'].includes(k)){ this.world.update(p); this.fillProps(); } else this.world.xform(p);
     this.fillProps();
+    if(k==='type') this.renderBody();
+  },
+  /* --- NPC: панель свойств --- */
+  npcHTML(p){
+    const n=p.npc||(p.npc=npcDefault()), a=npcLook(n);
+    const sws=(k,list)=>`<div class="sws">${list.map(c=>`<button class="sw ${a[k]===c?'on':''}" data-nk="${k}" data-nv="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
+    const chips=(k,list)=>`<div class="chips">${list.map(([v,t])=>`<button class="chip ${a[k]===v?'on':''}" data-nk="${k}" data-nv="${v}">${t}</button>`).join('')}</div>`;
+    const col=k=>`<div style="margin-top:.5em"><input type="color" data-nc="${k}" value="${a[k]}" aria-label="Свой цвет"></div>`;
+    return `<div class="sec"><span class="lbl">NPC — персонаж</span>
+      <label style="display:block"><span class="lbl">Имя над головой</span><input type="text" data-nf="name" maxlength="24" value="${esc(npcName(n))}"></label>
+      <label style="display:block;margin-top:.6em"><span class="lbl">Что говорит (каждая строка — отдельная реплика)</span><textarea data-nf="say" rows="5" maxlength="600" style="width:100%;resize:vertical">${esc(String(n.say||''))}</textarea></label>
+      <label class="row" style="justify-content:flex-start;margin-top:.5em"><input type="checkbox" data-nf="turn" ${n.turn!==false?'checked':''} style="flex:none"><span style="flex:none">Поворачиваться к игроку</span></label>
+      <label class="row" style="justify-content:flex-start"><input type="checkbox" data-nf="solid" ${n.solid!==false?'checked':''} style="flex:none"><span style="flex:none">Твёрдый (нельзя пройти насквозь)</span></label>
+      <p class="muted" style="margin:.5em 0 0;font-size:.85em">В игре: подойти и нажать F (или кнопку на экране). Чтобы NPC ходил, задайте «Движение» ниже.</p>
+      <div class="chips" style="margin-top:.6em"><button class="chip" id="npcMine">👤 Мой аватар</button><button class="chip" id="npcRnd">🎲 Случайный</button></div></div>
+    <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
+    <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}${col('shirt')}<span class="lbl" style="margin-top:.7em;display:block">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
+    <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}${col('pants')}</div>
+    <div class="sec"><span class="lbl">Наряд</span>${chips('outfit',OUTFITS)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}${col('outfitColor')}`:''}</div>
+    <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<span class="lbl" style="margin-top:.7em;display:block">Цвет убора</span>${sws('hatColor',CLOTHES)}</div>
+    <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
+    <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
+    <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}${col('hairColor')}`:''}</div>
+    <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>`;
+  },
+  npcBind(el,p){
+    const keep=fn=>{ const a=el.scrollTop, par=el.parentElement, b=par?par.scrollTop:0; fn(); el.scrollTop=a; if(par) par.scrollTop=b; };
+    const upd=()=>{ this.dirty=true; this.world.update(p); keep(()=>this.renderProps(el)); };
+    $$('[data-nf]',el).forEach(i=>{ i.addEventListener('focus',()=>this.pushUndo()); i.addEventListener('input',()=>{ const k=i.dataset.nf; p.npc[k]=i.type==='checkbox'?i.checked:i.value; this.dirty=true; if(k==='name') this.world.update(p); }); });
+    $$('[data-nk]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[b.dataset.nk]=b.dataset.nv; upd(); });
+    $$('[data-nc]',el).forEach(i=>i.addEventListener('change',()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[i.dataset.nc]=i.value; upd(); }));
+    $('#npcMine').onclick=()=>{ this.pushUndo(); p.npc.look=npcLook({look:S.avatar}); upd(); toast('Внешность скопирована с вашего аватара'); };
+    $('#npcRnd').onclick=()=>{ this.pushUndo(); const r=a=>a[Math.floor(Math.random()*a.length)]; p.npc.look=npcLook({look:{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0],outfit:Math.random()<.4?r(OUTFITS)[0]:'none',outfitColor:r(CLOTHES)}}); upd(); };
   },
   renderGame(el){
     const s=this.game.settings, rng=(k,l,mn,mx,st)=>`<div class="field"><span class="lbl">${l}: <b id="v_${k}">${s[k]}</b></span><input type="range" min="${mn}" max="${mx}" step="${st}" value="${s[k]}" data-s="${k}"></div>`;
@@ -2408,7 +2497,7 @@ const Admin={tab:'users',q:'',
 const Home={
   confirm:null,pub:[],sort:'pop',
   minimap(g){
-    const ps=g.parts.filter(p=>p.type!=='coin'&&p.sx<150); if(!ps.length) return '';
+    const ps=g.parts.filter(p=>p.type!=='coin'&&p.type!=='npc'&&p.sx<150); if(!ps.length) return '';
     let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9; ps.forEach(p=>{ const r=Math.hypot(p.sx,p.sz)/2; x0=Math.min(x0,p.x-r); x1=Math.max(x1,p.x+r); z0=Math.min(z0,p.z-r); z1=Math.max(z1,p.z+r); });
     const w=Math.max(x1-x0,10), h=Math.max(z1-z0,10), sc=Math.min(80/w,42/h), ox=50-((x0+x1)/2)*sc, oz=28-((z0+z1)/2)*sc;
     const rects=ps.slice(0,260).sort((a,b)=>a.y-b.y).map(p=>ROUND.has(p.shape)?`<ellipse cx="${(p.x*sc+ox).toFixed(1)}" cy="${(p.z*sc+oz).toFixed(1)}" rx="${(p.sx/2*sc).toFixed(1)}" ry="${(p.sz/2*sc).toFixed(1)}" fill="${p.color}"/>`

@@ -88,7 +88,7 @@ async function ensureSchema(db){
 const cleanText=(s,n)=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
 
 function thumbOf(g){
-  const parts=(g.parts||[]).filter(p=>p&&p.type!=='coin'&&p.sx<150).slice(0,260).map(p=>({type:p.type,x:p.x,y:p.y,z:p.z,sx:p.sx,sy:p.sy,sz:p.sz,color:p.color,shape:p.shape,ry:p.ry}));
+  const parts=(g.parts||[]).filter(p=>p&&p.type!=='coin'&&p.type!=='npc'&&p.sx<150).slice(0,260).map(p=>({type:p.type,x:p.x,y:p.y,z:p.z,sx:p.sx,sy:p.sy,sz:p.sz,color:p.color,shape:p.shape,ry:p.ry}));
   return {cover:typeof g.cover==='string'&&g.cover.length<150000?g.cover:null,settings:{sky:g.settings&&g.settings.sky},parts};
 }
 
