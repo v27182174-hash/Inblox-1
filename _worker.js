@@ -15,7 +15,7 @@ async function pbk(pw,saltHex){
 }
 const FOREVER=4102444800000, DAY=86400000;
 const ID_RE=/^[\w\-]{1,40}$/, ROOM_RE=/^[\w:.\-]{1,64}$/;
-const SND={perSound:14000000,total:60000000,count:80,chunk:800000};
+const SND={perSound:14000000,total:150000000,count:200,chunk:800000,pubTotal:30000000,pubCount:40};
 const IMGRE=/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/;
 /* картинки игры (game.images): только data:image, не больше 12 штук и ~0,75 МБ суммарно */
 function cleanImages(g){
@@ -78,7 +78,9 @@ async function ensureSchema(db){
       db.prepare('CREATE TABLE IF NOT EXISTS friend(a TEXT NOT NULL,b TEXT NOT NULL,ts INTEGER NOT NULL,PRIMARY KEY(a,b))'),
       db.prepare('CREATE TABLE IF NOT EXISTS freq(src TEXT NOT NULL,dst TEXT NOT NULL,ts INTEGER NOT NULL,PRIMARY KEY(src,dst))'),
       db.prepare('CREATE INDEX IF NOT EXISTS freq_dst ON freq(dst)'),
-      db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))')
+      db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS pub_snd(pub TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(pub,id))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS pub_snd_chunk(pub TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(pub,id,i))')
     ]);
   }catch(e){ console.error(e); }
   schemaOk=true;
@@ -198,7 +200,7 @@ async function api(req,env,url){
       const size=meta.size+data.length;
       if(size>SND.perSound||others.s+size>SND.total){
         await db.batch([db.prepare('DELETE FROM snd_chunk WHERE owner=? AND id=?').bind(u.id,id),db.prepare('DELETE FROM snd WHERE owner=? AND id=?').bind(u.id,id)]);
-        return err(size>SND.perSound?'Звук слишком большой (максимум 10 МБ)':'Нет места для звуков на сервере (максимум 60 МБ на аккаунт)',413);
+        return err(size>SND.perSound?'Звук слишком большой (максимум 10 МБ)':'Нет места для звуков на сервере (максимум 150 МБ на аккаунт)',413);
       }
       await db.batch([
         db.prepare('INSERT OR REPLACE INTO snd_chunk(owner,id,i,data) VALUES(?,?,?,?)').bind(u.id,id,i,data),
@@ -217,11 +219,19 @@ async function api(req,env,url){
     if(seg.length===1&&m==='POST'){
       const b=await body(), g=b&&b.game; if(!g||!Array.isArray(g.parts)||!ID_RE.test(g.id||'')) return err('Неверные данные игры');
       if(g.script!=null&&(typeof g.script!=='string'||g.script.length>30000)) return err('Скрипт слишком длинный (максимум 30 000 символов)',413);
-      const snd=Array.isArray(b.sounds)?b.sounds.filter(s=>s&&typeof s.id==='string'&&typeof s.data==='string'&&s.data.startsWith('data:audio')).map(s=>({id:s.id.slice(0,40),name:cleanText(s.name,40),data:s.data})):[];
+      /* звуки игры: клиент присылает только id — сервер сам копирует их из загруженных звуков автора (кусками, без лимита в 1 МБ) */
+      const sndIn=Array.isArray(b.sounds)?b.sounds.filter(s=>s&&typeof s.id==='string'&&ID_RE.test(s.id)):[];
+      const snd=sndIn.filter(s=>typeof s.data==='string'&&s.data.startsWith('data:audio')).map(s=>({id:s.id.slice(0,40),name:cleanText(s.name,40),data:s.data}));
+      const sids=[...new Set(sndIn.filter(s=>typeof s.data!=='string').map(s=>s.id))].slice(0,SND.pubCount);
+      let own=[];
+      if(sids.length){
+        own=(await db.prepare('SELECT id,name,size,n FROM snd WHERE owner=? AND n>0 AND got=n AND id IN ('+sids.map(()=>'?').join(',')+')').bind(u.id,...sids).all()).results||[];
+        if(own.reduce((a,r)=>a+r.size,0)>SND.pubTotal) return err('Звуки игры слишком большие для публикации (максимум 30 МБ)',413);
+      }
       cleanImages(g);
       const gj=JSON.stringify(g), sj=JSON.stringify(snd);
       if(bytes(gj)>LIM.pubGame) return err('Игра слишком большая для публикации (максимум 0,9 МБ)',413);
-      if(bytes(sj)>LIM.pubSounds) return err('Свои звуки в игре слишком большие для публикации (максимум 0,9 МБ)',413);
+      if(bytes(sj)>LIM.pubSounds) return err('Слишком большие звуки в старом формате, обновите страницу и опубликуйте снова',413);
       const name=cleanText(g.name,40)||'Игра', desc=b.desc==null?null:cleanText(b.desc,500).slice(0,500), th=JSON.stringify(thumbOf(g));
       const ex=await db.prepare('SELECT owner FROM pub WHERE id=?').bind(g.id).first();
       if(ex){
@@ -231,13 +241,20 @@ async function api(req,env,url){
         const n=(await db.prepare('SELECT COUNT(*) n FROM pub WHERE owner=?').bind(u.id).first()).n; if(n>=LIM.pubs) return err('Можно опубликовать не больше '+LIM.pubs+' игр',400);
         await db.prepare('INSERT INTO pub(id,owner,name,descr,json,sounds,thumb,ts,plays) VALUES(?,?,?,?,?,?,?,?,0)').bind(g.id,u.id,name,desc||'',gj,sj,th,Date.now()).run();
       }
+      const st=[db.prepare('DELETE FROM pub_snd_chunk WHERE pub=?').bind(g.id),db.prepare('DELETE FROM pub_snd WHERE pub=?').bind(g.id)];
+      for(const r of own){
+        st.push(db.prepare('INSERT INTO pub_snd(pub,id,name,size,n) VALUES(?,?,?,?,?)').bind(g.id,r.id,r.name,r.size,r.n));
+        st.push(db.prepare('INSERT INTO pub_snd_chunk(pub,id,i,data) SELECT ?,id,i,data FROM snd_chunk WHERE owner=? AND id=?').bind(g.id,u.id,r.id));
+      }
+      await db.batch(st);
       return J({ok:1});
     }
     const id=seg[1]; if(!id||!ID_RE.test(id)) return err('Неверный id',400);
     if(seg.length===2&&m==='GET'){
       const r=await db.prepare('SELECT p.*,x.name author,x.role arole,x.look,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner WHERE p.id=?').bind(u.id,id).first();
       if(!r) return err('Игра не найдена',404);
-      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:parse(r.sounds)||[]}});
+      const ps=(await db.prepare('SELECT id,name,size FROM pub_snd WHERE pub=? ORDER BY id').bind(id).all()).results||[];
+      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:(parse(r.sounds)||[]).concat(ps.map(x=>({id:x.id,name:x.name,size:x.size})))}});
     }
     if(seg.length===2&&m==='PATCH'){
       const b=await body()||{}; let ch=0;
@@ -249,7 +266,14 @@ async function api(req,env,url){
     if(seg.length===2&&m==='DELETE'){
       const r=u.role==='admin'?await db.prepare('DELETE FROM pub WHERE id=?').bind(id).run():await db.prepare('DELETE FROM pub WHERE id=? AND owner=?').bind(id,u.id).run();
       if(!(r.meta&&r.meta.changes)) return err('Нет доступа',403);
-      await db.prepare('DELETE FROM likes WHERE pub_id=?').bind(id).run(); return J({ok:1});
+      await db.batch([db.prepare('DELETE FROM likes WHERE pub_id=?').bind(id),db.prepare('DELETE FROM pub_snd_chunk WHERE pub=?').bind(id),db.prepare('DELETE FROM pub_snd WHERE pub=?').bind(id)]); return J({ok:1});
+    }
+    if(seg.length===4&&seg[2]==='sound'&&m==='GET'){
+      const sid=seg[3]; if(!ID_RE.test(sid)) return err('Неверный id звука');
+      const r=await db.prepare('SELECT name,n FROM pub_snd WHERE pub=? AND id=?').bind(id,sid).first(); if(!r) return err('Звук не найден',404);
+      const cs=(await db.prepare('SELECT data FROM pub_snd_chunk WHERE pub=? AND id=? ORDER BY i').bind(id,sid).all()).results||[];
+      if(cs.length!==r.n) return err('Звук повреждён',404);
+      return J({id:sid,name:r.name,data:cs.map(c=>c.data).join('')});
     }
     if(seg.length===3&&seg[2]==='like'&&m==='POST'){
       if(!await db.prepare('SELECT 1 x FROM pub WHERE id=?').bind(id).first()) return err('Игра не найдена',404);
