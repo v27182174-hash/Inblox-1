@@ -26,7 +26,7 @@ function cleanImages(g){
   }
   g.images=o;
 }
-const LIM={game:1500000,pubGame:900000,pubSounds:900000,avatar:200000,games:200,pubs:30};
+const LIM={game:1500000,pubGame:900000,pubSounds:900000,avatar:340000,games:200,pubs:30};
 
 async function throttle(db,key,max,win){
   const now=Date.now(), r=await db.prepare('SELECT n,reset FROM rl WHERE k=?').bind(key).first();
@@ -159,6 +159,8 @@ async function api(req,env,url){
   if(p==='avatar'&&m==='PUT'){
     const b=await body(), a=b&&b.avatar; if(!a||typeof a!=='object') return err('Неверные данные');
     if(u.role!=='admin'){ delete a.vipSuit; delete a.vipShades; }
+    /* текстуры одежды: либо встроенные (p:имя), либо своя картинка data:image до ~85 КБ */
+    for(const k of ['shirtTex','pantsTex','outfitTex']){ const v=a[k]; if(v!=null&&!(typeof v==='string'&&(/^p:[a-z]{1,12}$/.test(v)||(v.length<=90000&&/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+\/=]+$/.test(v))))) delete a[k]; }
     a.name=u.name;   /* ник в аватаре всегда равен нику аккаунта */
     const js=JSON.stringify(a); if(bytes(js)>LIM.avatar) return err('Аватар слишком большой',413);
     await db.prepare('UPDATE users SET avatar=?,look=? WHERE id=?').bind(js,JSON.stringify(lookOf(a,u.role)),u.id).run(); return J({ok:1});

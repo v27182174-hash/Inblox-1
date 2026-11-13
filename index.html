@@ -307,7 +307,7 @@ const Acc={cur:null,list:[],persist:true,
     this.cur=d.user; if(d.token){ Api.tok=d.token; store.set('inblox.token',d.token); }
     S.games=Array.isArray(d.games)?d.games:[]; Sync.reset();
     S.sounds=store.get(this.key('sounds'),[]).map(x=>x.idb?{id:x.id,name:x.name,stored:true}:x); if(S.sounds.some(x=>x.data&&!x.stored)) setTimeout(()=>saveSounds(),0);
-    S.avatar=Object.assign({},DEF_AVATAR,d.avatar||{},{name:d.user.name}); delete S.avatar.shirtTex; delete S.avatar.pantsTex; if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
+    S.avatar=Object.assign({},DEF_AVATAR,d.avatar||{},{name:d.user.name}); if(d.user.role!=='admin'){ delete S.avatar.vipSuit; delete S.avatar.vipShades; } Snd.cache={}; Cloud.set('Онлайн');
     this.migrate(); SndSync.init();
   },
   /* перенос игр и звуков из старого локального аккаунта с тем же именем (если они были в этом браузере) */
@@ -781,7 +781,7 @@ function makeWorld(game,editor){
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
 const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
-const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые']];
+const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза']];
 const HEADS=[['cube','Куб'],['cutie','Милая'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},cutie:{w:.78,h:.78,d:.76,k:.5},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
@@ -799,11 +799,11 @@ function softGeo(w,h,d,k){
   }
   return geo;
 }
-const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот'],['girl','Девушка'],['slimgirl','Стройная'],['curvy','Пышная'],['sport','Спортивная']];
+const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот'],['girl','Девушка'],['slimgirl','Стройная'],['curvy','Пышная'],['sport','Спортивная'],['petite','Миниатюрная']];
 const BUILD_DEF={normal:{tw:1.2,td:.6,k:0,aw:.4,lw:.55,cyl:0},slim:{tw:1,td:.5,k:0,aw:.32,lw:.44,cyl:0},wide:{tw:1.55,td:.75,k:0,aw:.5,lw:.62,cyl:0},round:{tw:1.4,td:.85,k:.55,aw:.38,lw:.5,cyl:0},stick:{tw:.8,td:.4,k:0,aw:.22,lw:.28,cyl:0},chunky:{tw:1.45,td:.7,k:0,aw:.62,lw:.7,cyl:0},robot:{tw:1.2,td:.6,k:0,aw:.36,lw:.45,cyl:1},
   /* женские тела: торс как у обычных, но руки и ноги кубические, тоньше и изящнее (lady) */
   girl:{tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1},slimgirl:{tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1},
-  curvy:{tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1},sport:{tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1}};
+  curvy:{tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1},sport:{tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1},petite:{tw:.84,td:.42,k:0,aw:.2,lw:.28,cyl:0,lady:1,sc:.86}};
 
 /* торс «песочные часы»: куб с сеткой, где ширина и глубина зависят от высоты; UV сохраняются, поэтому лицо футболки не искажается */
 function femGeo(bd,y0,y1,pad=0){
@@ -825,31 +825,34 @@ const HAIR_COLORS=['#1b1b1b','#2b2118','#5a3a22','#8a5a2b','#c9a26a','#e8d28a','
 /* волосы строятся от размеров головы (hs), поэтому подходят к любой форме головы */
 function buildHair(id,cfg,hs,body){
   const m=new THREE.MeshLambertMaterial({color:cfg.hairColor||'#2b2118'}), hc=2.2+hs.h/2, W=hs.w, H=hs.h, D=hs.d;
-  const hb=(w,h,d,x,y,z,rx=0,rz=0,k=.55)=>{ const b=new THREE.Mesh(softGeo(w*W,h*H,d*D,k),m); b.position.set(x*W,hc+y*H,z*D); b.rotation.set(rx,0,rz); b.castShadow=true; body.add(b); return b; };
-  const ball=(r,x,y,z,sx=1,sy=1,sz=1)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(r*W,16,12),m); b.position.set(x*W,hc+y*H,z*D); b.scale.set(sx,sy,sz); b.castShadow=true; body.add(b); return b; };
-  const cap=()=>{ hb(1.08,.22,1.08,0,.45,0,0,0,.3); hb(1.08,.62,.16,0,.2,-.46,0,0,.3); hb(1.08,.1,.14,0,.38,.47,0,0,.4); for(const s of [-1,1]) hb(.1,.4,.6,s*.5,.25,-.1,0,0,.35); };
+  const V=1.12, VH=1.06;   /* объём: волосы шире и толще головы */
+  const hb=(w,h,d,x,y,z,rx=0,rz=0,k=.55)=>{ const b=new THREE.Mesh(softGeo(w*W*V,h*H*VH,d*D*V,k),m); b.position.set(x*W*V,hc+y*H,z*D*V); b.rotation.set(rx,0,rz); b.castShadow=true; body.add(b); return b; };
+  const ball=(r,x,y,z,sx=1,sy=1,sz=1)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(r*W*V,16,12),m); b.position.set(x*W*V,hc+y*H,z*D*V); b.scale.set(sx,sy,sz); b.castShadow=true; body.add(b); return b; };
+  const cap=()=>{ hb(1.08,.26,1.08,0,.45,0,0,0,.35); hb(1.0,.22,1.0,0,.57,0,0,0,.85); hb(1.08,.66,.18,0,.2,-.46,0,0,.3); hb(1.08,.12,.16,0,.37,.47,0,0,.45); for(const s of [-1,1]) hb(.12,.44,.64,s*.5,.25,-.1,0,0,.4); };
+  /* коса — цепочка перекрывающихся «звеньев», начинается внутри основной массы волос и не отрывается от неё */
+  const plait=(x,z,y0,n,r)=>{ for(let i=0;i<n;i++) ball(r*(1-i*.05),x+(i%2?.045:-.045),y0-i*.19,z,1,1.35,1); ball(r*.55,x,y0-n*.19,z,1,1.1,1); };
   switch(id){
     case 'short': cap(); break;
     case 'spiky': cap(); for(const [x,z] of [[-.3,-.25],[0,-.25],[.3,-.25],[-.3,.1],[0,.1],[.3,.1],[0,.38]]) hb(.2,.32,.2,x,.64,z,z*.5,-x*.7); break;
-    case 'long': cap(); hb(1.1,1.5,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.2,.75,s*.52,-.1,-.05); break;
-    case 'ponytail': cap(); hb(.2,.2,.2,0,.32,-.58); hb(.28,1.2,.28,0,-.15,-.68); break;
-    case 'twin': cap(); for(const s of [-1,1]){ hb(.28,1.1,.28,s*.62,-.1,-.2); hb(.2,.14,.2,s*.62,.42,-.2); } break;
+    case 'long': cap(); hb(1.1,1.5,.24,0,-.2,-.48,0,0,.45); for(const s of [-1,1]) hb(.14,1.2,.78,s*.52,-.1,-.05); break;
+    case 'ponytail': cap(); hb(.22,.22,.22,0,.32,-.5); hb(.3,1.2,.3,0,-.15,-.6,.06); break;
+    case 'twin': cap(); for(const s of [-1,1]){ hb(.3,1.1,.3,s*.58,-.1,-.2); hb(.22,.16,.22,s*.56,.42,-.2); } break;
     case 'bob': cap(); hb(1.16,.85,.2,0,-.05,-.46); for(const s of [-1,1]) hb(.14,.85,.8,s*.55,-.05,-.02); break;
     case 'bun': cap(); ball(.3,0,.72,-.05); break;
-    case 'afro': ball(.68,0,.3,-.26,1,1,.95); hb(1.0,.12,.1,0,.47,.45); break;
+    case 'afro': ball(.78,0,.3,-.26,1,1,.95); hb(1.0,.12,.1,0,.47,.5); break;
     case 'mohawk': hb(.16,.34,1.0,0,.56,0); hb(.14,.5,.14,0,.2,-.5); break;
-    case 'braid': cap(); for(let i=0;i<4;i++) hb(.26,.34,.24,i%2?.05:-.05,-.1-i*.3,-.62); break;
+    case 'braid': cap(); hb(1.1,.95,.22,0,-.05,-.48,0,0,.45); plait(0,-.55,-.2,7,.15); break;
     case 'bangs': cap(); hb(1.1,.3,.14,0,.33,.5); hb(1.1,1.5,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.3,.75,s*.52,-.2,-.05); break;
     case 'wavy': cap(); hb(1.16,1.4,.2,0,-.2,-.48); for(const s of [-1,1]){ for(let i=0;i<4;i++) hb(.2,.3,.8,s*(.54+(i%2?.05:-.03)),-.05-i*.3,-.05); ball(.16,s*.56,-1.25,-.05,1,.8,1); } break;
-    case 'highponytail': cap(); ball(.2,0,.55,-.38); hb(.3,1.3,.26,0,-.15,-.72,.12); hb(.1,.12,.1,0,.52,-.4); break;
-    case 'sidebraid': cap(); hb(1.1,.9,.18,0,-.05,-.47); hb(.12,.7,.7,-.52,-.1,-.05); for(let i=0;i<5;i++) hb(.24,.32,.24,.56+(i%2?.02:-.02),-.25-i*.28,.42); ball(.14,.57,-1.6,.42); break;
-    case 'twinbraids': cap(); hb(1.1,.8,.18,0,-.05,-.47); for(const s of [-1,1]){ for(let i=0;i<5;i++) hb(.22,.32,.22,s*(.56+(i%2?.02:-.02)),-.25-i*.28,.42); ball(.13,s*.57,-1.6,.42); } break;
+    case 'highponytail': cap(); ball(.22,0,.6,-.4); hb(.32,1.3,.3,0,-.02,-.6,.2); break;
+    case 'sidebraid': cap(); hb(1.1,.95,.22,0,-.05,-.48,0,0,.45); for(const s of [-1,1]) hb(.14,.9,.8,s*.53,-.1,-.02); plait(.5,-.5,-.35,6,.14); break;
+    case 'twinbraids': cap(); hb(1.1,.9,.22,0,-.05,-.48,0,0,.45); for(const s of [-1,1]){ hb(.14,.9,.8,s*.53,-.1,-.02); plait(s*.42,-.5,-.35,6,.13); } break;
     case 'twinbuns': cap(); for(const s of [-1,1]) ball(.28,s*.42,.68,-.02); break;
     case 'lob': cap(); hb(1.12,.3,.14,0,.33,.5); hb(1.16,1.1,.2,0,-.25,-.47); for(const s of [-1,1]) hb(.14,1.0,.8,s*.55,-.2,-.02); break;
     case 'pixie': cap(); hb(1.08,.5,.16,0,.1,-.47); for(const s of [-1,1]) hb(.12,.5,.6,s*.52,.05,-.05); hb(.55,.26,.14,.25,.36,.5,0,-.3); break;
     case 'halfup': cap(); hb(1.1,1.4,.18,0,-.2,-.47); for(const s of [-1,1]) hb(.12,1.2,.75,s*.52,-.1,-.05); ball(.22,0,.64,-.1); break;
     case 'ringlets': cap(); hb(1.1,1.0,.18,0,-.1,-.47); for(const s of [-1,1]) for(let i=0;i<4;i++) ball(.17,s*.56,.05-i*.3,.02+(i%2?.06:0)); for(let i=0;i<5;i++) ball(.16,-.4+i*.2,-.7,-.5); break;
-    case 'sidetail': cap(); hb(.2,.2,.2,.5,.3,-.1); hb(.28,1.1,.28,.64,-.25,-.1,0,-.15); ball(.14,.58,.2,-.1); break;
+    case 'sidetail': cap(); hb(.22,.22,.22,.5,.3,-.1); hb(.3,1.1,.3,.58,-.25,-.1,0,-.1); break;
     case 'curly': cap(); for(const [x,y,z] of [[-.45,.35,0],[.45,.35,0],[-.3,.5,-.3],[.3,.5,-.3],[0,.55,-.1],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.55]]) ball(.2,x,y,z); break;
   }
 }
@@ -857,7 +860,7 @@ const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','�
 /* Наряд — объёмные детали поверх тела: воротники, ремни, плащи, броня. Цвет акцентов задаёт outfitColor */
 function buildOutfit(id,cfg,c){
   const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, mc=h=>MC[h]||(MC[h]=new THREE.MeshLambertMaterial({color:h}));
-  const oc=cfg.outfitColor||'#e8433f', O=mc(oc), tw=bd.tw, td=bd.td, fz=td/2, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
+  const oc=cfg.outfitColor||'#e8433f', O=cfg.outfitTex?(()=>{ const m0=new THREE.MeshLambertMaterial({color:'#ffffff'}); m0.map=userTex(cfg.outfitTex); return m0; })():mc(oc), tw=bd.tw, td=bd.td, fz=td/2, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
   const dark=h=>'#'+new THREE.Color(h).multiplyScalar(.6).getHexString();
   const hw=bd.hw||tw, part=(m,y0,y1,pad)=>{ if(bd.fem){ const k=new THREE.Mesh(femGeo(bd,y0,y1,pad),m); k.castShadow=true; body.add(k); return k; } return box(tw+pad,y1-y0,td+pad,m,0,(y0+y1)/2,0); };
   const sh=mc(cfg.shirt), shD=mc(dark(cfg.shirt)), pn=mc(cfg.pants), W=mc('#f4f4f6'), K=mc('#20222b'), G=mc('#f2c230'), S=mc('#aab3c0');
@@ -1044,6 +1047,29 @@ function drawKawaii(g){
   g.lineWidth=2.6; g.beginPath(); g.arc(59,98,5,.1,Math.PI-.1); g.stroke(); g.beginPath(); g.arc(69,98,5,.1,Math.PI-.1); g.stroke();
   g.restore();
 }
+
+/* Красивое лицо с закрытыми глазами: длинные ресницы, тени, румянец, мягкая улыбка */
+function drawAnimeClosed(g){
+  g.save(); g.lineCap='round'; g.lineJoin='round';
+  for(const side of [-1,1]){
+    g.save(); g.translate(64+side*29,66); g.scale(-side,1);
+    const sh=g.createRadialGradient(0,-4,1,0,-4,22); sh.addColorStop(0,'rgba(255,140,170,.5)'); sh.addColorStop(1,'rgba(255,140,170,0)'); g.fillStyle=sh; g.beginPath(); g.ellipse(0,-4,22,11,0,0,7); g.fill();
+    g.fillStyle='#2a1420'; g.beginPath(); g.moveTo(-21,-3); g.quadraticCurveTo(-4,16,21,-1); g.quadraticCurveTo(-2,8,-21,-3); g.fill();
+    g.strokeStyle='#2a1420'; g.lineWidth=2.4;
+    for(const [t,dx,dy,l] of [[.05,-.95,.3,9],[.17,-.8,.6,9],[.32,-.55,.85,8],[.5,-.3,.95,7],[.68,-.1,1,6]]){
+      const u=1-t, x=u*u*-21+2*t*u*-4+t*t*21, y=u*u*-3+2*t*u*16+t*t*-1;
+      g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+dx*l*.5,y+dy*l*.7,x+dx*l,y+dy*l); g.stroke();
+    }
+    g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=1.3; g.beginPath(); g.moveTo(-7,9); g.quadraticCurveTo(1,11,8,7); g.stroke();
+    g.strokeStyle='#4a2a2e'; g.lineWidth=2.2; g.beginPath(); g.moveTo(-22,-21); g.quadraticCurveTo(0,-32,20,-20); g.stroke();
+    g.restore();
+  }
+  for(const x of [30,98]){ const rg=g.createRadialGradient(x,92,1,x,92,15); rg.addColorStop(0,'rgba(255,100,125,.6)'); rg.addColorStop(1,'rgba(255,100,125,0)'); g.fillStyle=rg; g.beginPath(); g.ellipse(x,92,16,8,0,0,7); g.fill(); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.5; for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(x+i*6-2,89); g.lineTo(x+i*6+1,95); g.stroke(); } }
+  g.fillStyle='#8a5a52'; g.beginPath(); g.arc(64,88,1.2,0,7); g.fill();
+  g.strokeStyle='#b0605a'; g.lineWidth=2.4; g.beginPath(); g.moveTo(53,102); g.quadraticCurveTo(64,111,75,102); g.stroke();
+  g.fillStyle='#fff'; for(const [x,y,r] of [[14,44,4],[116,50,3]]) animeStar(g,x,y,r);
+  g.restore();
+}
 function faceTex(cfg){
   return canvasTex(128,128,(g,w,h)=>{
     g.fillStyle=cfg.skin; g.fillRect(0,0,w,h); g.fillStyle='#1b1b22'; g.strokeStyle='#1b1b22'; g.lineCap='round'; g.lineWidth=7;
@@ -1071,6 +1097,7 @@ function faceTex(cfg){
       case 'anime4': drawAnimeFace(g,{ew:18,eh:21,ix:1,iw:14,ih:18,sclera:'#f3f3f7',shade:'#c3c8d6',c1:'#a032e8',c2:'#4a63e8',c3:'#8be6ff',glow:'#b5f1ff',drop:'#9ff4ff',hl:4.8,lash:'#0e2a4e',lw:4.8,brow:'#0e2a4e',bw:2,lid:'#c0584a',mouth:'lens'}); break;
       case 'anime5': drawAnimeFace(g,{ew:13,eh:22,ix:1,iw:10,ih:16,sclera:'#ffffff',c1:'#145f78',c2:'#2aa0b8',c3:'#9be8f2',ring:'#08303c',pupil:'#0b4a5c',hl:5,lash:'#111',lw:2.4,out:3.6,brow:'#222',bw:1.6,blush:1,nose:1,mouth:'o'}); break;
       case 'anime6': drawKawaii(g); break;
+      case 'anime8': drawAnimeClosed(g); break;
       case 'anime7': drawAnimeFace(g,{ew:18,eh:21,ix:1,iw:14,ih:18,sclera:'#fff7ea',shade:'#e6cfa8',c1:'#ffb100',c2:'#ff7a00',c3:'#ffe27a',glow:'#fff2b0',drop:'#ff5a00',star:1,hl:4.6,lash:'#3a1a0a',lw:4.2,brow:'#3a1a0a',bw:1.8,lid:'#c0703a',mouth:'smile'}); break;
       default: eyes((x,y)=>{g.beginPath();g.ellipse(x,y,8,12,0,0,7);g.fill();}); g.beginPath(); g.arc(64,72,26,.25,Math.PI-.25); g.stroke();
     }
@@ -1119,6 +1146,16 @@ const TEXS=[
 const TEXTHUMB={};
 function texThumb(id){ if(TEXTHUMB[id]) return TEXTHUMB[id]; const d=TEXS.find(x=>x[0]===id); const c=document.createElement('canvas'); c.width=c.height=128; d[2](c.getContext('2d'),128,128); return TEXTHUMB[id]=c.toDataURL('image/png'); }
 const texCache={};
+/* своя картинка для одежды: обрезаем до квадрата 256×256 и сжимаем в JPEG, чтобы влезло в профиль */
+async function imgToTex(f){
+  if(!f||!/^image\//.test(f.type)) return null;
+  const src=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>r(null); fr.readAsDataURL(f); }); if(!src) return null;
+  const im=await new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src; }); if(!im||!im.width||!im.height) return null;
+  const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,256,256);
+  const q0=Math.min(im.width,im.height); g.drawImage(im,(im.width-q0)/2,(im.height-q0)/2,q0,q0,0,0,256,256);
+  for(const q of [.88,.75,.6,.45,.3]){ const u=c.toDataURL('image/jpeg',q); if(u.length<=85000) return u; }
+  return null;
+}
 function userTex(url){
   if(texCache[url]) return texCache[url];
   const ks=Object.keys(texCache); if(ks.length>6){ texCache[ks[0]].dispose(); delete texCache[ks[0]]; }
@@ -1174,6 +1211,7 @@ function buildAvatar(cfg){
     }
     box(.1,.04,.04,gold,0,2.72,.41,sg);                                                                                           /* переносица */
   }
+  if(bd.sc) body.scale.setScalar(bd.sc);   /* миниатюрное тело: всё немного меньше, ноги остаются на земле */
   return {group:g,body,head,armL,armR,legL,legR};
 }
 function animAvatar(av,t,speed,air,vy){
@@ -2159,15 +2197,15 @@ const AvS={
     const a=S.avatar, el=$('#avatar'), sc=keepScroll&&$('.apanel',el)?$('.apanel',el).scrollTop:0;
     const sws=(k,list)=>`<div class="sws">${list.map(c=>`<button class="sw ${a[k]===c?'on':''}" data-k="${k}" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
     const chips=(k,list)=>`<div class="chips">${list.map(([v,n])=>`<button class="chip ${a[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}</div>`;
-    const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>${a[k]?`<button class="btn sm danger" data-texx="${k}" style="margin-top:.5em">Убрать текстуру</button>`:''}`;
+    const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;margin-bottom:.5em">📁 Загрузить свою картинку<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>${a[k]&&String(a[k]).startsWith('data:')?`<div class="sws"><button class="sw on" title="Своя текстура" style="background:url(${a[k]}) center/cover"></button></div>`:''}<div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>${a[k]?`<button class="btn sm danger" data-texx="${k}" style="margin-top:.5em">Убрать текстуру</button>`:''}`;
     el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
       <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"><p class="muted" style="margin:.4em 0 0;font-size:.85em">Это ваш ник: он уникален, принадлежит только вам и его нельзя изменить.</p></div>
       <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
-      <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div></div>
+      <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
       <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
-      <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div></div>
-      <div class="sec"><span class="lbl">Наряд</span>${chips('outfit',OUTFITS)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>`:''}</div>
+      <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
+      <div class="sec"><span class="lbl">Наряд</span>${chips('outfit',OUTFITS)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>${texUI('outfitTex')}`:''}</div>
       <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
       <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
       <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
@@ -2179,6 +2217,7 @@ const AvS={
     $$('input[type=color]',el).forEach(i=>i.addEventListener('change',()=>this.set(i.dataset.k,i.value)));
     $$('[data-vip]',el).forEach(b=>b.onclick=()=>{ if(!Acc.cur||Acc.cur.role!=='admin') return; this.set(b.dataset.vip,!S.avatar[b.dataset.vip]); });
     $$('[data-tk]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.tk,b.dataset.tv));
+    $$('[data-tf]',el).forEach(inp=>inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; const u=await imgToTex(f); if(!u){ toast('Не удалось прочитать картинку'); return; } this.set(inp.dataset.tf,u); toast('Текстура применена'); });
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
     $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
