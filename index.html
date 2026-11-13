@@ -866,46 +866,59 @@ function hairTex(){
   },true);
   t.wrapS=t.wrapT=THREE.RepeatWrapping; return HAIRTEX=t;
 }
-/* Причёски собираются из округлых «прядей»: череп-купол, виски, затылок, чёлка и сужающиеся к концам пряди — как гладкие волосы в Роблоксе */
+/* Причёски собираются из округлых «прядей»: череп-купол, виски, затылок, чёлка и сужающиеся к концам волнистые пряди.
+   Чёлка короткая и высокая — глаза и брови остаются открытыми. */
 function buildHair(id,cfg,hs,body){
   const m=new THREE.MeshPhongMaterial({color:cfg.hairColor||'#2b2118',map:hairTex(),specular:new THREE.Color(0x2c2c2c),shininess:26}), hc=2.2+hs.h/2, W=hs.w, H=hs.h, D=hs.d;
   const hb=(w,h,d,x,y,z,rx=0,rz=0,k=.6,ry=0)=>{ const b=new THREE.Mesh(softGeo(w*W,h*H,d*D,k),m); b.position.set(x*W,hc+y*H,z*D); b.rotation.set(rx,ry,rz); b.castShadow=true; body.add(b); return b; };
   const ball=(r,x,y,z,sx=1,sy=1,sz=1)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(r*W,18,14),m); b.position.set(x*W,hc+y*H,z*D); b.scale.set(sx,sy,sz); b.castShadow=true; body.add(b); return b; };
-  const scalp=()=>{ hb(1.2,.64,1.2,0,.27,0,0,0,.45); hb(1.0,.22,1.0,0,.6,0,0,0,.9); hb(1.2,.4,.3,0,.1,-.46,0,0,.55); };
-  const sides=(top,bot,off=.54)=>{ const cy=(top+bot)/2, h=top-bot; for(const q of [-1,1]) hb(.24,h,.84,q*off,cy,-.04,0,0,.7); };
-  const back=(top,bot,t=.4)=>{ hb(1.22,top-bot,t,0,(top+bot)/2,-.42,0,0,.6); };
-  /* прядь: цепочка сужающихся кусков вниз от точки (x,y,z) */
-  const strand=(x,y,z,w,len,d,n=3,wob=0)=>{ const sl=len/n; for(let i=0;i<n;i++){ const f=1-i*.2, o=Math.sin(i*1.7)*wob; hb(w*f,sl*1.3,d*f,x+o,y-(i+.5)*sl,z,0,o*.8,.92); } };
-  /* коса: цепочка перекрывающихся звеньев, начинается внутри основной массы волос */
+  const wob=(i,a)=>Math.sin(i*1.9)*a;
+  const scalp=()=>{ hb(1.2,.62,1.2,0,.28,0,0,0,.45); hb(1.0,.22,1.0,0,.6,0,0,0,.9); hb(1.2,.4,.3,0,.1,-.46,0,0,.55); };
+  /* виски; wave>0 — пряди слегка изгибаются, как волны */
+  const sides=(top,bot,off=.54,wave=0)=>{
+    if(!wave){ for(const q of [-1,1]) hb(.24,top-bot,.84,q*off,(top+bot)/2,-.04,0,0,.7); return; }
+    const n=Math.max(1,Math.round((top-bot)/.3)), sl=(top-bot)/n;
+    for(const q of [-1,1]) for(let i=0;i<n;i++){ const f=1-i/n*.25; hb(.24*f,sl*1.35,.84*f,q*off+q*wob(i,wave),top-(i+.5)*sl,-.04,0,q*wob(i+1.3,wave)*3,.75); }
+  };
+  /* затылок; wave>0 — верх плотный, ниже — волнистые пряди колоннами */
+  const back=(top,bot,t=.4,wave=0)=>{
+    if(!wave){ hb(1.22,top-bot,t,0,(top+bot)/2,-.42,0,0,.6); return; }
+    const solid=Math.min(.55,top-bot); hb(1.22,solid,t,0,top-solid/2,-.42,0,0,.6);
+    const n=Math.max(1,Math.round((top-solid-bot)/.28)), sl=(top-solid-bot)/n;
+    for(const x of [-.4,-.13,.13,.4]) for(let i=0;i<n;i++){ const f=1-i/n*.3, o=wob(i+x*5,wave); hb(.36*f,sl*1.4,t*.9,x+o,top-solid-(i+.5)*sl,-.42-(i%2?.03:0),0,o*3,.9); }
+  };
+  /* прядь: цепочка сужающихся изогнутых кусков вниз */
+  const strand=(x,y,z,w,len,d,n=3,wobA=0)=>{ const sl=len/n; for(let i=0;i<n;i++){ const f=1-i*.17, o=wob(i,wobA); hb(w*f,sl*1.35,d*f,x+o,y-(i+.5)*sl,z+(i%2?.02:0),0,o*3,.92); } };
   const plait=(x,z,y0,n,r)=>{ for(let i=0;i<n;i++) ball(r*(1-i*.05),x+(i%2?.045:-.045),y0-i*.19,z,1,1.4,1); ball(r*.55,x,y0-n*.19,z,1,1.15,1); };
+  /* чёлка — короткая и высокая (нижний край выше бровей) */
   const fringe=kind=>{
-    if(kind==='full'){ for(let i=-2;i<=2;i++) hb(.3,.3,.16,i*.22,.43-Math.abs(i)*.015,.52,-.12,i*.03,.9); }
-    else if(kind==='side'){ hb(.62,.3,.16,-.1,.44,.52,-.15,.28,.9); hb(.5,.26,.16,.24,.46,.52,-.15,.12,.9); hb(.3,.3,.16,-.4,.38,.5,-.1,.4,.9); }
-    else if(kind==='part'){ for(const q of [-1,1]){ hb(.5,.34,.16,q*.27,.42,.52,-.12,-q*.3,.9); hb(.22,.46,.14,q*.46,.3,.5,-.05,-q*.1,.9); } }
+    if(kind==='full'){ for(let i=-2;i<=2;i++) hb(.3,.22,.14,i*.22,.47-Math.abs(i)*.012,.52,-.1,i*.05,.9); }
+    else if(kind==='side'){ hb(.6,.22,.14,-.12,.47,.52,-.12,.3,.9); hb(.46,.2,.14,.22,.48,.52,-.12,.14,.9); hb(.2,.26,.14,-.45,.42,.5,-.05,.3,.9); }
+    else if(kind==='part'){ for(const q of [-1,1]){ hb(.5,.24,.14,q*.27,.47,.52,-.1,-q*.28,.9); hb(.16,.34,.13,q*.5,.38,.49,-.04,-q*.12,.9); } }
   };
   switch(id){
-    case 'short': scalp(); sides(.42,-.02); fringe('side'); hb(.5,.2,.5,.12,.68,.08,0,.2,.9); break;
-    case 'spiky': scalp(); sides(.42,.05); for(const [x,z] of [[-.34,-.28],[0,-.3],[.34,-.28],[-.34,.05],[0,.05],[.34,.05],[0,.34]]) hb(.26,.46,.26,x,.74,z,z*.7,-x*.9,.85); for(const x of [-.3,0,.3]) hb(.22,.3,.16,x,.46,.52,-.5,x*.5,.85); break;
-    case 'long': scalp(); sides(.42,-.78); back(.35,-1.2,.42); for(const x of [-.38,-.13,.13,.38]) strand(x,-.7,-.42,.3,.55,.3,3,.015); fringe('part'); break;
-    case 'ponytail': scalp(); sides(.42,0); fringe('side'); ball(.17,0,.28,-.56); strand(0,.2,-.66,.38,1.35,.36,4,.02); break;
-    case 'twin': scalp(); sides(.42,0); fringe('full'); for(const q of [-1,1]){ ball(.15,q*.6,.2,-.12); strand(q*.68,.14,-.14,.34,1.2,.32,4,.02); } break;
-    case 'bob': scalp(); back(.3,-.55,.42); sides(.42,-.5,.55); for(const q of [-1,1]) hb(.3,.2,.44,q*.52,-.55,.02,0,q*.1,.9); hb(1.1,.2,.3,0,-.58,-.4,0,0,.9); fringe('full'); break;
-    case 'bun': scalp(); sides(.42,.02); fringe('side'); ball(.3,0,.78,-.1); ball(.2,0,.66,-.1); break;
-    case 'afro': ball(.78,0,.28,-.08,1,1.02,.96); ball(.4,-.52,0,-.18); ball(.4,.52,0,-.18); ball(.42,0,-.1,-.5); hb(1.0,.14,.1,0,.48,.52,0,0,.8); break;
+    case 'short': scalp(); sides(.42,-.02); fringe('side'); hb(.5,.2,.5,.12,.68,.08,0,.2,.9); hb(.3,.18,.3,-.3,.66,.1,0,-.3,.9); break;
+    case 'spiky': scalp(); sides(.42,.05); for(const [x,z] of [[-.34,-.28],[0,-.3],[.34,-.28],[-.34,.05],[0,.05],[.34,.05],[0,.34]]) hb(.26,.46,.26,x,.74,z,z*.7,-x*.9,.85); for(const x of [-.3,0,.3]) hb(.2,.24,.14,x,.5,.52,-.5,x*.5,.85); break;
+    case 'long': scalp(); sides(.42,-.8,.54,.035); back(.35,-1.2,.42,.045); fringe('part'); break;
+    case 'ponytail': scalp(); sides(.42,0); fringe('side'); ball(.17,0,.28,-.56); strand(0,.2,-.66,.38,1.35,.36,4,.055); break;
+    case 'twin': scalp(); sides(.42,0); fringe('full'); for(const q of [-1,1]){ ball(.15,q*.6,.2,-.12); strand(q*.68,.14,-.14,.34,1.2,.32,4,.055); } break;
+    case 'bob': scalp(); back(.3,-.5,.42,.025); sides(.42,-.45,.55,.03); for(const q of [-1,1]) hb(.3,.2,.44,q*.55,-.5,.02,0,q*.28,.9); hb(1.1,.2,.3,0,-.54,-.4,0,0,.9); fringe('full'); break;
+    case 'bun': scalp(); sides(.42,.02); fringe('side'); ball(.3,0,.78,-.1); ball(.2,0,.66,-.1); hb(.4,.14,.4,0,.52,-.1,0,0,.9); break;
+    case 'afro': ball(.78,0,.28,-.08,1,1.02,.96); ball(.4,-.52,0,-.18); ball(.4,.52,0,-.18); ball(.42,0,-.1,-.5); ball(.3,-.3,.62,.2); ball(.3,.3,.62,.2); break;
     case 'mohawk': hb(.22,.5,1.05,0,.58,0,0,0,.85); hb(.2,.6,.22,0,.12,-.5,0,0,.85); hb(.2,.3,.2,0,.5,.45,-.3,0,.85); break;
     case 'braid': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('part'); plait(0,-.55,-.28,7,.15); break;
-    case 'curly': scalp(); sides(.42,-.1); for(const [x,y,z] of [[-.45,.4,.05],[.45,.4,.05],[-.3,.62,-.28],[.3,.62,-.28],[0,.68,-.05],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.58],[-.3,-.12,-.5],[.3,-.12,-.5],[-.55,-.14,-.05],[.55,-.14,-.05],[0,.62,.28]]) ball(.2,x,y,z); break;
-    case 'bangs': scalp(); sides(.42,-.82); back(.35,-1.0,.42); fringe('full'); for(const x of [-.36,-.12,.12,.36]) strand(x,-.65,-.42,.3,.5,.3,3); break;
-    case 'wavy': scalp(); sides(.42,-.2); back(.35,-.9,.42); for(const q of [-1,1]) for(let i=0;i<4;i++) ball(.2,q*(.55+(i%2?.04:-.03)),-.15-i*.22,-.04,1,1.15,1.1); for(const x of [-.35,0,.35]) for(let i=0;i<3;i++) ball(.22,x+(i%2?.05:-.05),-.55-i*.18,-.45); fringe('part'); break;
-    case 'highponytail': scalp(); sides(.42,.02); fringe('part'); ball(.2,0,.62,-.4); strand(0,.42,-.62,.38,1.45,.36,4,.02); break;
+    case 'curly': scalp(); sides(.42,-.1); for(const [x,y,z] of [[-.45,.4,.05],[.45,.4,.05],[-.3,.62,-.28],[.3,.62,-.28],[0,.68,-.05],[-.5,.1,-.3],[.5,.1,-.3],[0,.15,-.58],[-.3,-.12,-.5],[.3,-.12,-.5],[-.55,-.14,-.05],[.55,-.14,-.05],[-.32,.64,.2],[.32,.64,.2]]) ball(.2,x,y,z); break;
+    case 'bangs': scalp(); sides(.42,-.82,.54,.03); back(.35,-1.0,.42,.04); fringe('full'); break;
+    case 'wavy': scalp(); sides(.42,-.9,.54,.055); back(.35,-1.0,.42,.065); fringe('part'); for(const q of [-1,1]) ball(.17,q*.56,-.98,-.02,1,.9,1.1); break;
+    case 'highponytail': scalp(); sides(.42,.02); fringe('part'); ball(.2,0,.62,-.4); strand(0,.42,-.62,.38,1.45,.36,4,.06); break;
     case 'sidebraid': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('side'); plait(.5,-.5,-.3,6,.14); break;
     case 'twinbraids': scalp(); sides(.42,-.1); back(.35,-.4,.4); fringe('part'); for(const q of [-1,1]) plait(q*.42,-.5,-.3,6,.13); break;
     case 'twinbuns': scalp(); sides(.42,0); fringe('full'); for(const q of [-1,1]){ ball(.28,q*.46,.7,-.04); ball(.16,q*.46,.55,-.04); } break;
-    case 'lob': scalp(); back(.3,-.7,.42); sides(.42,-.62,.55); for(const q of [-1,1]) hb(.3,.22,.5,q*.54,-.66,0,0,q*.1,.9); hb(1.1,.22,.3,0,-.72,-.4,0,0,.9); fringe('part'); break;
+    case 'lob': scalp(); back(.3,-.7,.42,.03); sides(.42,-.62,.55,.035); for(const q of [-1,1]) hb(.3,.22,.5,q*.55,-.66,0,0,q*.25,.9); hb(1.1,.22,.3,0,-.72,-.4,0,0,.9); fringe('part'); break;
     case 'pixie': hb(1.16,.58,1.16,0,.26,0,0,0,.5); hb(.96,.2,.96,0,.56,0,0,0,.9); hb(1.14,.36,.28,0,.08,-.46,0,0,.6); sides(.34,.08); fringe('side'); break;
-    case 'halfup': scalp(); sides(.42,-.92); back(.35,-1.05,.42); fringe('part'); ball(.22,0,.7,-.12); ball(.14,0,.55,-.12); break;
+    case 'halfup': scalp(); sides(.42,-.92,.54,.04); back(.35,-1.05,.42,.05); fringe('part'); ball(.22,0,.7,-.12); ball(.14,0,.55,-.12); break;
     case 'ringlets': scalp(); back(.35,-.3,.4); sides(.42,-.05); for(const q of [-1,1]) for(let i=0;i<5;i++) ball(.17-i*.008,q*(.57+(i%2?.04:-.02)),-.12-i*.22,i%2?.05:0); for(let i=0;i<5;i++) for(const x of [-.3,0,.3]) ball(.15,x+(i%2?.06:-.06),-.3-i*.2,-.5); fringe('part'); break;
-    case 'sidetail': scalp(); sides(.42,0); fringe('side'); ball(.15,.58,.28,-.1); strand(.64,.2,-.1,.36,1.2,.34,4,.02); break;
+    case 'sidetail': scalp(); sides(.42,0); fringe('side'); ball(.15,.58,.28,-.1); strand(.64,.2,-.1,.36,1.2,.34,4,.055); break;
   }
 }
 const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье']];
