@@ -781,7 +781,7 @@ function makeWorld(game,editor){
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
 const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
-const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза']];
+const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот']];
 const HEADS=[['cube','Куб'],['cutie','Милая'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},cutie:{w:.78,h:.78,d:.76,k:.5},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
@@ -802,8 +802,9 @@ function softGeo(w,h,d,k){
 const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот'],['girl','Девушка'],['slimgirl','Стройная'],['curvy','Пышная'],['sport','Спортивная'],['petite','Миниатюрная']];
 const BUILD_DEF={normal:{tw:1.2,td:.6,k:0,aw:.4,lw:.55,cyl:0},slim:{tw:1,td:.5,k:0,aw:.32,lw:.44,cyl:0},wide:{tw:1.55,td:.75,k:0,aw:.5,lw:.62,cyl:0},round:{tw:1.4,td:.85,k:.55,aw:.38,lw:.5,cyl:0},stick:{tw:.8,td:.4,k:0,aw:.22,lw:.28,cyl:0},chunky:{tw:1.45,td:.7,k:0,aw:.62,lw:.7,cyl:0},robot:{tw:1.2,td:.6,k:0,aw:.36,lw:.45,cyl:1},
   /* женские тела: торс как у обычных, но руки и ноги кубические, тоньше и изящнее (lady) */
-  girl:{tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1},slimgirl:{tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1},
-  curvy:{tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1},sport:{tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1},petite:{tw:.84,td:.42,k:0,aw:.2,lw:.28,cyl:0,lady:1,sc:.86}};
+  girl:{tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1,fem:1,ww:.88,hw:1.18,dw:.46,dh:.54},slimgirl:{tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1,fem:1,ww:.76,hw:1.04,dw:.42,dh:.48},
+  curvy:{tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1,fem:1,ww:.98,hw:1.45,dw:.52,dh:.68},sport:{tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1,fem:1,ww:1.05,hw:1.2,dw:.52,dh:.56},
+  petite:{tw:.84,td:.42,k:0,aw:.2,lw:.28,cyl:0,lady:1,fem:1,ww:.66,hw:.92,dw:.36,dh:.42,sc:.86}};
 
 /* торс «песочные часы»: куб с сеткой, где ширина и глубина зависят от высоты; UV сохраняются, поэтому лицо футболки не искажается */
 function femGeo(bd,y0,y1,pad=0){
@@ -865,7 +866,10 @@ function buildOutfit(id,cfg,c){
   const hw=bd.hw||tw, part=(m,y0,y1,pad)=>{ if(bd.fem){ const k=new THREE.Mesh(femGeo(bd,y0,y1,pad),m); k.castShadow=true; body.add(k); return k; } return box(tw+pad,y1-y0,td+pad,m,0,(y0+y1)/2,0); };
   const sh=mc(cfg.shirt), shD=mc(dark(cfg.shirt)), pn=mc(cfg.pants), W=mc('#f4f4f6'), K=mc('#20222b'), G=mc('#f2c230'), S=mc('#aab3c0');
   const sleeve=(m,len=1.15,w=.03,y=-.575)=>arms.forEach(a=>cx(bd.aw+w,len,bd.aw+w,m,0,y,0,a));
-  const cyl=(rt,rb,h,m,y)=>{ const k=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,22),m); k.position.set(0,y,0); k.castShadow=true; body.add(k); return k; };
+  /* у юбок и платьев текстура повторяется плиткой (≈1,2 блока), а не растягивается на весь подол */
+  const cyl=(rt,rb,h,m,y)=>{ const geo=new THREE.CylinderGeometry(rt,rb,h,22), uv=geo.attributes&&geo.attributes.uv;
+    if(m.map&&uv&&uv.count){ const n=Math.max(1,Math.round(Math.PI*(rt+rb)/1.2)), v=Math.max(.3,h/1.2); for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*n,uv.getY(i)*v); uv.needsUpdate=true; }
+    const k=new THREE.Mesh(geo,m); k.position.set(0,y,0); k.castShadow=true; body.add(k); return k; };
   switch(id){
     case 'skirt':
       part(mc(dark(oc)),1.2,1.3,.05); cyl(tw*.62,tw*.92,.42,O,1.07); cyl(tw*.93,tw*.93,.05,mc(dark(oc)),.865); break;
@@ -1004,39 +1008,104 @@ function drawAnime2(g){
 
 /* Универсальные аниме-глаза: параметры подбираются под каждое лицо */
 function animeStar(g,x,y,r){ g.beginPath(); g.moveTo(x,y-r); g.quadraticCurveTo(x+r*.15,y-r*.15,x+r,y); g.quadraticCurveTo(x+r*.15,y+r*.15,x,y+r); g.quadraticCurveTo(x-r*.15,y+r*.15,x-r,y); g.quadraticCurveTo(x-r*.15,y-r*.15,x,y-r); g.fill(); }
+/* Стили глаз и готовые аниме-лица (таблица ANIME ниже) */
+const AE_BASE={ew:18,eh:21,ix:1,iw:14,ih:18,sclera:'#f4f2f8',shade:'#c9c6d6',hl:4.7,lw:4.4,bw:1.8};
+const AE={
+  pink:{c1:'#7a2fd0',c2:'#e04fc6',c3:'#ffa6e4',glow:'#ffd9f5',drop:'#4a1a78',lash:'#4a1d1d',brow:'#3a2222',lid:'#a85a52'},
+  blue:{c1:'#a032e8',c2:'#4a63e8',c3:'#8be6ff',glow:'#b5f1ff',drop:'#9ff4ff',lash:'#0e2a4e',brow:'#0e2a4e',lid:'#c0584a'},
+  green:{c1:'#0e6b3a',c2:'#2fbf6a',c3:'#c8ffb4',glow:'#eaffd6',drop:'#0a4a28',lash:'#1c2b1c',brow:'#2a2a1a',lid:'#9a6a4a'},
+  ruby:{c1:'#6a0a1e',c2:'#e0224a',c3:'#ffa0ae',glow:'#ffd6dc',drop:'#4a0612',lash:'#2a0a12',brow:'#2a0a12',lid:'#b04a52'},
+  gray:{c1:'#34405c',c2:'#7f93b8',c3:'#dce8ff',glow:'#f0f6ff',drop:'#1c2a48',lash:'#2a2f3c',brow:'#2a2f3c',lid:'#8a8a9a'},
+  gold:{c1:'#ffb100',c2:'#ff7a00',c3:'#ffe27a',glow:'#fff2b0',drop:'#ff5a00',lash:'#3a1a0a',brow:'#3a1a0a',lid:'#c0703a',sclera:'#fff7ea',shade:'#e6cfa8'}
+};
+const mkAE=(st,x)=>Object.assign({},AE_BASE,AE[st],x);
+const ANIME={
+  anime9:mkAE('pink',{lx:-3,ly:4,blush:2,sweat:1,mouth:'wavy',bt:'worry'}),
+  anime10:{happy:1,lash:'#2a1420',brow:'#4a2a2e',bw:2,blush:2,sweat:1,mouth:'cat',bt:'worry'},
+  anime11:mkAE('blue',{lx:4,ly:5,blush:2,sweat:1,mouth:'pout',bt:'worry'}),
+  anime12:mkAE('green',{blush:1,mouth:'cat'}),
+  anime13:mkAE('ruby',{mouth:'lens'}),
+  anime14:mkAE('gray',{mouth:'smile'}),
+  anime15:mkAE('pink',{c1:'#ff4d8a',c2:'#ff8ab8',c3:'#ffd0e4',glow:'#fff0f6',drop:'#c0306a',hearts:1,blush:1,mouth:'open'}),
+  anime16:mkAE('blue',{wink:1,blush:1,mouth:'tongue'}),
+  anime17:mkAE('green',{iw:11,ih:15,bt:'up',mouth:'o',sweat:1}),
+  anime18:mkAE('gray',{half:.5,mouth:'pout',blush:1}),
+  anime19:mkAE('blue',{tears:1,mouth:'wavy',bt:'worry',blush:1}),
+  anime20:mkAE('gold',{star:1,ly:-3,mouth:'open',blush:1}),
+  anime21:mkAE('pink',{mouth:'cat',blush:1}),
+  anime22:mkAE('ruby',{lx:3,ly:3,blush:2,mouth:'wavy',bt:'worry'})
+};
+function animeStar(g,x,y,r){ g.beginPath(); g.moveTo(x,y-r); g.quadraticCurveTo(x+r*.15,y-r*.15,x+r,y); g.quadraticCurveTo(x+r*.15,y+r*.15,x,y+r); g.quadraticCurveTo(x-r*.15,y+r*.15,x-r,y); g.quadraticCurveTo(x-r*.15,y-r*.15,x,y-r); g.fill(); }
+function animeBrow(g,o,E,F){
+  if(!o.brow) return; g.strokeStyle=o.brow; g.lineWidth=o.bw||1.8; g.lineCap='round'; g.beginPath();
+  if(o.bt==='worry'){ g.moveTo(-E-4,-F-6); g.quadraticCurveTo(-2,-F-11,E+5,-F-20); }
+  else if(o.bt==='up'){ g.moveTo(-E-4,-F-12); g.quadraticCurveTo(0,-F-25,E+5,-F-14); }
+  else if(o.bt==='angry'){ g.moveTo(-E-4,-F-15); g.quadraticCurveTo(0,-F-14,E+5,-F-4); }
+  else { g.moveTo(-E-4,-F-9); g.quadraticCurveTo(-2,-F-19,E+5,-F-8); }
+  g.stroke();
+}
 function animeEye(g,o){
-  const E=o.ew, F=o.eh, circ=(x,y,r)=>{ g.beginPath(); g.arc(x,y,r,0,7); g.fill(); };
+  const E=o.ew, F=o.eh, cx=o.ix+(o.lx||0), cy=2+(o.ly||0), dy=cy-2, circ=(x,y,r)=>{ g.beginPath(); g.arc(x,y,r,0,7); g.fill(); };
   g.lineCap='round'; g.lineJoin='round';
+  g.save();
+  if(o.half){ g.beginPath(); g.rect(-60,-F+2*F*o.half,120,200); g.clip(); }
   g.fillStyle=o.sclera; g.beginPath(); g.ellipse(0,1,E,F,0,0,7); g.fill();
   if(o.shade){ g.strokeStyle=o.shade; g.lineWidth=3; g.beginPath(); g.ellipse(0,1,E-1,F-1,0,Math.PI*.9,Math.PI*1.6); g.stroke(); }
-  g.save(); g.beginPath(); g.ellipse(o.ix,2,o.iw,o.ih,0,0,7); g.clip();
-  const gr=g.createLinearGradient(0,2-o.ih,0,2+o.ih); gr.addColorStop(0,o.c1); gr.addColorStop(.5,o.c2); gr.addColorStop(1,o.c3); g.fillStyle=gr; g.fillRect(-30,-30,60,60);
-  if(o.glow){ const rg=g.createRadialGradient(o.ix,6,0,o.ix,6,o.ih*.8); rg.addColorStop(0,o.glow); rg.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=rg; g.fillRect(-30,-30,60,60); }
-  const sh=g.createLinearGradient(0,2-o.ih,0,0); sh.addColorStop(0,'rgba(10,0,40,.5)'); sh.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=sh; g.fillRect(-30,-30,60,32);
-  if(o.drop){ g.fillStyle=o.drop; g.beginPath(); g.moveTo(o.ix,-1); g.quadraticCurveTo(o.ix+3.5,5,o.ix,10); g.quadraticCurveTo(o.ix-3.5,5,o.ix,-1); g.fill(); }
-  if(o.pupil){ g.fillStyle=o.pupil; g.beginPath(); g.ellipse(o.ix,3,o.iw*.45,o.ih*.45,0,0,7); g.fill(); }
-  g.strokeStyle=o.ring||'rgba(0,0,0,.4)'; g.lineWidth=2; g.beginPath(); g.ellipse(o.ix,2,o.iw-1,o.ih-1,0,0,7); g.stroke();
+  g.save(); g.beginPath(); g.ellipse(cx,cy,o.iw,o.ih,0,0,7); g.clip();
+  const gr=g.createLinearGradient(0,cy-o.ih,0,cy+o.ih); gr.addColorStop(0,o.c1); gr.addColorStop(.5,o.c2); gr.addColorStop(1,o.c3); g.fillStyle=gr; g.fillRect(-40,-40,80,80);
+  if(o.glow){ const rg=g.createRadialGradient(cx,cy+4,0,cx,cy+4,o.ih*.8); rg.addColorStop(0,o.glow); rg.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=rg; g.fillRect(-40,-40,80,80); }
+  const sh=g.createLinearGradient(0,cy-o.ih,0,cy-2); sh.addColorStop(0,'rgba(10,0,40,.5)'); sh.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=sh; g.fillRect(-40,-40,80,cy+36);
+  if(o.drop){ g.fillStyle=o.drop; g.beginPath(); g.moveTo(cx,cy-3); g.quadraticCurveTo(cx+3.5,cy+3,cx,cy+8); g.quadraticCurveTo(cx-3.5,cy+3,cx,cy-3); g.fill(); }
+  if(o.pupil){ g.fillStyle=o.pupil; g.beginPath(); g.ellipse(cx,cy+1,o.iw*.45,o.ih*.45,0,0,7); g.fill(); }
+  g.strokeStyle=o.ring||'rgba(0,0,0,.4)'; g.lineWidth=2; g.beginPath(); g.ellipse(cx,cy,o.iw-1,o.ih-1,0,0,7); g.stroke();
   g.restore();
   g.fillStyle='#fff';
-  if(o.star) animeStar(g,o.ix+4,-5,6.5); else circ(o.ix+4,-5,o.hl);
-  circ(o.ix+9,.5,o.hl*.45); g.globalAlpha=.8; circ(o.ix-5,9,1.4); circ(o.ix-2,13,1); g.globalAlpha=1;
+  if(o.hearts) drawHeart(g,cx+4,-3+dy,8,'#fff'); else if(o.star) animeStar(g,cx+4,-5+dy,6.5); else circ(cx+4,-5+dy,o.hl);
+  circ(cx+9,.5+dy,o.hl*.45); g.globalAlpha=.8; circ(cx-5,9+dy,1.4); circ(cx-2,13+dy,1); g.globalAlpha=1;
   if(o.out){ g.strokeStyle='#111'; g.lineWidth=o.out; g.beginPath(); g.ellipse(0,1,E,F,0,Math.PI*.6,Math.PI*1.65); g.stroke(); }
+  g.restore();
   g.strokeStyle=o.lash;
-  g.lineWidth=o.lw; g.beginPath(); g.moveTo(-E-2,-3); g.bezierCurveTo(-E+1,-F-3,E*.3,-F-7,E+1,-F*.45); g.stroke();
+  g.save(); g.translate(0,o.half?2*F*o.half:0);
+  g.lineWidth=o.lw+(o.half?.8:0); g.beginPath(); g.moveTo(-E-2,-3); g.bezierCurveTo(-E+1,-F-3,E*.3,-F-7,E+1,-F*.45); g.stroke();
   g.lineWidth=2; for(const [a,b,c,d] of [[-E-1,-6,-E-9,-10],[-E,-1,-E-9,0],[-E+1,5,-E-6,10],[-E+6,-F-1,-E-3,-F-7]]){ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.stroke(); }
+  g.restore();
   g.lineWidth=1.3; g.beginPath(); g.moveTo(-E*.6,F+1.5); g.quadraticCurveTo(0,F+4,E*.7,F+1); g.stroke();
-  if(o.lid){ g.strokeStyle=o.lid; g.lineWidth=1.3; g.beginPath(); g.ellipse(0,-F-3,E*.9,6,0,Math.PI*1.15,Math.PI*1.85); g.stroke(); }
-  if(o.brow){ g.strokeStyle=o.brow; g.lineWidth=o.bw; g.beginPath(); g.moveTo(-E-4,-F-9); g.quadraticCurveTo(-2,-F-19,E+5,-F-8); g.stroke(); }
+  if(o.lid&&!o.half){ g.strokeStyle=o.lid; g.lineWidth=1.3; g.beginPath(); g.ellipse(0,-F-3,E*.9,6,0,Math.PI*1.15,Math.PI*1.85); g.stroke(); }
+  animeBrow(g,o,E,F);
+}
+/* закрытый глаз (для подмигивания) и радостный глаз «^» */
+function animeClosedEye(g,o){
+  g.lineCap='round'; g.lineJoin='round';
+  const sh=g.createRadialGradient(0,-4,1,0,-4,22); sh.addColorStop(0,'rgba(255,140,170,.45)'); sh.addColorStop(1,'rgba(255,140,170,0)'); g.fillStyle=sh; g.beginPath(); g.ellipse(0,-4,22,11,0,0,7); g.fill();
+  g.fillStyle=o.lash||'#2a1420'; g.beginPath(); g.moveTo(-21,-3); g.quadraticCurveTo(-4,16,21,-1); g.quadraticCurveTo(-2,8,-21,-3); g.fill();
+  g.strokeStyle=o.lash||'#2a1420'; g.lineWidth=2.4;
+  for(const [t,dx,dy,l] of [[.05,-.95,.3,9],[.17,-.8,.6,9],[.32,-.55,.85,8],[.5,-.3,.95,7],[.68,-.1,1,6]]){ const u=1-t, x=u*u*-21+2*t*u*-4+t*t*21, y=u*u*-3+2*t*u*16+t*t*-1; g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+dx*l*.5,y+dy*l*.7,x+dx*l,y+dy*l); g.stroke(); }
+  animeBrow(g,{brow:o.brow||'#4a2a2e',bw:2,bt:o.bt},18,12);
+}
+function animeHappyEye(g,o){
+  g.lineCap='round'; g.lineJoin='round';
+  const sh=g.createRadialGradient(0,2,1,0,2,20); sh.addColorStop(0,'rgba(255,140,170,.35)'); sh.addColorStop(1,'rgba(255,140,170,0)'); g.fillStyle=sh; g.beginPath(); g.ellipse(0,2,20,10,0,0,7); g.fill();
+  g.strokeStyle=o.lash||'#2a1420'; g.lineWidth=4.5; g.beginPath(); g.arc(0,8,13,Math.PI*1.12,Math.PI*1.88); g.stroke();
+  g.lineWidth=2.2; for(const [a,b,c,d] of [[-12,3,-19,0],[-12.5,5.5,-19,6],[-10,8,-16,12]]){ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.stroke(); }
+  animeBrow(g,{brow:o.brow||'#4a2a2e',bw:2,bt:o.bt},16,10);
 }
 function drawAnimeFace(g,o){
   g.save();
-  for(const side of [-1,1]){ g.save(); g.translate(64+side*29,64); g.scale(-side,1); animeEye(g,o); g.restore(); }
-  if(o.blush){ for(const x of [34,94]){ const rg=g.createRadialGradient(x,92,1,x,92,15); rg.addColorStop(0,'rgba(255,110,130,.6)'); rg.addColorStop(1,'rgba(255,110,130,0)'); g.fillStyle=rg; g.beginPath(); g.ellipse(x,92,16,8,0,0,7); g.fill(); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.6; for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(x+i*6-2,89); g.lineTo(x+i*6+1,95); g.stroke(); } } }
+  for(const side of [-1,1]){ g.save(); g.translate(64+side*29,64); g.scale(-side,1); if(o.happy) animeHappyEye(g,o); else if(o.wink&&side===1) animeClosedEye(g,o); else animeEye(g,o); g.restore(); }
+  if(o.blush){ const big=o.blush>1; for(const x of [32,96]){ const rg=g.createRadialGradient(x,92,1,x,92,big?20:15); rg.addColorStop(0,big?'rgba(255,95,120,.78)':'rgba(255,110,130,.6)'); rg.addColorStop(1,'rgba(255,110,130,0)'); g.fillStyle=rg; g.beginPath(); g.ellipse(x,92,big?20:16,big?10:8,0,0,7); g.fill(); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.6; for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(x+i*6-2,89); g.lineTo(x+i*6+1,95); g.stroke(); } } }
+  if(o.tears){ for(const x of [32,96]){ g.strokeStyle='rgba(170,225,255,.9)'; g.lineWidth=3; g.lineCap='round'; g.beginPath(); g.moveTo(x,86); g.lineTo(x,98); g.stroke(); g.fillStyle='rgba(170,225,255,.95)'; g.beginPath(); g.ellipse(x,101,3,4,0,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(x-1,100,1,0,7); g.fill(); } }
+  if(o.sweat){ const x=108,y=36; g.fillStyle='rgba(150,215,255,.95)'; g.strokeStyle='#5aa8e0'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x,y-9); g.quadraticCurveTo(x+7,y+1,x,y+6); g.quadraticCurveTo(x-7,y+1,x,y-9); g.fill(); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.ellipse(x-2,y+1,1.2,2,0,0,7); g.fill(); }
   if(o.nose){ g.fillStyle='#8a5a52'; g.beginPath(); g.arc(64,88,1.2,0,7); g.fill(); }
-  g.lineCap='round';
-  if(o.mouth==='smile'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(55,106); g.quadraticCurveTo(64,111,73,106); g.stroke(); }
-  else if(o.mouth==='lens'){ g.fillStyle='#e0626b'; g.beginPath(); g.moveTo(56,105); g.quadraticCurveTo(64,103,72,105); g.quadraticCurveTo(64,113,56,105); g.fill(); }
-  else if(o.mouth==='o'){ g.fillStyle='#ff9a9a'; g.strokeStyle='#c04a5a'; g.lineWidth=1.6; g.beginPath(); g.ellipse(64,106,4,3.2,0,0,7); g.fill(); g.stroke(); }
+  g.lineCap='round'; g.lineJoin='round';
+  const mo=o.mouth;
+  if(mo==='smile'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(55,106); g.quadraticCurveTo(64,111,73,106); g.stroke(); }
+  else if(mo==='lens'){ g.fillStyle='#e0626b'; g.beginPath(); g.moveTo(56,105); g.quadraticCurveTo(64,103,72,105); g.quadraticCurveTo(64,113,56,105); g.fill(); }
+  else if(mo==='o'){ g.fillStyle='#ff9a9a'; g.strokeStyle='#c04a5a'; g.lineWidth=1.6; g.beginPath(); g.ellipse(64,106,4,3.2,0,0,7); g.fill(); g.stroke(); }
+  else if(mo==='cat'){ g.strokeStyle='#8a4a4a'; g.lineWidth=2.2; g.beginPath(); g.arc(60,104,4.2,.1,Math.PI-.1); g.stroke(); g.beginPath(); g.arc(68,104,4.2,.1,Math.PI-.1); g.stroke(); }
+  else if(mo==='wavy'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(53,106); g.quadraticCurveTo(56,102,59,106); g.quadraticCurveTo(62,110,65,106); g.quadraticCurveTo(68,102,71,106); g.quadraticCurveTo(72,108,75,105); g.stroke(); }
+  else if(mo==='pout'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(57,108); g.quadraticCurveTo(64,103,71,108); g.stroke(); }
+  else if(mo==='open'){ g.fillStyle='#8a1f3a'; g.beginPath(); g.moveTo(54,103); g.quadraticCurveTo(64,106,74,103); g.quadraticCurveTo(71,117,64,117); g.quadraticCurveTo(57,117,54,103); g.fill(); g.fillStyle='#ff8aa0'; g.beginPath(); g.ellipse(64,113,4.5,2.6,0,0,7); g.fill(); }
+  else if(mo==='tongue'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(55,104); g.quadraticCurveTo(64,110,73,104); g.stroke(); g.fillStyle='#ff8aa0'; g.strokeStyle='#c04a5a'; g.lineWidth=1.2; g.beginPath(); g.ellipse(67,110,4,5,0,0,7); g.fill(); g.stroke(); }
   g.restore();
 }
 function drawKawaii(g){
@@ -1074,6 +1143,7 @@ function faceTex(cfg){
   return canvasTex(128,128,(g,w,h)=>{
     g.fillStyle=cfg.skin; g.fillRect(0,0,w,h); g.fillStyle='#1b1b22'; g.strokeStyle='#1b1b22'; g.lineCap='round'; g.lineWidth=7;
     const eyes=(f)=>{ f(38,54); f(90,54); };
+    if(ANIME[cfg.face]){ drawAnimeFace(g,ANIME[cfg.face]); return; }
     switch(cfg.face){
       case 'happy': g.lineWidth=7; eyes((x,y)=>{g.beginPath();g.arc(x,y+6,10,Math.PI*1.1,Math.PI*1.9);g.stroke();}); g.beginPath(); g.arc(64,74,22,0,Math.PI); g.closePath(); g.fillStyle='#3a1620'; g.fill(); break;
       case 'cool': g.fillStyle='#0c0c10'; g.fillRect(16,40,96,24); g.fillRect(58,44,12,6); g.fillStyle='rgba(255,255,255,.35)'; g.fillRect(22,44,16,6); g.fillStyle='#1b1b22'; g.lineWidth=6; g.beginPath(); g.arc(64,78,22,.25,Math.PI-.25); g.stroke(); break;
@@ -1159,8 +1229,8 @@ async function imgToTex(f){
 function userTex(url){
   if(texCache[url]) return texCache[url];
   const ks=Object.keys(texCache); if(ks.length>6){ texCache[ks[0]].dispose(); delete texCache[ks[0]]; }
-  if(url.startsWith('p:')){ const d=TEXS.find(x=>x[0]===url.slice(2)); if(d){ const t=canvasTex(128,128,d[2],true); return texCache[url]=t; } }
-  const t=new THREE.TextureLoader().load(url); t.userData={keep:true}; return texCache[url]=t;
+  if(url.startsWith('p:')){ const d=TEXS.find(x=>x[0]===url.slice(2)); if(d){ const t=canvasTex(128,128,d[2],true); t.wrapS=t.wrapT=THREE.RepeatWrapping; return texCache[url]=t; } }
+  const t=new THREE.TextureLoader().load(url); t.userData={keep:true}; t.wrapS=t.wrapT=THREE.RepeatWrapping; return texCache[url]=t;
 }
 function buildAvatar(cfg){
   const g=new THREE.Group(), body=new THREE.Group(); g.add(body);
@@ -2197,7 +2267,11 @@ const AvS={
     const a=S.avatar, el=$('#avatar'), sc=keepScroll&&$('.apanel',el)?$('.apanel',el).scrollTop:0;
     const sws=(k,list)=>`<div class="sws">${list.map(c=>`<button class="sw ${a[k]===c?'on':''}" data-k="${k}" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
     const chips=(k,list)=>`<div class="chips">${list.map(([v,n])=>`<button class="chip ${a[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}</div>`;
-    const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;margin-bottom:.5em">📁 Загрузить свою картинку<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>${a[k]&&String(a[k]).startsWith('data:')?`<div class="sws"><button class="sw on" title="Своя текстура" style="background:url(${a[k]}) center/cover"></button></div>`:''}<div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>${a[k]?`<button class="btn sm danger" data-texx="${k}" style="margin-top:.5em">Убрать текстуру</button>`:''}`;
+    const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>
+      <div style="margin-top:.9em;padding-top:.7em;border-top:1px solid rgba(255,255,255,.14)"><span class="lbl" style="display:block">Своя картинка</span>
+      <div style="display:flex;gap:.5em;align-items:center;flex-wrap:wrap;margin-top:.3em"><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;display:inline-block">📁 Загрузить текстуру<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"></label>
+      ${a[k]&&String(a[k]).startsWith('data:')?`<span class="sw on" title="Своя текстура" style="display:inline-block;width:34px;height:34px;border-radius:8px;background:url(${a[k]}) center/cover"></span>`:''}
+      ${a[k]?`<button class="btn sm danger" data-texx="${k}">Убрать</button>`:''}</div></div>`;
     el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
       <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"><p class="muted" style="margin:.4em 0 0;font-size:.85em">Это ваш ник: он уникален, принадлежит только вам и его нельзя изменить.</p></div>
