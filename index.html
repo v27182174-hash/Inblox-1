@@ -774,7 +774,7 @@ function makeWorld(game,editor){
       else if(p.type==='npc'){
         /* невидимая «коробка» для выбора и столкновений + настоящая модель аватара с ником */
         mesh=new THREE.Mesh(GBOX,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-        av=buildAvatar(npcLook(p.npc)); const nm=npcName(p.npc); if(nm){ av.tag=nameSprite(nm); av.group.add(av.tag); } grp.add(av.group);
+        av=buildAvatar(npcLook(p.npc)); { const ps=npcPoseOf(p.npc); if(ps!=='stand') applyNpcPose(av,ps,0); } const nm=npcName(p.npc); if(nm){ av.tag=nameSprite(nm); av.group.add(av.tag); } grp.add(av.group);
       }
       else{
         const sg=SHAPE_GEO[p.shape]||SHAPE_GEO.box, ms=W.matsFor(p); mesh=new THREE.Mesh(sg[0],(!SHAPE_GEO[p.shape]||p.shape==='box'||p.shape==='cyl')?ms:ms[0]);
@@ -1352,6 +1352,37 @@ function buildAvatar(cfg){
   if(bd.sc) body.scale.setScalar(bd.sc);   /* миниатюрное тело: всё немного меньше, ноги остаются на земле */
   return {group:g,body,head,armL,armR,legL,legR};
 }
+/* Позы NPC: [id, название, женская?]. Руки вращаются от плеча: x<0 — вперёд/вверх, z — в сторону (левая рука наружу при z<0, правая при z>0) */
+const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['dance','Танцует',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
+  ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1]];
+function npcPoseOf(n){ const v=n&&n.pose; return typeof v==='string'&&NPC_POSES.some(x=>x[0]===v)?v:'stand'; }
+function applyNpcPose(av,pose,t){
+  const L=av.armL,R=av.armR,LL=av.legL,RL=av.legR,B=av.body, s=Math.sin(t*5), s2=Math.sin(t*9);
+  const A=(l,r)=>{ L.rotation.x=l[0]; L.rotation.z=l[1]; R.rotation.x=r[0]; R.rotation.z=r[1]; };
+  const G=(l,r)=>{ LL.rotation.x=l[0]; LL.rotation.z=l[1]; RL.rotation.x=r[0]; RL.rotation.z=r[1]; };
+  A([0,0],[0,0]); G([0,0],[0,0]); B.rotation.z=0; B.rotation.x=0;
+  switch(pose){
+    case 'hips': A([.2,-.55],[.2,.55]); break;
+    case 'sidehand': A([.15,-.5],[0,.05]); G([0,0],[0,0]); B.rotation.z=.03; break;
+    case 'crossed': A([-1.15,.95],[-1.15,-.95]); break;
+    case 'back': A([.5,.2],[.5,-.2]); break;
+    case 'wave': A([0,-.05],[-.1,2.5+s2*.3]); break;
+    case 'cheer': A([0,-2.7+s2*.2],[0,2.7-s2*.2]); B.position.y+=Math.abs(Math.sin(t*5))*.25; break;
+    case 'dance': A([-.6+s*.9,-1.2],[-.6-s*.9,1.2]); G([s*.3,0],[-s*.3,0]); B.rotation.z=s*.08; B.position.y+=Math.abs(Math.sin(t*5))*.12; break;
+    case 'sit': B.position.y=-.82; G([-1.5,0],[-1.5,0]); A([-.35,-.15],[-.35,.15]); break;
+    case 'salute': A([0,-.05],[-2.5,.25]); break;
+    case 'think': A([0,-.05],[-1.9,-.8]); B.rotation.z=.03; break;
+    case 'shy': A([-.55,.35],[-.55,-.35]); G([0,.07],[0,-.07]); B.rotation.z=.04+s*.01; break;
+    case 'hair': A([-2.2+s*.05,.6],[.05,.08]); G([0,0],[-.12,.1]); B.rotation.z=-.04; break;
+    case 'model': A([.1,-.45],[.55,-.1]); G([-.05,.04],[-.3,.35]); B.rotation.z=.06; break;
+    case 'kawaii': A([-2.35,.45],[-2.35,-.45]); G([0,.1],[0,-.1]); B.position.y+=Math.abs(Math.sin(t*4))*.1; B.rotation.z=s*.04; break;
+    case 'curtsy': { const d=(Math.sin(t*2)+1)/2; B.position.y-=.25*d; A([-.2,-.8],[-.2,.8]); G([-.3*d,.05],[.55*d,-.05]); break; }
+    case 'heart': A([-2.9,.55],[-2.9,-.55]); B.rotation.z=s*.05; G([0,.06],[0,-.06]); break;
+    case 'sitlady': B.position.y=-.82; G([-1.5,.12],[-1.5,-.12]); A([-1.1,.25],[-1.1,-.25]); break;
+    case 'pose2': A([-.2,-.9],[-2.6,.5]); G([-.05,0],[.1,.35]); B.rotation.z=.07; break;
+    case 'sleepy': A([-3.0+s*.06,-.45],[-3.0-s*.06,.45]); B.rotation.x=-.06; break;
+  }
+}
 function animAvatar(av,t,speed,air,vy){
   const now=performance.now(), dt=Math.min(.05,Math.max(0,(now-(av._pt||now))/1000)); av._pt=now;
   const ex=r=>1-Math.exp(-r*dt), k=Math.min(1,speed/8), sw=Math.sin(t*11)*.95*k;
@@ -1630,6 +1661,7 @@ const Play={
       else if((this.talk&&this.talk.n===n)||(d<9&&p.npc&&p.npc.turn!==false)) want=Math.atan2(dx,dz)-p.ry*DEG;
       let df=want-n.face; df=Math.atan2(Math.sin(df),Math.cos(df)); n.face+=df*Math.min(1,dt*8);
       n.av.body.rotation.y=n.face; animAvatar(n.av,this.clock+n.ph,hs>.5?Math.min(hs,8):0,false,0);
+      { const ps=npcPoseOf(p.npc); if(hs<=.5&&ps!=='stand'){ applyNpcPose(n.av,ps,this.clock+n.ph); n.av._pz=1; } else if(n.av._pz){ for(const a of [n.av.armL,n.av.armR,n.av.legL,n.av.legR]) a.rotation.z=0; n.av.body.rotation.z=0; n.av.body.rotation.x=0; n.av._pz=0; } }
       if(active){ if(d<5&&!n.gr){ n.gr=true; this.npcPlay(n,'sndNear'); } else if(d>9) n.gr=false; }
       if(active&&!this.talk&&d<3.4&&Math.abs(pl.y-(m.y-m.hy))<3.5&&d<bd){ best=n; bd=d; }
     }
@@ -2196,6 +2228,7 @@ const Ed={
       <label class="row" style="justify-content:flex-start;margin-top:.5em"><input type="checkbox" data-nf="turn" ${n.turn!==false?'checked':''} style="flex:none"><span style="flex:none">Поворачиваться к игроку</span></label>
       <label class="row" style="justify-content:flex-start"><input type="checkbox" data-nf="solid" ${n.solid!==false?'checked':''} style="flex:none"><span style="flex:none">Твёрдый (нельзя пройти насквозь)</span></label>
       <p class="muted" style="margin:.5em 0 0;font-size:.85em">В игре: подойти и нажать F (или кнопку на экране). Чтобы NPC ходил, задайте «Движение» ниже.</p>
+      <span class="lbl" style="margin-top:.7em;display:block">Поза</span><div class="chips">${NPC_POSES.filter(x=>!x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div><span class="lbl" style="margin-top:.5em;display:block">Женские позы</span><div class="chips">${NPC_POSES.filter(x=>x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div>
       <div class="chips" style="margin-top:.6em"><button class="chip" id="npcMine">👤 Мой аватар</button><button class="chip" id="npcRnd">🎲 Случайный</button></div></div>
     <div class="sec"><span class="lbl">Звуки NPC</span>${NPC_SND.map(([k,t])=>`<div class="srow" style="flex-wrap:wrap"><span class="n" style="flex-basis:100%">${t}</span><select data-ns="${k}" style="flex:1;min-width:0">${sndOptsHTML(npcSnd(n,k))}</select><button class="btn sm" data-nsp="${k}" title="Прослушать">▶</button></div>`).join('')}<p class="muted" style="margin:.4em 0 0;font-size:.85em">Свои звуки загружаются во вкладке «Звуки».</p></div>
     <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
@@ -2212,6 +2245,7 @@ const Ed={
     const keep=fn=>{ const a=el.scrollTop, par=el.parentElement, b=par?par.scrollTop:0; fn(); el.scrollTop=a; if(par) par.scrollTop=b; };
     const upd=()=>{ this.dirty=true; this.world.update(p); keep(()=>this.renderProps(el)); };
     $$('[data-nf]',el).forEach(i=>{ i.addEventListener('focus',()=>this.pushUndo()); i.addEventListener('input',()=>{ const k=i.dataset.nf; p.npc[k]=i.type==='checkbox'?i.checked:i.value; this.dirty=true; if(k==='name') this.world.update(p); }); });
+    $$('[data-np]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.pose=b.dataset.np; upd(); });
     $$('[data-nk]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[b.dataset.nk]=b.dataset.nv; upd(); });
     $$('[data-nc]',el).forEach(i=>i.addEventListener('change',()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[i.dataset.nc]=i.value; upd(); }));
     $$('[data-ns]',el).forEach(i=>i.onchange=()=>{ this.pushUndo(); p.npc[i.dataset.ns]=i.value; this.dirty=true; });
