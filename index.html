@@ -933,7 +933,9 @@ function buildOutfit(id,cfg,c){
   const sh=mc(cfg.shirt), shD=mc(dark(cfg.shirt)), pn=mc(cfg.pants), W=mc('#f4f4f6'), K=mc('#20222b'), G=mc('#f2c230'), S=mc('#aab3c0');
   const sleeve=(m,len=1.15,w=.03,y=-.575)=>arms.forEach(a=>cx(bd.aw+w,len,bd.aw+w,m,0,y,0,a));
   /* у юбок и платьев текстура повторяется плиткой (≈1,2 блока), а не растягивается на весь подол */
-  const cyl=(rt,rb,h,m,y)=>{ const geo=new THREE.CylinderGeometry(rt,rb,h,22), uv=geo.attributes&&geo.attributes.uv;
+  /* ширина тела на высоте y: у женских фигур талия уже плеч и бёдер, юбки и платья начинаются от талии, а не от «квадрата» */
+  const tabW=y=>{ const T=[[1,bd.hw],[1.12,bd.hw],[1.5,bd.ww],[1.9,bd.tw],[2.2,bd.tw*.96]]; for(let i=1;i<T.length;i++) if(y<=T[i][0]||i===T.length-1){ const p=T[i-1], q=T[i], t=Math.min(1,Math.max(0,(y-p[0])/(q[0]-p[0]))); return p[1]+(q[1]-p[1])*t*t*(3-2*t); } };
+  const cyl=(rt,rb,h,m,y)=>{ if(bd.fem){ const lim=tabW(y+h/2)/2*1.06+.03; if(rt>lim) rt=lim; if(rb<rt) rb=rt; } const geo=new THREE.CylinderGeometry(rt,rb,h,22), uv=geo.attributes&&geo.attributes.uv;
     if(m.map&&uv&&uv.count){ const n=Math.max(1,Math.round(Math.PI*(rt+rb)/1.2)), v=Math.max(.3,h/1.2); for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*n,uv.getY(i)*v); uv.needsUpdate=true; }
     const k=new THREE.Mesh(geo,m); k.position.set(0,y,0); k.castShadow=true; body.add(k); return k; };
   switch(id){
@@ -954,7 +956,7 @@ function buildOutfit(id,cfg,c){
       legs.forEach(l=>cx(bd.lw+.03,.8,bd.lw+.03,W,0,-.4,0,l)); break; }
     case 'croptop': {
       const DN=mc('#3b6fd6');
-      box(tw+.02,.5,td+.02,skin,0,1.27,0); part(O,1.55,2.2,.04); box(tw*.3,.1,.03,W,0,1.95,fz+.03);
+      part(skin,1.02,1.52,.02); part(O,1.55,2.2,.04); box(tw*.3,.1,.03,W,0,1.95,fz+.03);
       part(DN,1.0,1.12,.05); legs.forEach(l=>cx(bd.lw+.04,.34,bd.lw+.04,DN,0,-.17,0,l)); break; }
     case 'gown':
       part(O,1.0,2.2,.04); part(G,1.46,1.54,.07); cyl(tw*.55,tw*1.3,1.0,O,.82); cyl(tw*1.3,tw*1.3,.06,G,.33); box(.12,.12,.04,G,0,2.1,fz+.04);
@@ -965,7 +967,7 @@ function buildOutfit(id,cfg,c){
       sleeve(K,.7,.04,-.35); arms.forEach(a=>{ cx(bd.aw+.1,.3,bd.aw+.1,W,0,-.1,0,a); cx(bd.aw+.06,.1,bd.aw+.06,W,0,-.7,0,a); });
       legs.forEach(l=>cx(bd.lw+.03,.5,bd.lw+.03,W,0,-.55,0,l)); break;
     case 'sundress':
-      box(tw+.02,.34,td+.02,skin,0,2.03,0); part(O,1.0,1.86,.04); for(const s of sx) box(.1,.4,td+.05,O,s*tw*.26,2.05,0);
+      part(skin,1.86,2.2,.02); part(O,1.0,1.86,.04); for(const s of sx) box(.1,.4,td+.05,O,s*tw*.26,2.05,0);
       cyl(tw*.58,tw*.92,.55,O,.98); cyl(tw*.93,tw*.93,.05,W,.71); box(.3,.1,.05,W,0,1.25,fz+.05);
       arms.forEach(a=>cx(bd.aw+.02,.7,bd.aw+.02,skin,0,-.35,0,a)); break;
     case 'cardigan':
@@ -995,7 +997,7 @@ function buildOutfit(id,cfg,c){
       part(pn,1.03,1.53,.04); box(tw*.6,.6,.04,pn,0,1.65,fz+.03); box(tw*.3,.22,.04,mc(dark(cfg.pants)),0,1.5,fz+.06);
       for(const s of sx){ box(.14,.55,.04,pn,s*tw*.24,2.0,fz+.025); box(.14,.55,.04,pn,s*tw*.24,2.0,-fz-.025); box(.14,.04,td+.06,pn,s*tw*.24,2.21,0); box(.1,.1,.05,G,s*tw*.24,1.82,fz+.05); } break;
     case 'apron':
-      box(tw*.78,1.25,.04,W,0,1.42,fz+.025); box(tw*.4,.22,.03,O,0,1.3,fz+.055); box(.1,.3,.04,W,0,2.2,fz+.02); part(W,1.515,1.585,.04); break;
+      box((bd.fem?bd.ww:tw)*.8,1.25,.04,W,0,1.42,fz+.025); box(tw*.4,.22,.03,O,0,1.3,fz+.055); box(.1,.3,.04,W,0,2.2,fz+.02); part(W,1.515,1.585,.04); break;
     case 'armor':
       part(S,1.25,2.2,.08); part(mc('#5c6470'),1.08,1.28,.1); box(.3,.3,.03,O,0,1.8,fz+.06);
       arms.forEach(a=>{ box(bd.aw+.2,.2,bd.aw+.2,S,0,.02,0,a); cx(bd.aw+.06,.4,bd.aw+.06,S,0,-.88,0,a); });
