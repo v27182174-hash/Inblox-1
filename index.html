@@ -807,7 +807,7 @@ function makeWorld(game,editor){
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
 const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
-const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот']];
+const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот'],['anime23','Аниме: фиолетовые'],['anime24','Аниме: бирюзовые, смущение'],['anime25','Аниме: янтарные, улыбка'],['anime26','Аниме: лавандовые, подмигивание'],['anime27','Аниме: мятные, веснушки'],['anime28','Аниме: розовые, сердечки'],['anime29','Аниме: небесные, сонные'],['anime30','Аниме: рубиновые, веснушки'],['anime31','Аниме: счастливая'],['anime32','Аниме: слёзы радости'],['anime33','Аниме парень: дерзкий'],['anime34','Аниме парень: серьёзный'],['anime35','Аниме парень: клык'],['anime36','Аниме парень: спокойный'],['anime37','Аниме парень: хитрый'],['anime38','Аниме парень: тёмный'],['anime39','Аниме парень: подмигивает'],['anime40','Аниме парень: ухмылка'],['anime41','Аниме парень: скучает'],['anime42','Аниме парень: радость'],['anime43','Аниме парень: веснушки'],['anime44','Аниме парень: мягкий']];
 const HEADS=[['cube','Куб'],['cutie','Милая'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},cutie:{w:.78,h:.78,d:.76,k:.5},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
@@ -923,7 +923,7 @@ function buildHair(id,cfg,hs,body){
     case 'sidetail': scalp(); sides(.42,0); fringe('side'); ball(.15,.58,.28,-.1); strand(.64,.2,-.1,.36,1.2,.34,4,.055); break;
   }
 }
-const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье']];
+const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье'],['schooluni','Школьная форма'],['lolita','Лолита'],['witch','Ведьма'],['princess','Принцесса'],['swim','Купальник'],['yukata','Юката'],['sportwear','Спорт-комплект'],['qipao','Ципао'],['nurse','Медсестра'],['angel','Ангел'],['cheer','Чирлидер'],['knit','Свитер и юбка']];
 /* Наряд — объёмные детали поверх тела: воротники, ремни, плащи, броня. Цвет акцентов задаёт outfitColor */
 function buildOutfit(id,cfg,c){
   const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, mc=h=>MC[h]||(MC[h]=new THREE.MeshLambertMaterial({color:h}));
@@ -939,6 +939,61 @@ function buildOutfit(id,cfg,c){
     if(m.map&&uv&&uv.count){ const n=Math.max(1,Math.round(Math.PI*(rt+rb)/1.2)), v=Math.max(.3,h/1.2); for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*n,uv.getY(i)*v); uv.needsUpdate=true; }
     const k=new THREE.Mesh(geo,m); k.position.set(0,y,0); k.castShadow=true; body.add(k); return k; };
   switch(id){
+    case 'schooluni': {
+      const PL=mc('#2f3552'), RB=O;
+      part(W,1.25,2.2,.04); box(tw*.7,.1,td+.08,W,0,2.17,0); box(.3,.14,.05,RB,0,1.95,fz+.06); box(.12,.34,.05,RB,0,1.76,fz+.06);
+      part(PL,1.2,1.3,.05); cyl(tw*.6,tw*.92,.42,PL,1.07); cyl(tw*.93,tw*.93,.04,RB,.87);
+      arms.forEach(a=>cx(bd.aw+.04,.4,bd.aw+.04,W,0,-.2,0,a)); legs.forEach(l=>cx(bd.lw+.03,.4,bd.lw+.03,W,0,-.6,0,l)); break; }
+    case 'lolita': {
+      part(O,1.0,2.2,.04); box(tw*.55,.12,td+.08,W,0,2.14,0); box(.3,.14,.05,W,0,1.92,fz+.06); box(.1,.14,.05,W,.12,1.9,fz+.06);
+      cyl(tw*.5,tw*1.15,.8,O,.9); cyl(tw*1.17,tw*1.17,.1,W,.5); box(tw*.5,.7,.04,W,0,1.55,fz+.03); part(W,1.37,1.45,.06);
+      arms.forEach(a=>{ cx(bd.aw+.18,.3,bd.aw+.18,W,0,-.1,0,a); cx(bd.aw+.05,.1,bd.aw+.05,O,0,-.3,0,a); });
+      legs.forEach(l=>cx(bd.lw+.03,.78,bd.lw+.03,W,0,-.39,0,l)); break; }
+    case 'witch': {
+      const PU=mc('#3a1f5c'), PU2=mc('#6a3fa0');
+      part(PU,1.0,2.2,.04); part(G,1.4,1.5,.07); box(.16,.16,.05,G,0,1.45,fz+.05); box(.14,.14,.03,G,0,1.9,fz+.04);
+      cyl(tw*.45,tw*1.05,.9,PU,.95); cyl(tw*1.07,tw*1.07,.06,PU2,.5);
+      sleeve(PU,.9,.05,-.45); arms.forEach(a=>cx(bd.aw+.08,.1,bd.aw+.08,PU2,0,-.9,0,a));
+      legs.forEach(l=>cx(bd.lw+.03,.78,bd.lw+.03,mc('#2a2a3a'),0,-.39,0,l)); break; }
+    case 'princess': {
+      const LT=mc('#'+new THREE.Color(oc).lerp(new THREE.Color('#ffffff'),.45).getHexString());
+      part(O,1.0,2.2,.04); part(skin,2.0,2.2,.03); part(G,1.5,1.58,.06); box(.14,.14,.05,G,0,1.8,fz+.05);
+      cyl(tw*.5,tw*1.5,1.1,O,.78); cyl(tw*.52,tw*1.36,.7,LT,.95); cyl(tw*1.5,tw*1.5,.08,G,.25);
+      arms.forEach(a=>{ cx(bd.aw+.22,.28,bd.aw+.22,O,0,-.12,0,a); cx(bd.aw+.05,.5,bd.aw+.05,W,0,-.85,0,a); }); break; }
+    case 'swim':
+      part(O,1.0,2.0,.02); box(tw*.3,.06,.03,W,0,1.55,fz+.02);
+      legs.forEach(l=>cx(bd.lw+.02,bd.lady?.5:.8,bd.lw+.02,skin,0,bd.lady?-.25:-.4,0,l)); break;
+    case 'yukata':
+      part(O,1.0,2.2,.05); part(G,1.45,1.75,.09); box(.5,.4,.12,mc(dark(oc)),0,1.6,-fz-.12); box(.12,.3,.03,W,0,2.0,fz+.04);
+      for(const s of sx){ const c=box(.1,.7,.03,W,s*.14,1.9,fz+.04); c.rotation.z=-s*.3; }
+      arms.forEach(a=>{ box(bd.aw+.3,.65,bd.aw+.15,O,0,-.33,0,a); box(bd.aw+.32,.06,bd.aw+.17,G,0,-.66,0,a); });
+      cyl(tw*.5,tw*.75,.75,O,.62); break;
+    case 'sportwear': {
+      const DN=mc('#2f3552');
+      part(O,1.45,2.0,.03); part(W,1.7,1.76,.05); part(DN,1.0,1.2,.04);
+      legs.forEach(l=>cx(bd.lw+.03,.78,bd.lw+.03,DN,0,-.39,0,l)); for(const s of sx) box(.04,.6,.03,W,s*(bd.lw/2+.03),-.4,0,legs[s<0?0:1]); break; }
+    case 'qipao':
+      part(O,1.0,2.2,.04); part(G,1.98,2.04,.06); box(tw*.3,.14,td*.6,O,0,2.24,0); box(tw*.2,.04,td*.6+.02,G,0,2.3,0);
+      cyl(hw*.54,hw*.5,.75,O,.78); cyl(hw*.5,hw*.5,.05,G,.41);
+      for(let i=0;i<3;i++) box(.07,.07,.03,G,.1+i*.0,1.85-i*.22,fz+.035); box(.18,.18,.03,G,-.12,1.5,fz+.03); break;
+    case 'nurse': {
+      const RD=mc('#e0405a');
+      part(W,1.0,2.2,.04); part(RD,1.4,1.48,.06); box(.2,.06,.03,RD,0,1.95,fz+.04); box(.06,.2,.03,RD,0,1.95,fz+.04);
+      cyl(hw*.55,hw*.85,.75,W,.9); arms.forEach(a=>cx(bd.aw+.05,.3,bd.aw+.05,W,0,-.15,0,a));
+      legs.forEach(l=>cx(bd.lw+.03,.78,bd.lw+.03,W,0,-.39,0,l)); break; }
+    case 'angel': {
+      part(W,1.0,2.2,.04); part(G,1.46,1.54,.06); cyl(hw*.5,hw*1.25,.95,W,.75); cyl(hw*1.27,hw*1.27,.05,G,.3);
+      for(const s of sx){ const w1=box(.14,1.0,.55,W,s*.5,1.95,-fz-.3); w1.rotation.z=-s*.35; const w2=box(.12,.7,.5,W,s*.78,1.7,-fz-.34); w2.rotation.z=-s*.5; }
+      const hl=new THREE.Mesh(new THREE.TorusGeometry(.4,.05,8,24),new THREE.MeshLambertMaterial({color:'#ffe066',emissive:'#a88410'})); hl.rotation.x=Math.PI/2; hl.position.set(0,3.6,0); body.add(hl); break; }
+    case 'cheer': {
+      part(O,1.5,2.1,.03); part(W,1.72,1.8,.05); cyl(tw*.55,tw*.85,.3,O,1.13); cyl(tw*.86,tw*.86,.04,W,.97);
+      arms.forEach(a=>{ const k=new THREE.Mesh(new THREE.SphereGeometry(.25,10,8),mc(oc)); k.position.set(0,-1.15,0); a.add(k); });
+      legs.forEach(l=>cx(bd.lw+.03,.4,bd.lw+.03,W,0,-.6,0,l)); break; }
+    case 'knit': {
+      const PL=mc('#2f3552');
+      sleeve(O,1.0,.05,-.5); arms.forEach(a=>cx(bd.aw+.08,.12,bd.aw+.08,mc(dark(oc)),0,-1.0,0,a));
+      part(O,1.3,2.2,.06); box(tw*.62,.2,td+.1,O,0,2.18,0); part(mc(dark(oc)),1.45,1.53,.065);
+      part(PL,1.0,1.3,.05); cyl(tw*.6,tw*.9,.42,PL,1.07); cyl(tw*.93,tw*.93,.04,mc(dark(oc)),.87); break; }
     case 'skirt':
       part(mc(dark(oc)),1.2,1.3,.05); cyl(tw*.62,tw*.92,.42,O,1.07); cyl(tw*.93,tw*.93,.05,mc(dark(oc)),.865); break;
     case 'sailor': {
@@ -1084,6 +1139,14 @@ const AE={
   green:{c1:'#0e6b3a',c2:'#2fbf6a',c3:'#c8ffb4',glow:'#eaffd6',drop:'#0a4a28',lash:'#1c2b1c',brow:'#2a2a1a',lid:'#9a6a4a'},
   ruby:{c1:'#6a0a1e',c2:'#e0224a',c3:'#ffa0ae',glow:'#ffd6dc',drop:'#4a0612',lash:'#2a0a12',brow:'#2a0a12',lid:'#b04a52'},
   gray:{c1:'#34405c',c2:'#7f93b8',c3:'#dce8ff',glow:'#f0f6ff',drop:'#1c2a48',lash:'#2a2f3c',brow:'#2a2f3c',lid:'#8a8a9a'},
+  purple:{c1:'#3a1a78',c2:'#8a4de0',c3:'#d8b8ff',glow:'#f0e4ff',drop:'#2a0f55',lash:'#2a1440',brow:'#3a2a50',lid:'#a05a8a'},
+  teal:{c1:'#0a5a68',c2:'#1fb8c0',c3:'#b4fff6',glow:'#e0fffb',drop:'#06424c',lash:'#10303a',brow:'#10303a',lid:'#7a6a5a'},
+  amber:{c1:'#7a3a00',c2:'#e08a1a',c3:'#ffe0a0',glow:'#fff3d0',drop:'#5a2a00',lash:'#3a1e0a',brow:'#4a2a12',lid:'#b0704a'},
+  lav:{c1:'#5a4aa8',c2:'#a89aee',c3:'#e8e0ff',glow:'#f6f2ff',drop:'#3a2e78',lash:'#3a3050',brow:'#4a4060',lid:'#a07a9a'},
+  mint:{c1:'#1a7a5a',c2:'#5ee0b0',c3:'#d8fff0',glow:'#f0fff8',drop:'#0e5a40',lash:'#1c3a30',brow:'#2a4a3c',lid:'#8a7a5a'},
+  rose:{c1:'#a01a4a',c2:'#ff6a9a',c3:'#ffd0e0',glow:'#fff0f6',drop:'#780f36',lash:'#4a1428',brow:'#5a2a38',lid:'#b85a6a'},
+  sky:{c1:'#1a4ea8',c2:'#5aa8ff',c3:'#d0ecff',glow:'#eef8ff',drop:'#0f3478',lash:'#1c2a4a',brow:'#2a3a5a',lid:'#8a7a8a'},
+  dark:{c1:'#0a0c14',c2:'#2a3354',c3:'#7a90c8',glow:'#b0c4f0',drop:'#05060c',lash:'#0a0a10',brow:'#14141c',lid:'#8a5a4a'},
   gold:{c1:'#ffb100',c2:'#ff7a00',c3:'#ffe27a',glow:'#fff2b0',drop:'#ff5a00',lash:'#3a1a0a',brow:'#3a1a0a',lid:'#c0703a',sclera:'#fff7ea',shade:'#e6cfa8'}
 };
 const mkAE=(st,x)=>Object.assign({},AE_BASE,AE[st],x);
@@ -1101,7 +1164,29 @@ const ANIME={
   anime19:mkAE('blue',{tears:1,mouth:'wavy',bt:'worry',blush:1}),
   anime20:mkAE('gold',{star:1,ly:-3,mouth:'open',blush:1}),
   anime21:mkAE('pink',{mouth:'cat',blush:1}),
-  anime22:mkAE('ruby',{lx:3,ly:3,blush:2,mouth:'wavy',bt:'worry'})
+  anime22:mkAE('ruby',{lx:3,ly:3,blush:2,mouth:'wavy',bt:'worry'}),
+  anime23:mkAE('purple',{blush:1,mouth:'smile'}),
+  anime24:mkAE('teal',{blush:2,mouth:'o',bt:'worry',sweat:1}),
+  anime25:mkAE('amber',{star:1,blush:1,mouth:'grin'}),
+  anime26:mkAE('lav',{wink:1,blush:1,mouth:'cat'}),
+  anime27:mkAE('mint',{freckles:1,blush:1,mouth:'smile'}),
+  anime28:mkAE('rose',{hearts:1,blush:2,mouth:'open'}),
+  anime29:mkAE('sky',{half:.35,blush:1,mouth:'pout'}),
+  anime30:mkAE('ruby',{freckles:1,blush:2,mouth:'lens',lx:-2,ly:3}),
+  anime31:mkAE('rose',{happy:1,blush:2,mouth:'open'}),
+  anime32:mkAE('gold',{star:1,tears:1,blush:1,mouth:'grin',bt:'up'}),
+  anime33:mkAE('sky',{bt:'angry',bw:2.6,iw:12,ih:16,ew:15,eh:19,mouth:'smirk'}),
+  anime34:mkAE('green',{bt:'angry',bw:2.6,iw:12,ih:16,ew:15,eh:19,mouth:'flat'}),
+  anime35:mkAE('ruby',{bt:'angry',bw:2.6,iw:12,ih:16,ew:15,eh:19,mouth:'fang'}),
+  anime36:mkAE('gray',{bw:2.4,iw:12,ih:16,ew:15,eh:19,mouth:'smile'}),
+  anime37:mkAE('gold',{bt:'angry',bw:2.6,iw:12,ih:16,ew:15,eh:19,mouth:'grin'}),
+  anime38:mkAE('dark',{bt:'angry',bw:2.8,iw:12,ih:16,ew:15,eh:19,mouth:'flat',nose:1}),
+  anime39:mkAE('purple',{wink:1,bw:2.4,iw:12,ih:16,ew:15,eh:19,mouth:'smirk'}),
+  anime40:mkAE('teal',{bw:2.4,iw:12,ih:16,ew:15,eh:19,mouth:'grin',sweat:1}),
+  anime41:mkAE('amber',{half:.4,bw:2.6,iw:12,ih:16,ew:15,eh:19,mouth:'flat'}),
+  anime42:mkAE('sky',{happy:1,bw:2.4,mouth:'grin'}),
+  anime43:mkAE('dark',{bt:'angry',bw:2.8,iw:12,ih:16,ew:15,eh:19,mouth:'smirk',freckles:1}),
+  anime44:mkAE('mint',{bw:2.4,iw:12,ih:16,ew:15,eh:19,mouth:'smile',blush:1})
 };
 function animeStar(g,x,y,r){ g.beginPath(); g.moveTo(x,y-r); g.quadraticCurveTo(x+r*.15,y-r*.15,x+r,y); g.quadraticCurveTo(x+r*.15,y+r*.15,x,y+r); g.quadraticCurveTo(x-r*.15,y+r*.15,x-r,y); g.quadraticCurveTo(x-r*.15,y-r*.15,x,y-r); g.fill(); }
 function animeBrow(g,o,E,F){
@@ -1163,6 +1248,7 @@ function drawAnimeFace(g,o){
   if(o.blush){ const big=o.blush>1; for(const x of [32,96]){ const rg=g.createRadialGradient(x,92,1,x,92,big?20:15); rg.addColorStop(0,big?'rgba(255,95,120,.78)':'rgba(255,110,130,.6)'); rg.addColorStop(1,'rgba(255,110,130,0)'); g.fillStyle=rg; g.beginPath(); g.ellipse(x,92,big?20:16,big?10:8,0,0,7); g.fill(); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.6; for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(x+i*6-2,89); g.lineTo(x+i*6+1,95); g.stroke(); } } }
   if(o.tears){ for(const x of [32,96]){ g.strokeStyle='rgba(170,225,255,.9)'; g.lineWidth=3; g.lineCap='round'; g.beginPath(); g.moveTo(x,86); g.lineTo(x,98); g.stroke(); g.fillStyle='rgba(170,225,255,.95)'; g.beginPath(); g.ellipse(x,101,3,4,0,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(x-1,100,1,0,7); g.fill(); } }
   if(o.sweat){ const x=108,y=36; g.fillStyle='rgba(150,215,255,.95)'; g.strokeStyle='#5aa8e0'; g.lineWidth=1.2; g.beginPath(); g.moveTo(x,y-9); g.quadraticCurveTo(x+7,y+1,x,y+6); g.quadraticCurveTo(x-7,y+1,x,y-9); g.fill(); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.ellipse(x-2,y+1,1.2,2,0,0,7); g.fill(); }
+  if(o.freckles){ g.fillStyle='rgba(150,80,60,.65)'; for(const x of [26,34,98,106]) for(const [dx,dy] of [[0,0],[5,3],[-4,4]]){ g.beginPath(); g.arc(x+dx,86+dy,1.3,0,7); g.fill(); } }
   if(o.nose){ g.fillStyle='#8a5a52'; g.beginPath(); g.arc(64,88,1.2,0,7); g.fill(); }
   g.lineCap='round'; g.lineJoin='round';
   const mo=o.mouth;
@@ -1174,6 +1260,10 @@ function drawAnimeFace(g,o){
   else if(mo==='pout'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(57,108); g.quadraticCurveTo(64,103,71,108); g.stroke(); }
   else if(mo==='open'){ g.fillStyle='#8a1f3a'; g.beginPath(); g.moveTo(54,103); g.quadraticCurveTo(64,106,74,103); g.quadraticCurveTo(71,117,64,117); g.quadraticCurveTo(57,117,54,103); g.fill(); g.fillStyle='#ff8aa0'; g.beginPath(); g.ellipse(64,113,4.5,2.6,0,0,7); g.fill(); }
   else if(mo==='tongue'){ g.strokeStyle='#b0605a'; g.lineWidth=2.2; g.beginPath(); g.moveTo(55,104); g.quadraticCurveTo(64,110,73,104); g.stroke(); g.fillStyle='#ff8aa0'; g.strokeStyle='#c04a5a'; g.lineWidth=1.2; g.beginPath(); g.ellipse(67,110,4,5,0,0,7); g.fill(); g.stroke(); }
+  else if(mo==='grin'){ g.fillStyle='#7a1f2e'; g.strokeStyle='#8a4a4a'; g.lineWidth=2; g.beginPath(); g.moveTo(52,102); g.quadraticCurveTo(64,108,76,102); g.quadraticCurveTo(72,116,64,116); g.quadraticCurveTo(56,116,52,102); g.fill(); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.moveTo(54,103); g.quadraticCurveTo(64,107,74,103); g.lineTo(73,107); g.quadraticCurveTo(64,111,55,107); g.closePath(); g.fill(); }
+  else if(mo==='smirk'){ g.strokeStyle='#8a4a4a'; g.lineWidth=2.4; g.beginPath(); g.moveTo(54,108); g.quadraticCurveTo(66,108,76,102); g.stroke(); }
+  else if(mo==='flat'){ g.strokeStyle='#8a4a4a'; g.lineWidth=2.4; g.beginPath(); g.moveTo(55,107); g.lineTo(73,107); g.stroke(); }
+  else if(mo==='fang'){ g.strokeStyle='#8a4a4a'; g.lineWidth=2.4; g.beginPath(); g.moveTo(54,104); g.quadraticCurveTo(64,111,74,104); g.stroke(); g.fillStyle='#fff'; g.strokeStyle='#8a4a4a'; g.lineWidth=1; g.beginPath(); g.moveTo(58,108); g.lineTo(61,108); g.lineTo(59.5,113); g.closePath(); g.fill(); g.stroke(); }
   g.restore();
 }
 function drawKawaii(g){
@@ -1303,7 +1393,7 @@ function userTex(url){
 function buildAvatar(cfg){
   const g=new THREE.Group(), body=new THREE.Group(); g.add(body);
   const M=c=>new THREE.MeshLambertMaterial({color:c}), MT=(c,tex)=>{ const m=new THREE.MeshLambertMaterial({color:tex?'#ffffff':c}); if(tex) m.map=userTex(tex); return m; }, skin=M(cfg.skin), shirt=MT(cfg.shirt,cfg.shirtTex), pants=MT(cfg.pants,cfg.pantsTex), shoe=M('#15151a');
-  const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), bare=!vs&&['dress','gown','kimono','tutu','croptop','sundress','maid','sailor'].includes(cfg.outfit), shirtM=vs?suitM:bare?skin:shirt, pantsM=vs?suitM:pants;   /* у платьев и т.п. рубашка не торчит синим на плечах */
+  const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), bare=!vs&&['dress','gown','kimono','tutu','croptop','sundress','maid','sailor','schooluni','lolita','witch','princess','swim','yukata','sportwear','qipao','nurse','angel','cheer'].includes(cfg.outfit), shirtM=vs?suitM:bare?skin:shirt, pantsM=vs?suitM:pants;   /* у платьев и т.п. рубашка не торчит синим на плечах */
   const box=(w,h,d,m,x,y,z,parent)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); b.castShadow=true; b.receiveShadow=true; (parent||body).add(b); return b; };
   const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):bare?skin:cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
   const bd=BUILD_DEF[cfg.build]||BUILD_DEF.normal, tm=[shirtM,shirtM,shirtM,shirtM,front,shirtM];
@@ -1354,16 +1444,20 @@ function buildAvatar(cfg){
 }
 /* Позы NPC: [id, название, женская?]. Руки вращаются от плеча: x<0 — вперёд/вверх, z — в сторону (левая рука наружу при z<0, правая при z>0) */
 const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['dance','Танцует',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
-  ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1]];
+  ['jacks','Прыжки «звёздочка»',0],['march','Марширует',0],['clap','Хлопает',0],['point','Показывает вперёд',0],['flex','Силач',0],['bow','Кланяется',0],['robot','Робот',0],['guard','Боевая стойка',0],['run','Бежит на месте',0],['yawn','Зевает',0],['victory','Победа',0],
+  ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1],
+  ['twirl','Кружится',1],['kiss','Воздушный поцелуй',1],['peace','Знак «мир»',1],['catwalk','Подиум',1],['giggle','Хихикает',1],['ballet','Балет',1],['hugself','Обнимает себя',1],['tantrum','Дуется и топает',1],['flirt','Кокетничает',1],['sway','Покачивается',1],['wave2','Машет двумя',1],['bunny','Зайка',1],['idol','Поза айдола',1]];
 function npcPoseOf(n){ const v=n&&n.pose; return typeof v==='string'&&NPC_POSES.some(x=>x[0]===v)?v:'stand'; }
 function applyNpcPose(av,pose,t){
-  const L=av.armL,R=av.armR,LL=av.legL,RL=av.legR,B=av.body, s=Math.sin(t*5), s2=Math.sin(t*9);
+  const L=av.armL,R=av.armR,LL=av.legL,RL=av.legR,B=av.body, s=Math.sin(t*5), s2=Math.sin(t*9), P=Math.PI;
+  B.rotation.order='YXZ';
   const A=(l,r)=>{ L.rotation.x=l[0]; L.rotation.z=l[1]; R.rotation.x=r[0]; R.rotation.z=r[1]; };
   const G=(l,r)=>{ LL.rotation.x=l[0]; LL.rotation.z=l[1]; RL.rotation.x=r[0]; RL.rotation.z=r[1]; };
-  A([0,0],[0,0]); G([0,0],[0,0]); B.rotation.z=0; B.rotation.x=0;
+  const lean=a=>{ B.rotation.x=a; B.position.y+=1.2-1.2*Math.cos(a); const f=-1.2*Math.sin(a), yy=B.rotation.y; B.position.x=f*Math.sin(yy); B.position.z=f*Math.cos(yy); };
+  A([0,0],[0,0]); G([0,0],[0,0]); B.rotation.z=0; B.rotation.x=0; B.position.x=0; B.position.z=0;
   switch(pose){
     case 'hips': A([.2,-.55],[.2,.55]); break;
-    case 'sidehand': A([.15,-.5],[0,.05]); G([0,0],[0,0]); B.rotation.z=.03; break;
+    case 'sidehand': A([.15,-.5],[0,.05]); B.rotation.z=.03; break;
     case 'crossed': A([-1.15,.95],[-1.15,-.95]); break;
     case 'back': A([.5,.2],[.5,-.2]); break;
     case 'wave': A([0,-.05],[-.1,2.5+s2*.3]); break;
@@ -1372,16 +1466,42 @@ function applyNpcPose(av,pose,t){
     case 'sit': B.position.y=-.82; G([-1.5,0],[-1.5,0]); A([-.35,-.15],[-.35,.15]); break;
     case 'salute': A([0,-.05],[-2.5,.25]); break;
     case 'think': A([0,-.05],[-1.9,-.8]); B.rotation.z=.03; break;
+    case 'jacks': { const q=(Math.sin(t*6)+1)/2; A([0,-q*3],[0,q*3]); G([0,-q*.35],[0,q*.35]); B.position.y+=Math.abs(Math.sin(t*6))*.12; break; }
+    case 'march': { const m=Math.sin(t*7); G([m*.9,0],[-m*.9,0]); A([-m*.9,0],[m*.9,0]); B.position.y+=Math.abs(m)*.06; break; }
+    case 'clap': { const z=.45+.45*Math.sin(t*14); A([-1.3,z],[-1.3,-z]); break; }
+    case 'point': A([0,-.05],[-1.55+s*.05,0]); break;
+    case 'flex': A([-.2,-1.5+s2*.08],[-.2,1.5-s2*.08]); B.position.y+=Math.sin(t*3)*.02; break;
+    case 'bow': { const d=(Math.sin(t*1.6)+1)/2; lean(.75*d); A([.1,-.1],[.1,.1]); break; }
+    case 'robot': { const q=Math.sin(t*3)>0?1:0; A([-1.57*q,0],[-1.57*(1-q),0]); G([0,0],[0,0]); B.rotation.z=(q-.5)*.05; break; }
+    case 'guard': A([-1.3,.3],[-1.0,-.3]); G([.2,0],[-.4,0]); B.rotation.z=s*.03; B.position.y+=Math.abs(s)*.03; break;
+    case 'run': { const m=Math.sin(t*14); G([m*1.2,0],[-m*1.2,0]); A([-m*1.1,0],[m*1.1,0]); lean(.15); B.position.y+=Math.abs(m)*.08; break; }
+    case 'yawn': { const d=(Math.sin(t*1.5)+1)/2; A([0,-.05],[-2.3*d,-.2]); lean(-.12*d); break; }
+    case 'victory': A([0,-.1],[0,2.9+s2*.15]); B.position.y+=Math.abs(Math.sin(t*5))*.18; break;
     case 'shy': A([-.55,.35],[-.55,-.35]); G([0,.07],[0,-.07]); B.rotation.z=.04+s*.01; break;
-    case 'hair': A([-2.2+s*.05,.6],[.05,.08]); G([0,0],[-.12,.1]); B.rotation.z=-.04; break;
+    case 'hair': A([-2.2+s*.05,.6],[.05,.08]); G([0,0],[-.12,.1]); B.rotation.z=-.04+s*.01; break;
     case 'model': A([.1,-.45],[.55,-.1]); G([-.05,.04],[-.3,.35]); B.rotation.z=.06; break;
     case 'kawaii': A([-2.35,.45],[-2.35,-.45]); G([0,.1],[0,-.1]); B.position.y+=Math.abs(Math.sin(t*4))*.1; B.rotation.z=s*.04; break;
     case 'curtsy': { const d=(Math.sin(t*2)+1)/2; B.position.y-=.25*d; A([-.2,-.8],[-.2,.8]); G([-.3*d,.05],[.55*d,-.05]); break; }
     case 'heart': A([-2.9,.55],[-2.9,-.55]); B.rotation.z=s*.05; G([0,.06],[0,-.06]); break;
     case 'sitlady': B.position.y=-.82; G([-1.5,.12],[-1.5,-.12]); A([-1.1,.25],[-1.1,-.25]); break;
-    case 'pose2': A([-.2,-.9],[-2.6,.5]); G([-.05,0],[.1,.35]); B.rotation.z=.07; break;
-    case 'sleepy': A([-3.0+s*.06,-.45],[-3.0-s*.06,.45]); B.rotation.x=-.06; break;
+    case 'pose2': A([-.2,-.9],[-2.6,.5]); G([-.05,0],[.1,.35]); B.rotation.z=.07+s*.015; break;
+    case 'sleepy': A([-3.0+s*.06,-.45],[-3.0-s*.06,.45]); lean(-.06); break;
+    case 'twirl': B.rotation.y+=t*5; A([0,-1.35],[0,1.35]); G([0,.05],[0,-.05]); break;
+    case 'kiss': { const q=Math.max(0,Math.sin(t*3)); A([0,-.05],[-2.3+q*1.1,-.25-q*.6]); B.rotation.z=.03*q; break; }
+    case 'peace': A([.1,-.5],[-2.2+s*.06,-.4]); B.rotation.z=.04; break;
+    case 'catwalk': { const m=Math.sin(t*4); G([m*.5,0],[-m*.5,0]); A([-m*.35,-.15],[m*.35,.15]); B.rotation.z=m*.06; B.position.y+=Math.abs(m)*.04; break; }
+    case 'giggle': A([-1.9+s2*.06,.35],[-1.9-s2*.06,-.35]); B.position.y+=Math.abs(Math.sin(t*10))*.05; B.rotation.z=Math.sin(t*10)*.03; break;
+    case 'ballet': { const d=(Math.sin(t*2)+1)/2; A([0,-2.5],[0,2.5]); RL.rotation.x=.4+.6*d; B.rotation.y+=t*1.2; lean(.1); break; }
+    case 'hugself': A([-1.4,1.25],[-1.4,-1.25]); B.rotation.z=s*.03; B.position.y+=Math.sin(t*3)*.015; break;
+    case 'tantrum': { const m=Math.sin(t*8); A([m*.4,.1],[-m*.4,-.1]); G([Math.max(0,m)*-.5,0],[Math.max(0,-m)*-.5,0]); B.rotation.z=Math.sin(t*16)*.04; break; }
+    case 'flirt': A([.1,-.5],[-2.2,-.3]); B.rotation.z=.05+s*.02; G([0,0],[-.1,.2]); break;
+    case 'sway': A([.45,.2],[.45,-.2]); B.rotation.z=Math.sin(t*2.5)*.08; G([0,Math.sin(t*2.5)*.05],[0,Math.sin(t*2.5)*.05]); break;
+    case 'wave2': A([0,-2.5-s2*.3],[0,2.5+s2*.3]); B.rotation.z=s*.03; break;
+    case 'bunny': A([-3.0,.35],[-3.0,-.35]); G([0,.05],[0,-.05]); B.position.y+=Math.abs(Math.sin(t*5))*.2; break;
+    case 'idol': A([-.1,-2.6],[.2,.55]); G([0,0],[-.1,.3]); B.rotation.z=.06+s*.03; B.position.y+=Math.abs(s)*.03; break;
   }
+  /* лёгкое «дыхание» для всех поз */
+  const br=Math.sin(t*2); L.rotation.x+=br*.03; R.rotation.x-=br*.03; B.position.y+=br*.01;
 }
 function animAvatar(av,t,speed,air,vy){
   const now=performance.now(), dt=Math.min(.05,Math.max(0,(now-(av._pt||now))/1000)); av._pt=now;
@@ -1655,17 +1775,39 @@ const Play={
     const pl=this.pl; let best=null, bd=1e9;
     if(this.talk&&(!active||Math.hypot(pl.x-this.talk.n.o.x,pl.z-this.talk.n.o.z)>9)) this.talkEnd(true);
     for(const n of this.npcs){
+      this.npcWalk(n,dt,active,pl);
       const m=n.o, p=n.p, hs=Math.hypot(m.dx,m.dz)/Math.max(dt,1e-3), dx=pl.x-m.x, dz=pl.z-m.z, d=Math.hypot(dx,dz);
       let want=0;
       if(hs>.5) want=Math.atan2(m.dx,m.dz)-p.ry*DEG;
       else if((this.talk&&this.talk.n===n)||(d<9&&p.npc&&p.npc.turn!==false)) want=Math.atan2(dx,dz)-p.ry*DEG;
       let df=want-n.face; df=Math.atan2(Math.sin(df),Math.cos(df)); n.face+=df*Math.min(1,dt*8);
       n.av.body.rotation.y=n.face; animAvatar(n.av,this.clock+n.ph,hs>.5?Math.min(hs,8):0,false,0);
-      { const ps=npcPoseOf(p.npc); if(hs<=.5&&ps!=='stand'){ applyNpcPose(n.av,ps,this.clock+n.ph); n.av._pz=1; } else if(n.av._pz){ for(const a of [n.av.armL,n.av.armR,n.av.legL,n.av.legR]) a.rotation.z=0; n.av.body.rotation.z=0; n.av.body.rotation.x=0; n.av._pz=0; } }
+      { const ps=npcPoseOf(p.npc); if(hs<=.5&&ps!=='stand'){ applyNpcPose(n.av,ps,this.clock+n.ph); n.av._pz=1; } else if(n.av._pz){ for(const a of [n.av.armL,n.av.armR,n.av.legL,n.av.legR]) a.rotation.z=0; n.av.body.rotation.z=0; n.av.body.rotation.x=0; n.av.body.position.x=0; n.av.body.position.z=0; for(const a of [n.av.legL,n.av.legR,n.av.armL,n.av.armR]) a.rotation.x=0; n.av._pz=0; } }
       if(active){ if(d<5&&!n.gr){ n.gr=true; this.npcPlay(n,'sndNear'); } else if(d>9) n.gr=false; }
       if(active&&!this.talk&&d<3.4&&Math.abs(pl.y-(m.y-m.hy))<3.5&&d<bd){ best=n; bd=d; }
     }
     if(best!==this.near){ this.near=best; const e=$('#npcP'); if(e){ if(best){ e.hidden=false; e.textContent='💬 F — поговорить'+(best.name?' с «'+best.name+'»':''); } else e.hidden=true; } }
+  },
+  /* ходьба NPC: «бродит» вокруг своей точки или «идёт за игроком»; обходит твёрдые объекты */
+  npcWalk(n,dt,active,pl){
+    const m=n.o, p=n.p, c=p.npc||{}, mode=c.walk;
+    if(!mode||mode==='none'||(p.mv&&p.mv.axis)) return;
+    m.dx=0; m.dz=0;
+    if(!active||(this.talk&&this.talk.n===n)) return;
+    const sp=clamp(+c.wspeed||3,.5,10), R=clamp(+c.wr||8,1,60);
+    let tx=null, tz=null, w=n.ws||(n.ws={wait:Math.random()*2,tx:null,tz:null,stuck:0});
+    if(mode==='follow'){ const d=Math.hypot(pl.x-m.x,pl.z-m.z); if(d>2.4&&d<R*2.5&&Math.abs(pl.y-(m.y-m.hy))<12){ tx=pl.x; tz=pl.z; } }
+    else {
+      if(w.tx===null){ w.wait-=dt; if(w.wait<=0){ const a=Math.random()*6.283, r=Math.sqrt(Math.random())*R; w.tx=m.bx+Math.cos(a)*r; w.tz=m.bz+Math.sin(a)*r; w.stuck=0; } }
+      if(w.tx!==null){ if(Math.hypot(w.tx-m.x,w.tz-m.z)<.4||w.stuck>1){ w.tx=null; w.wait=1+Math.random()*3; } else { tx=w.tx; tz=w.tz; } }
+    }
+    if(tx===null) return;
+    const dx=tx-m.x, dz=tz-m.z, d=Math.hypot(dx,dz)||1, st=Math.min(d,sp*dt);
+    const q={x:m.x+dx/d*st,y:m.y-m.hy,z:m.z+dz/d*st,vx:0,vy:0,vz:0,grounded:false,gp:null};
+    for(const col of this.cols) if(col!==m) this.collide(q,col);
+    const mv=Math.hypot(q.x-m.x,q.z-m.z);
+    if(mode!=='follow'){ if(mv<st*.4) w.stuck+=dt; else w.stuck=0; }
+    m.dx=q.x-m.x; m.dz=q.z-m.z; m.x=q.x; m.z=q.z; m.grp.position.set(m.x,m.y,m.z);
   },
   initChat(){
     const room=this.game.id, ch=$('#chat'), inp=$('#cIn'), log=$('#clog'); this.cseen=new Set(); this.clast=0;
@@ -2229,6 +2371,8 @@ const Ed={
       <label class="row" style="justify-content:flex-start"><input type="checkbox" data-nf="solid" ${n.solid!==false?'checked':''} style="flex:none"><span style="flex:none">Твёрдый (нельзя пройти насквозь)</span></label>
       <p class="muted" style="margin:.5em 0 0;font-size:.85em">В игре: подойти и нажать F (или кнопку на экране). Чтобы NPC ходил, задайте «Движение» ниже.</p>
       <span class="lbl" style="margin-top:.7em;display:block">Поза</span><div class="chips">${NPC_POSES.filter(x=>!x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div><span class="lbl" style="margin-top:.5em;display:block">Женские позы</span><div class="chips">${NPC_POSES.filter(x=>x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div>
+      <span class="lbl" style="margin-top:.7em;display:block">Ходьба</span><div class="chips">${[['none','Стоит на месте'],['wander','Бродит рядом'],['follow','Идёт за игроком']].map(([v,t])=>`<button class="chip ${(n.walk||'none')===v?'on':''}" data-nw="${v}">${t}</button>`).join('')}</div>
+      ${n.walk&&n.walk!=='none'?`<label style="display:block;margin-top:.5em"><span class="lbl">Скорость: ${(+n.wspeed||3)}</span><input type="range" data-nf="wspeed" min="1" max="8" step=".5" value="${+n.wspeed||3}"></label><label style="display:block"><span class="lbl">${n.walk==='follow'?'Дальность (замечает игрока на ×2,5 этого)':'Радиус прогулки'}: ${+n.wr||8}</span><input type="range" data-nf="wr" min="2" max="30" step="1" value="${+n.wr||8}"></label>`:''}
       <div class="chips" style="margin-top:.6em"><button class="chip" id="npcMine">👤 Мой аватар</button><button class="chip" id="npcRnd">🎲 Случайный</button></div></div>
     <div class="sec"><span class="lbl">Звуки NPC</span>${NPC_SND.map(([k,t])=>`<div class="srow" style="flex-wrap:wrap"><span class="n" style="flex-basis:100%">${t}</span><select data-ns="${k}" style="flex:1;min-width:0">${sndOptsHTML(npcSnd(n,k))}</select><button class="btn sm" data-nsp="${k}" title="Прослушать">▶</button></div>`).join('')}<p class="muted" style="margin:.4em 0 0;font-size:.85em">Свои звуки загружаются во вкладке «Звуки».</p></div>
     <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
@@ -2245,6 +2389,7 @@ const Ed={
     const keep=fn=>{ const a=el.scrollTop, par=el.parentElement, b=par?par.scrollTop:0; fn(); el.scrollTop=a; if(par) par.scrollTop=b; };
     const upd=()=>{ this.dirty=true; this.world.update(p); keep(()=>this.renderProps(el)); };
     $$('[data-nf]',el).forEach(i=>{ i.addEventListener('focus',()=>this.pushUndo()); i.addEventListener('input',()=>{ const k=i.dataset.nf; p.npc[k]=i.type==='checkbox'?i.checked:i.value; this.dirty=true; if(k==='name') this.world.update(p); }); });
+    $$('[data-nw]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.walk=b.dataset.nw; upd(); });
     $$('[data-np]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.pose=b.dataset.np; upd(); });
     $$('[data-nk]',el).forEach(b=>b.onclick=()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[b.dataset.nk]=b.dataset.nv; upd(); });
     $$('[data-nc]',el).forEach(i=>i.addEventListener('change',()=>{ this.pushUndo(); p.npc.look=npcLook(p.npc); p.npc.look[i.dataset.nc]=i.value; upd(); }));
