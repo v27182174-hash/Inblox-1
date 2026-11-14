@@ -1301,9 +1301,9 @@ function userTex(url){
 function buildAvatar(cfg){
   const g=new THREE.Group(), body=new THREE.Group(); g.add(body);
   const M=c=>new THREE.MeshLambertMaterial({color:c}), MT=(c,tex)=>{ const m=new THREE.MeshLambertMaterial({color:tex?'#ffffff':c}); if(tex) m.map=userTex(tex); return m; }, skin=M(cfg.skin), shirt=MT(cfg.shirt,cfg.shirtTex), pants=MT(cfg.pants,cfg.pantsTex), shoe=M('#15151a');
-  const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), shirtM=vs?suitM:shirt, pantsM=vs?suitM:pants;
+  const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), bare=!vs&&['dress','gown','kimono','tutu','croptop','sundress','maid','sailor'].includes(cfg.outfit), shirtM=vs?suitM:bare?skin:shirt, pantsM=vs?suitM:pants;   /* у платьев и т.п. рубашка не торчит синим на плечах */
   const box=(w,h,d,m,x,y,z,parent)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); b.castShadow=true; b.receiveShadow=true; (parent||body).add(b); return b; };
-  const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
+  const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):bare?skin:cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
   const bd=BUILD_DEF[cfg.build]||BUILD_DEF.normal, tm=[shirtM,shirtM,shirtM,shirtM,front,shirtM];
   if(bd.fem){ for(const t of [new THREE.Mesh(femGeo(bd,1.25,2.2),tm),new THREE.Mesh(femGeo(bd,1.0,1.25),pantsM)]){ t.castShadow=true; t.receiveShadow=true; body.add(t); } }
   else if(bd.k){ const t=new THREE.Mesh(softGeo(bd.tw,1.2,bd.td,bd.k),tm); t.position.set(0,1.6,0); t.castShadow=true; t.receiveShadow=true; body.add(t); } else box(bd.tw,1.2,bd.td,tm,0,1.6,0);
