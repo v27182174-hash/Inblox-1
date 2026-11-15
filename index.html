@@ -224,6 +224,80 @@ label.drop{position:relative;display:block;overflow:hidden}
 .chat.typing .cin{display:block}
 .cin input{width:100%;background:rgba(10,10,12,.85);border:1px solid var(--line);border-radius:.6em;color:var(--fg);padding:.5em .75em}
 .istouch .chat{bottom:auto;top:3.8em;max-width:42%}
+
+/* ===== Дизайн v2: минимализм + свой характер — тёмная бумага, кислотно-лаймовый акцент, строгие углы, моно-подписи ===== */
+:root{--bg:#0b0b0c;--panel:rgba(13,13,15,.92);--panel2:#16161a;--line:rgba(255,255,255,.09);--accent:#d7ff4a;--muted:#85858f;--ok:#4be3a8;
+  --display:'Space Grotesk','Avenir Next','Segoe UI Variable Display',system-ui,-apple-system,sans-serif;--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+*{scrollbar-width:thin;scrollbar-color:#2c2c33 transparent}
+body{background:var(--bg)}
+.btn{border-radius:.5em;background:var(--panel2);font-weight:500;letter-spacing:.005em}
+.btn:hover{border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);color:#0b0b0c;border-color:var(--accent);font-weight:600}
+.btn.pri:hover{background:#e6ff7d;color:#0b0b0c}
+.btn.on{background:var(--accent);color:#0b0b0c;border-color:var(--accent)}
+.btn.sm{border-radius:.45em}
+.lbl{font-family:var(--mono);font-size:.7em;letter-spacing:.12em;color:var(--muted)}
+h1,h2,h3{letter-spacing:-.03em}
+.topbar{height:3.4em;background:var(--panel);border-bottom:1px solid var(--line)}
+.logo{letter-spacing:-.04em}
+input[type=text],input[type=password],input[type=number],select,input[type=color]{border-radius:.4em}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;outline:none}
+input[type=range],input[type=checkbox]{accent-color:var(--accent)}
+.chip{border-radius:.45em;background:var(--panel2)}
+.chip:hover{border-color:rgba(255,255,255,.3)}
+.chip.on{background:var(--accent);color:#0b0b0c;border-color:var(--accent);font-weight:600}
+.sw{border-radius:.4em}
+.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px #000 inset}
+.tab{font-family:var(--mono);font-size:.82em;letter-spacing:.04em;text-transform:uppercase}
+.tab.on{color:var(--fg);border-bottom-color:var(--accent)}
+.tools,.rpanel,.flybar,.apanel{border-radius:.6em;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.tool{border-radius:.4em}
+.tool:hover{background:rgba(215,255,74,.09)}
+.pill{border-radius:.45em;background:rgba(11,11,12,.66)}
+.npcp,.npcb{border-radius:.6em}
+.npcb b{color:var(--accent)}
+#toast{background:var(--fg);border-radius:.5em;font-family:var(--mono);font-size:.9em}
+.ov .box,.gpg{border-radius:.7em}
+.ov h2{letter-spacing:-.04em}
+.card{border-radius:.6em;background:var(--panel2);transition:border-color .15s,transform .15s}
+.card:hover{border-color:rgba(215,255,74,.55);transform:translateY(-2px)}
+.card.new{background:transparent}
+.card .meta b{letter-spacing:-.02em}
+#home .hero h2{font-size:3.3em;letter-spacing:-.05em;line-height:1;border-left:.09em solid var(--accent);padding-left:.28em}
+#home .shelf{background-color:var(--bg);background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1.2px);background-size:22px 22px}
+.apanel{background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1.2px);background-size:22px 22px}
+.socials .tg{border-radius:.45em}
+.cmsg{border-radius:.4em}.cmsg b{color:var(--accent)}
+.cin input{border-radius:.45em}
+.guil.edit .gui-el.sel{outline-color:var(--accent)}
+.joy{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22)}
+.jbtn{background:rgba(215,255,74,.14);border-color:rgba(215,255,74,.55)}
+.jbtn:active{background:rgba(215,255,74,.4)}
+/* ===== Телефон: экран во всю ширину, крупные зоны нажатия, панели не мешают ===== */
+@media (pointer:coarse) and (orientation:landscape){ #stage{width:100vw;height:100dvh} }
+.istouch #ui{font-size:clamp(12px,1.55cqw,19px)}
+.istouch .topbar{overflow-x:auto;scrollbar-width:none;gap:.5em;padding:0 max(.9em,env(safe-area-inset-left))}
+.istouch .topbar::-webkit-scrollbar{display:none}
+.istouch .topbar>*{flex:none}
+.istouch .topbar .sp{flex:1 0 .3em}
+.istouch .btn{min-height:2.5em;padding:.5em 1em}
+.istouch .btn.sm{min-height:2.3em}
+.istouch .chip{padding:.5em .95em}
+.istouch .sw{width:2.3em;height:2.3em}
+.istouch .swr .sw{width:1.9em;height:1.9em}
+.istouch .tab{padding:.95em .2em}
+.istouch .tool{padding:.62em .55em}
+.istouch .rpanel{width:min(19em,48%)}
+.istouch .tools{width:9.5em;max-height:calc(100% - 5.2em)}
+.istouch .joy{left:max(2em,env(safe-area-inset-left));bottom:2em;width:9em;height:9em}
+.istouch .jbtn{right:max(2.2em,env(safe-area-inset-right));bottom:2.2em;width:7em;height:7em}
+.istouch #edUp,.istouch #edDn{width:5.4em;height:5.4em;right:max(2.2em,env(safe-area-inset-right))}
+.istouch #edUp{bottom:8.6em!important}
+.istouch .flybar{top:3.8em;max-width:calc(100% - 2em);flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+.istouch .flybar::-webkit-scrollbar{display:none}
+.istouch .flybar>*{flex:none}
+.istouch .popen{top:3.8em}
+.istouch .thint{left:1em;right:1em;bottom:.5em;text-align:center}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -828,18 +902,20 @@ function softGeo(w,h,d,k){
 const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот'],['girl','Девушка'],['slimgirl','Стройная'],['curvy','Пышная'],['sport','Спортивная'],['petite','Миниатюрная']];
 const BUILD_DEF={normal:{tw:1.2,td:.6,k:0,aw:.4,lw:.55,cyl:0},slim:{tw:1,td:.5,k:0,aw:.32,lw:.44,cyl:0},wide:{tw:1.55,td:.75,k:0,aw:.5,lw:.62,cyl:0},round:{tw:1.4,td:.85,k:.55,aw:.38,lw:.5,cyl:0},stick:{tw:.8,td:.4,k:0,aw:.22,lw:.28,cyl:0},chunky:{tw:1.45,td:.7,k:0,aw:.62,lw:.7,cyl:0},robot:{tw:1.2,td:.6,k:0,aw:.36,lw:.45,cyl:1},
   /* женские тела: торс как у обычных, но руки и ноги кубические, тоньше и изящнее (lady) */
-  girl:{tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1,fem:1,ww:.88,hw:1.18,dw:.46,dh:.54},slimgirl:{tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1,fem:1,ww:.76,hw:1.04,dw:.42,dh:.48},
-  curvy:{tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1,fem:1,ww:.98,hw:1.45,dw:.52,dh:.68},sport:{tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1,fem:1,ww:1.05,hw:1.2,dw:.52,dh:.56},
-  petite:{tw:.84,td:.42,k:0,aw:.2,lw:.28,cyl:0,lady:1,fem:1,ww:.66,hw:.92,dw:.36,dh:.42,sc:.86}};
+  girl:{bust:0.055,tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1,fem:1,ww:.88,hw:1.18,dw:.46,dh:.54},slimgirl:{bust:0.04,tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1,fem:1,ww:.76,hw:1.04,dw:.42,dh:.48},
+  curvy:{bust:0.075,tw:1.25,td:.6,k:0,aw:.34,lw:.5,cyl:0,lady:1,fem:1,ww:.98,hw:1.45,dw:.52,dh:.68},sport:{bust:0.045,tw:1.25,td:.58,k:0,aw:.36,lw:.46,cyl:0,lady:1,fem:1,ww:1.05,hw:1.2,dw:.52,dh:.56},
+  petite:{bust:0.035,tw:.84,td:.42,k:0,aw:.2,lw:.28,cyl:0,lady:1,fem:1,ww:.66,hw:.92,dw:.36,dh:.42,sc:.86}};
 
 /* торс «песочные часы»: куб с сеткой, где ширина и глубина зависят от высоты; UV сохраняются, поэтому лицо футболки не искажается */
 function femGeo(bd,y0,y1,pad=0){
-  const h=y1-y0, geo=new THREE.BoxGeometry(1,h,1,10,Math.max(2,Math.round(h*16)),10), P=geo.attributes.position;
+  const h=y1-y0, geo=new THREE.BoxGeometry(1,h,1,14,Math.max(2,Math.round(h*16)),10), P=geo.attributes.position;
   const tb=(tab,y)=>{ for(let i=1;i<tab.length;i++) if(y<=tab[i][0]||i===tab.length-1){ const a=tab[i-1], b=tab[i], t=clamp((y-a[0])/(b[0]-a[0]),0,1); return a[1]+(b[1]-a[1])*t*t*(3-2*t); } };
   const WT=[[1,bd.hw],[1.12,bd.hw],[1.5,bd.ww],[1.9,bd.tw],[2.2,bd.tw*.96]], DT=[[1,bd.dh],[1.12,bd.dh],[1.5,bd.dw],[1.9,bd.td],[2.2,bd.td*.96]];
   for(let i=0;i<P.count;i++){
     const vx=P.getX(i), vz=P.getZ(i), y=y0+P.getY(i)+h/2, m=Math.max(Math.abs(vx),Math.abs(vz)), l=Math.hypot(vx,vz)||1, k=.5;
-    P.setXYZ(i,(vx+(vx/l*m-vx)*k)*(tb(WT,y)+pad),y,(vz+(vz/l*m-vz)*k)*(tb(DT,y)+pad));
+    const W=tb(WT,y)+pad, nx=(vx+(vx/l*m-vx)*k)*W; let nz=(vz+(vz/l*m-vz)*k)*(tb(DT,y)+pad);
+    if(bd.bust&&nz>0) nz+=bd.bust*Math.exp(-Math.pow((Math.abs(nx)-W*.2)/(W*.16),2))*Math.exp(-Math.pow((y-1.84)/.17,2))*Math.min(1,nz/.14);   /* небольшая женская грудь */
+    P.setXYZ(i,nx,y,nz);
   }
   geo.computeVertexNormals();
   const N=geo.attributes.normal, acc=new Map();   /* сглаживаем нормали на стыках граней */
@@ -2088,7 +2164,7 @@ const Ed={
       <button class="logo" id="edHome" title="Сохранить и выйти в меню">${LOGO}<span>Inblox</span></button>
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
       <span class="sp"></span>
-      <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
+      <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Полёт камеры (основной режим) — нажмите, чтобы переключить на орбиту">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
       <button class="btn sm" id="edVert" title="Режим: тянуть блок вверх и вниз" style="flex:none">↕ Высота</button>
       <label class="row" style="flex:none;gap:.5em"><span class="muted">Сетка</span>
         <select id="edSnap" style="width:5.2em"><option value="0">Выкл</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label>
@@ -2115,7 +2191,10 @@ const Ed={
     $$('#flyBar [data-go]').forEach(b=>b.onclick=()=>this.goTo(b.dataset.go));
     $('#flySp').onchange=e=>{ this.fly.speed=+e.target.value; };
     this.bindFly(); this.bindPanels(); this.renderBody();
+    const prevFly=this.fly.on?{p:this.fly.pos.clone(),y:this.fly.yaw,q:this.fly.pitch}:null;
     if(this.fly.on){ this.fly.on=false; this.fly.tw=null; }
+    /* режим полёта — основной: редактор открывается уже в полёте, обычная камера включается кнопкой «✈ Полёт» */
+    this._init=true; this.setFly(true); { const f=this.fly; if(prevFly){ f.pos.copy(prevFly.p); f.yaw=prevFly.y; f.pitch=prevFly.q; } else { this.goTo('start'); const w=f.tw; if(w){ f.pos.copy(w.p1); f.yaw=w.y1; f.pitch=w.q1; f.tw=null; } } } this._init=false;
   },
   bindPanels(){
     const st=this.ps||(this.ps={tools:true,panel:true});
@@ -2154,13 +2233,13 @@ const Ed={
     if(on){ f.pos.copy(this.cam.position); const d=o.t.clone().sub(f.pos), l=Math.max(1e-6,d.length()); f.yaw=Math.atan2(-d.x,-d.z); f.pitch=Math.asin(clamp(d.y/l,-1,1)); }
     else{ const dist=clamp(o.dist,6,60); o.t.copy(f.pos).addScaledVector(this.flyDir(),dist); o.yaw=f.yaw; o.pitch=clamp(-f.pitch,.03,1.5); o.dist=dist; }
     f.on=on; f.jx=f.jy=f.vy=0; f.tw=null; this.drag=null; this.keys={}; this.flyUI();
-    toast(on?'Полёт: WASD — лететь, Пробел / Shift — вверх / вниз, мышь — смотреть':'Обычная камера',2600);
+    if(!this._init) toast(on?'Полёт: WASD — лететь, Пробел / Shift — вверх / вниз, мышь — смотреть':'Обычная камера (орбита)',2600);
   },
   flyUI(){
     const on=this.fly.on, touch=stage.classList.contains('istouch');
     $('#edFly').classList.toggle('on',on); $('#flyBar').style.display=on?'flex':'none'; $('#edTouch').style.display=on?'':'none';
     const h=$('#editor .thint'); if(h) h.style.visibility=on?'hidden':'';
-    if(touch&&this.applyPanels){ if(on){ this.psSave={...this.ps}; this.ps.tools=false; this.ps.panel=false; } else if(this.psSave){ Object.assign(this.ps,this.psSave); this.psSave=null; } this.applyPanels(); }
+    if(touch&&this.applyPanels&&!this._init){ if(on){ this.psSave={...this.ps}; this.ps.tools=false; this.ps.panel=false; } else if(this.psSave){ Object.assign(this.ps,this.psSave); this.psSave=null; } this.applyPanels(); }
   },
   bindFly(){
     const joy=$('#edJoy'), knob=$('#edJoyK'), f=this.fly; let jid=null,j0=null; const R=()=>Math.max(34,VW*.05);
