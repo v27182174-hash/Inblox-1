@@ -56,13 +56,13 @@ input[type=checkbox]{accent-color:#fff;width:1.1em;height:1.1em}
 #home{background:transparent}
 #home .head{position:absolute;left:0;right:0;top:0;height:4.4em;display:flex;align-items:center;gap:.8em;padding:0 2.2em}
 #home .scroll{position:absolute;left:0;right:0;top:4.4em;bottom:0;overflow:auto;padding:0;-webkit-overflow-scrolling:touch}
-#home .hero{height:14em;padding:1.4em 2.2em 0;max-width:32em;text-shadow:0 2px 12px #000}
+#home .hero{height:19em;padding:1.4em 2.2em 0;max-width:32em;text-shadow:0 2px 12px #000}
 #home .hero h2{font-size:2.9em;line-height:1.04;margin:0 0 .3em}
 .socials{display:flex;align-items:center;gap:.8em;margin-top:2em;padding-top:1.2em;border-top:1px solid var(--line)}
 .socials .tg{display:inline-flex;align-items:center;gap:.5em;padding:.45em .95em;border-radius:99em;background:#229ed9;color:#fff;text-decoration:none;font-weight:600;font-size:.95em}
 .socials .tg:hover{filter:brightness(1.1)}
 .socials .tg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#home .shelf{background:var(--bg);border-top:1px solid var(--line);padding:1.4em 2.2em 2.2em;min-height:calc(100% - 14em)}
+#home .shelf{background:var(--bg);border-top:1px solid var(--line);padding:1.4em 2.2em 2.2em;min-height:calc(100% - 19em)}
 #home h2{font-size:1.9em;margin:.2em 0 .1em}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1em;margin-top:1.2em}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:.9em;overflow:hidden;display:flex;flex-direction:column;min-width:0}
@@ -2776,29 +2776,40 @@ const AvS={
 /* ============================================================
    3D-ФОН ГЛАВНОГО МЕНЮ: парящие блоки и ваш аватар
    ============================================================ */
-const HomeBG={scene:null,cam:null,av:null,items:[],t:0,
+const HomeBG={scene:null,cam:null,chars:[],t:0,
+  /* четыре героя главной: две девушки (женственные позы) и два парня */
+  CAST:[
+    {fx:.47,z:-.9,rot:.35,pose:'think',look:{build:'normal',skin:'#f1c27d',shirt:'#2f3552',pants:'#1c1d26',face:'anime36',head:'cube',hair:'short',hairColor:'#2b2118',outfit:'suit',outfitColor:'#b3262d'}},
+    {fx:.6,z:.5,rot:-.2,pose:'hair',look:{build:'curvy',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#c9a26a',outfit:'sundress',outfitColor:'#ff8fb8'}},
+    {fx:.73,z:-.6,rot:.2,pose:'victory',look:{build:'wide',skin:'#c68642',shirt:'#e86a3a',pants:'#2b2f3a',face:'anime37',head:'cube',hair:'spiky',hairColor:'#1b1b1b',outfit:'hoodie',outfitColor:'#e8433f'}},
+    {fx:.86,z:.5,rot:-.35,pose:'kawaii',look:{build:'petite',skin:'#f8d9b8',face:'anime15',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'idolstage',outfitColor:'#6a5acd'}}
+  ],
   init(){
-    const s=this.scene=new THREE.Scene(); s.background=new THREE.Color(0x0a0a0c); s.fog=new THREE.Fog(0x0a0a0c,16,44);
-    s.add(new THREE.HemisphereLight(0xffffff,0x444455,.85)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(5,9,7); s.add(d);
-    const cols=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#f4f4f6'];
-    for(let i=0;i<18;i++){
-      const cyl=i%3===0, m=new THREE.Mesh(cyl?GCYL:GBOX,new THREE.MeshLambertMaterial({color:cols[i%6]})), k=.8+Math.random()*1.7;
-      m.scale.set(k,cyl?k*.5:k,k); m.add(new THREE.LineSegments(cyl?ECYL:EBOX,EDGE_MAT));
-      m.position.set(-3+Math.random()*14,-1+Math.random()*7,-12+Math.random()*9);
-      m.userData={sp:.25+Math.random()*.6,ph:Math.random()*6,y0:m.position.y}; s.add(m); this.items.push(m);
-    }
+    const s=this.scene=new THREE.Scene(); s.background=new THREE.Color(0x0b0b0c); s.fog=new THREE.Fog(0x0b0b0c,18,48);
+    s.add(new THREE.HemisphereLight(0xffffff,0x444455,.9)); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(4,9,9); s.add(d);
     this.cam=mkCam(45); this.cam.position.set(0,0,14); this.cam.lookAt(0,0,0);
     this.rebuild();
   },
   rebuild(){
     if(!this.scene) return;
-    if(this.av){ this.scene.remove(this.av.group); disposeObj(this.av.group); }
-    this.av=buildAvatar(S.avatar); this.av.group.position.set(5.6,.4,0); this.av.group.scale.setScalar(1.15); this.scene.add(this.av.group);
+    for(const c of this.chars){ this.scene.remove(c.root); disposeObj(c.root); } this.chars=[];
+    this.CAST.forEach((c,i)=>{
+      const av=buildAvatar(npcLook({look:c.look})), root=new THREE.Group();
+      const pad=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.05,28),new THREE.MeshLambertMaterial({color:0x17171b})); pad.position.y=-.03; root.add(pad);
+      root.add(av.group); this.scene.add(root); this.chars.push({root,av,c,ph:i*1.7});
+    });
+    this.layout(true);
+  },
+  /* раскладка под видимую полосу над «полкой» с играми: герои стоят на её верхнем краю */
+  layout(force){
+    const sc=$('#home .scroll'), sh=$('#home .shelf'), hd=$('#home .head'); if(!sc||!sh||!sc.offsetParent) return;
+    const top=hd?hd.offsetHeight:60, bot=sc.offsetTop+sh.offsetTop, key=VW+'x'+VH+'/'+top+'/'+bot; if(!force&&key===this.key) return; this.key=key;
+    const wpp=2*14*Math.tan(22.5*Math.PI/180)/VH, avail=Math.max(60,bot-top-8)*wpp, k=clamp(avail/3.9,.45,1.25), feet=(VH/2-bot)*wpp+.1;
+    for(const o of this.chars){ const x=(o.c.fx-.5)*VW*wpp; o.root.position.set(x,feet,o.c.z); o.root.scale.setScalar(k); o.root.rotation.y=o.c.rot; }
   },
   update(dt){
-    this.t+=dt;
-    for(const m of this.items){ m.rotation.y+=dt*m.userData.sp; m.rotation.x+=dt*m.userData.sp*.5; m.position.y=m.userData.y0+Math.sin(this.t*m.userData.sp+m.userData.ph)*.6; }
-    if(this.av){ this.av.group.rotation.y=Math.sin(this.t*.6)*.7; animAvatar(this.av,0,0,false,0); }
+    this.t+=dt; this.layout();
+    for(const o of this.chars){ animAvatar(o.av,0,0,false,0); applyNpcPose(o.av,o.c.pose,this.t+o.ph); }
   }
 };
 
