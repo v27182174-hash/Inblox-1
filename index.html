@@ -225,54 +225,63 @@ label.drop{position:relative;display:block;overflow:hidden}
 .cin input{width:100%;background:rgba(10,10,12,.85);border:1px solid var(--line);border-radius:.6em;color:var(--fg);padding:.5em .75em}
 .istouch .chat{bottom:auto;top:3.8em;max-width:42%}
 
-/* ===== Дизайн v2: минимализм + свой характер — тёмная бумага, кислотно-лаймовый акцент, строгие углы, моно-подписи ===== */
-:root{--bg:#0b0b0c;--panel:rgba(13,13,15,.92);--panel2:#16161a;--line:rgba(255,255,255,.09);--accent:#ffffff;--muted:#85858f;--ok:#4be3a8;
-  --display:'Space Grotesk','Avenir Next','Segoe UI Variable Display',system-ui,-apple-system,sans-serif;--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
-*{scrollbar-width:thin;scrollbar-color:#2c2c33 transparent}
+/* ===== Дизайн v3: плоский, тихий, без свечения. Тёплый графит, один светлый тон, строгие углы, обычная гарнитура ===== */
+:root{--bg:#0f0f0e;--panel:#131312;--panel2:#1a1a18;--line:#2b2b28;--fg:#ebe8e1;--muted:#8b8881;--accent:#ebe8e1;--danger:#e5604f;--ok:#6fbf8e;
+  --display:'Helvetica Neue',Helvetica,Arial,'Liberation Sans',sans-serif;--body:'Helvetica Neue',Helvetica,Arial,'Liberation Sans',sans-serif}
+*{scrollbar-width:thin;scrollbar-color:#34342f transparent}
 body{background:var(--bg)}
-.btn{border-radius:.5em;background:var(--panel2);font-weight:500;letter-spacing:.005em}
-.btn:hover{border-color:var(--accent);color:#fff}
-.btn.pri{background:var(--accent);color:#0b0b0c;border-color:var(--accent);font-weight:600}
-.btn.pri:hover{background:#e6e6ea;color:#0b0b0c}
-.btn.on{background:var(--accent);color:#0b0b0c;border-color:var(--accent)}
-.btn.sm{border-radius:.45em}
-.lbl{font-family:var(--mono);font-size:.7em;letter-spacing:.12em;color:var(--muted)}
-h1,h2,h3{letter-spacing:-.03em}
-.topbar{height:3.4em;background:var(--panel);border-bottom:1px solid var(--line)}
-.logo{letter-spacing:-.04em}
-input[type=text],input[type=password],input[type=number],select,input[type=color]{border-radius:.4em}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;outline:none}
-input[type=range],input[type=checkbox]{accent-color:var(--accent)}
-.chip{border-radius:.45em;background:var(--panel2)}
-.chip:hover{border-color:rgba(255,255,255,.3)}
-.chip.on{background:var(--accent);color:#0b0b0c;border-color:var(--accent);font-weight:600}
-.sw{border-radius:.4em}
-.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px #000 inset}
-.tab{font-family:var(--mono);font-size:.82em;letter-spacing:.04em;text-transform:uppercase}
-.tab.on{color:var(--fg);border-bottom-color:var(--accent)}
-.tools,.rpanel,.flybar,.apanel{border-radius:.6em;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-.tool{border-radius:.4em}
-.tool:hover{background:rgba(255,255,255,.09)}
-.pill{border-radius:.45em;background:rgba(11,11,12,.66)}
-.npcp,.npcb{border-radius:.6em}
-.npcb b{color:var(--accent)}
-#toast{background:var(--fg);border-radius:.5em;font-family:var(--mono);font-size:.9em}
-.ov .box,.gpg{border-radius:.7em}
-.ov h2{letter-spacing:-.04em}
-.card{border-radius:.6em;background:var(--panel2);transition:border-color .15s,transform .15s}
-.card:hover{border-color:rgba(255,255,255,.55);transform:translateY(-2px)}
-.card.new{background:transparent}
-.card .meta b{letter-spacing:-.02em}
-#home .hero h2{font-size:3.3em;letter-spacing:-.05em;line-height:1;border-left:.09em solid var(--accent);padding-left:.28em}
-#home .shelf{background-color:var(--bg);background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1.2px);background-size:22px 22px}
-.apanel{background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1.2px);background-size:22px 22px}
-.socials .tg{border-radius:.45em}
-.cmsg{border-radius:.4em}.cmsg b{color:var(--accent)}
-.cin input{border-radius:.45em}
-.guil.edit .gui-el.sel{outline-color:var(--accent)}
-.joy{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22)}
-.jbtn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.55)}
-.jbtn:active{background:rgba(255,255,255,.4)}
+#stage{background:var(--bg)}
+h1,h2,h3{letter-spacing:-.025em;font-weight:600}
+.btn{border-radius:3px;background:transparent;font-weight:500;letter-spacing:0;transition:background .12s,color .12s,border-color .12s}
+.btn:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.pri:hover{background:transparent;color:var(--fg)}
+.btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.danger:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.sm{border-radius:3px}
+.lbl{font-family:var(--body);font-size:.85em;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 .4em}
+.topbar,#home .head{background:var(--bg)}
+.topbar{height:3.4em;backdrop-filter:none}
+.logo{font-weight:600;letter-spacing:-.03em}
+input[type=text],input[type=password],input[type=number],select,input[type=color]{border-radius:3px;background:var(--bg)}
+input:focus,select:focus,textarea:focus{border-color:var(--fg)!important;outline:none}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
+.btn:focus-visible,.card:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible,.sw:focus-visible{outline:1px solid var(--fg);outline-offset:2px}
+input[type=range],input[type=checkbox]{accent-color:var(--fg)}
+.chip{border-radius:3px;background:transparent;padding:.32em .75em}
+.chip:hover{border-color:var(--fg)}
+.chip.on{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:500}
+.chip.more{border-style:dashed;color:var(--muted);background:transparent}
+.sw{border-radius:3px}
+.sw.on{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
+.tab{font-family:var(--body);font-size:.92em;letter-spacing:0;text-transform:none;font-weight:500}
+.tab.on{color:var(--fg);border-bottom-color:var(--fg)}
+.tools,.rpanel,.flybar,.apanel{border-radius:0;box-shadow:none;backdrop-filter:none;background:var(--panel)}
+.tools,.rpanel,.flybar{border-radius:3px}
+.tool{border-radius:3px}
+.tool:hover{background:var(--panel2)}
+.pill{border-radius:3px;background:rgba(15,15,14,.78);backdrop-filter:none}
+.phud{border-radius:3px;background:rgba(15,15,14,.78)}
+.npcp,.npcb{border-radius:3px}
+.npcb b{color:var(--fg)}
+#toast{background:var(--fg);color:var(--bg);border-radius:3px;font-family:var(--body);font-size:.95em}
+.ov{backdrop-filter:none;background:rgba(10,10,9,.75)}
+.ov .box,.gpg{border-radius:4px;box-shadow:none;background:var(--panel)}
+.card{border-radius:3px;background:transparent;border:1px solid var(--line);box-shadow:none;transition:border-color .12s}
+.card:hover{border-color:var(--fg);transform:none}
+.card.new{background:transparent;border-style:dashed}
+#home .hero{text-shadow:none;max-width:26em}
+#home .hero h2{font-size:3.1em;letter-spacing:-.045em;line-height:1.02;border:0;padding:0;font-weight:600}
+#home .hero p{font-size:1.05em;max-width:24em}
+#home .shelf{background:var(--bg);background-image:none;border-top:1px solid var(--line)}
+.apanel{background-image:none}
+.socials .tg{border-radius:3px}
+.cmsg{border-radius:3px}.cmsg b{color:var(--fg)}
+.cin input{border-radius:3px}
+.hint,.stat,.hintp,.thint,.istouch .thint{text-shadow:none;color:var(--muted)}
+.joy{background:transparent;border:1px solid rgba(235,232,225,.35)}
+.jbtn{background:transparent;border:1px solid rgba(235,232,225,.5)}
+.jbtn:active{background:rgba(235,232,225,.25)}
 /* ===== Телефон: экран во всю ширину, крупные зоны нажатия, панели не мешают ===== */
 @media (pointer:coarse) and (orientation:landscape){ #stage{width:100vw;height:100dvh} }
 .istouch #ui{font-size:clamp(11px,1.25cqw,17px)}
@@ -305,13 +314,13 @@ input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 
 /* ===== кастомизация: вкладки и сетка лиц ===== */
 .atabs{position:sticky;top:0;z-index:3;display:flex;background:var(--bg);border-bottom:1px solid var(--line)}
-.atabs .tab{padding:.85em .1em;font-size:.74em;white-space:nowrap}
+.atabs .tab{padding:.85em .1em;font-size:.88em;white-space:nowrap}
 .fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5em}
-.fcell{background:var(--panel2);border:1px solid var(--line);border-radius:.5em;padding:.3em;cursor:pointer;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:.25em;min-width:0}
-.fcell i{display:block;width:100%;aspect-ratio:1;border-radius:.35em}
+.fcell{background:transparent;border:1px solid var(--line);border-radius:3px;padding:.3em;cursor:pointer;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:.25em;min-width:0}
+.fcell i{display:block;width:100%;aspect-ratio:1;border-radius:2px}
 .fcell span{font-size:.62em;line-height:1.15;text-align:center;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .fcell:hover{border-color:rgba(255,255,255,.4)}
-.fcell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.fcell.on{border-color:var(--fg);box-shadow:0 0 0 1px var(--fg) inset}
 .fcell.on span{color:var(--fg)}
 .chip.more{background:transparent;border-style:dashed;color:var(--muted)}
 .istouch .apanel{width:min(22em,52%)}
@@ -2856,7 +2865,7 @@ const AvS={
       ${faceList.length>16?`<button class="btn sm" style="margin-top:.7em;width:100%" data-more="face">${faceOpen?'Свернуть ▴':`Показать все лица (${faceList.length}) ▾`}</button>`:''}`;
     const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>
       <div style="margin-top:.9em;padding-top:.7em;border-top:1px solid rgba(255,255,255,.14)"><span class="lbl" style="display:block">Своя картинка</span>
-      <div style="display:flex;gap:.5em;align-items:center;flex-wrap:wrap;margin-top:.3em"><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;display:inline-block">📁 Загрузить текстуру<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"></label>
+      <div style="display:flex;gap:.5em;align-items:center;flex-wrap:wrap;margin-top:.3em"><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;display:inline-block">Загрузить текстуру<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"></label>
       ${a[k]&&String(a[k]).startsWith('data:')?`<span class="sw on" title="Своя текстура" style="display:inline-block;width:34px;height:34px;border-radius:8px;background:url(${a[k]}) center/cover"></span>`:''}
       ${a[k]?`<button class="btn sm danger" data-texx="${k}">Убрать</button>`:''}</div></div>`;
     const SEC={
@@ -3044,7 +3053,7 @@ const Home={
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
     const el=$('#home'), builtins=BUILTIN.map(f=>f());
     el.innerHTML=`<div class="head"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span><span class="sp"></span>
-      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span>${installEv?'<button class="btn pri" id="hInst">Установить приложение</button>':''}<button class="btn" id="hProf" title="Мой профиль">👤 ${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hFr" title="Друзья и заявки">👥 Друзья</button><button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
+      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span>${installEv?'<button class="btn pri" id="hInst">Установить приложение</button>':''}<button class="btn" id="hProf" title="Мой профиль">${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hFr" title="Друзья и заявки">Друзья</button><button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
     <div class="scroll"><div class="hero"><h2>Создавай игры в 3D</h2><p class="muted" style="margin:0">Играйте во встроенные карты или соберите свою в редакторе.</p></div><div class="shelf"><h3 style="font-size:1.4em">Игры</h3>
       <div class="grid"><div class="card new" id="cNew" tabindex="0" role="button"><span class="plus">+</span>Новая игра</div>
       ${S.games.map(g=>this.card(g,false)).join('')}${builtins.map(g=>this.card(g,true)).join('')}</div>
@@ -3107,7 +3116,7 @@ const Home={
     $$('[data-cplay]',root).forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); this.playPub(b.dataset.cplay); });
   },
   async friendBadge(){
-    const r=await Api.call('GET','friends'), b=$('#hFr'); if(!r.ok||!b) return; const n=(r.d.incoming||[]).length; b.textContent='👥 Друзья'+(n?' ('+n+')':'');
+    const r=await Api.call('GET','friends'), b=$('#hFr'); if(!r.ok||!b) return; const n=(r.d.incoming||[]).length; b.textContent='Друзья'+(n?' ('+n+')':'');
   },
   async openFriends(tab,q){
     this.frTab=tab||this.frTab||'list'; if(q!==undefined) this.frQ=q; const ov=$('#hOv'); if(!ov) return;
