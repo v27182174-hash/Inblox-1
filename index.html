@@ -926,12 +926,12 @@ function buildHair(id,cfg,hs,body){
 const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье'],['schooluni','Школьная форма'],['lolita','Лолита'],['witch','Ведьма'],['princess','Принцесса'],['swim','Купальник'],['yukata','Юката'],['sportwear','Спорт-комплект'],['qipao','Ципао'],['nurse','Медсестра'],['angel','Ангел'],['cheer','Чирлидер'],['knit','Свитер и юбка']];
 /* Наряд — объёмные детали поверх тела: воротники, ремни, плащи, броня. Цвет акцентов задаёт outfitColor */
 function buildOutfit(id,cfg,c){
-  const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, mc=h=>MC[h]||(MC[h]=new THREE.MeshLambertMaterial({color:h}));
-  const oc=cfg.outfitColor||'#e8433f', O=cfg.outfitTex?(()=>{ const m0=new THREE.MeshLambertMaterial({color:'#ffffff'}); m0.map=userTex(cfg.outfitTex); return m0; })():mc(oc), tw=bd.tw, td=bd.td, fz=td/2, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
+  const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, po=m=>{ m.polygonOffset=true; m.polygonOffsetFactor=-2; m.polygonOffsetUnits=-2; return m; }, mc=h=>MC[h]||(MC[h]=po(new THREE.MeshLambertMaterial({color:h})));   /* одежда чуть «ближе» к камере: на плечах кожа/рубашка с ней больше не мерцают и не смешиваются */
+  const oc=cfg.outfitColor||'#e8433f', O=cfg.outfitTex?(()=>{ const m0=new THREE.MeshLambertMaterial({color:'#ffffff'}); m0.map=userTex(cfg.outfitTex); return po(m0); })():mc(oc), tw=bd.tw, td=bd.td, fz=td/2, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
   const dark=h=>'#'+new THREE.Color(h).multiplyScalar(.6).getHexString();
-  const hw=bd.hw||tw, part=(m,y0,y1,pad)=>{ if(bd.fem){ const k=new THREE.Mesh(femGeo(bd,y0,y1,pad),m); k.castShadow=true; body.add(k); return k; } return box(tw+pad,y1-y0,td+pad,m,0,(y0+y1)/2,0); };
+  const hw=bd.hw||tw, part=(m,y0,y1,pad)=>{ if(y1>2.19) y1+=.015; if(bd.fem){ const k=new THREE.Mesh(femGeo(bd,y0,y1,pad),m); k.castShadow=true; body.add(k); return k; } return box(tw+pad,y1-y0,td+pad,m,0,(y0+y1)/2,0); };
   const sh=mc(cfg.shirt), shD=mc(dark(cfg.shirt)), pn=mc(cfg.pants), W=mc('#f4f4f6'), K=mc('#20222b'), G=mc('#f2c230'), S=mc('#aab3c0');
-  const sleeve=(m,len=1.15,w=.03,y=-.575)=>arms.forEach(a=>cx(bd.aw+w,len,bd.aw+w,m,0,y,0,a));
+  const sleeve=(m,len=1.15,w=.03,y=-.575)=>arms.forEach(a=>cx(bd.aw+w,len+.02,bd.aw+w,m,0,y+.01,0,a));
   /* у юбок и платьев текстура повторяется плиткой (≈1,2 блока), а не растягивается на весь подол */
   /* ширина тела на высоте y: у женских фигур талия уже плеч и бёдер, юбки и платья начинаются от талии, а не от «квадрата» */
   const tabW=y=>{ const T=[[1,bd.hw],[1.12,bd.hw],[1.5,bd.ww],[1.9,bd.tw],[2.2,bd.tw*.96]]; for(let i=1;i<T.length;i++) if(y<=T[i][0]||i===T.length-1){ const p=T[i-1], q=T[i], t=Math.min(1,Math.max(0,(y-p[0])/(q[0]-p[0]))); return p[1]+(q[1]-p[1])*t*t*(3-2*t); } };
