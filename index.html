@@ -226,14 +226,14 @@ label.drop{position:relative;display:block;overflow:hidden}
 .istouch .chat{bottom:auto;top:3.8em;max-width:42%}
 
 /* ===== Дизайн v2: минимализм + свой характер — тёмная бумага, кислотно-лаймовый акцент, строгие углы, моно-подписи ===== */
-:root{--bg:#0b0b0c;--panel:rgba(13,13,15,.92);--panel2:#16161a;--line:rgba(255,255,255,.09);--accent:#d7ff4a;--muted:#85858f;--ok:#4be3a8;
+:root{--bg:#0b0b0c;--panel:rgba(13,13,15,.92);--panel2:#16161a;--line:rgba(255,255,255,.09);--accent:#ffffff;--muted:#85858f;--ok:#4be3a8;
   --display:'Space Grotesk','Avenir Next','Segoe UI Variable Display',system-ui,-apple-system,sans-serif;--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
 *{scrollbar-width:thin;scrollbar-color:#2c2c33 transparent}
 body{background:var(--bg)}
 .btn{border-radius:.5em;background:var(--panel2);font-weight:500;letter-spacing:.005em}
 .btn:hover{border-color:var(--accent);color:#fff}
 .btn.pri{background:var(--accent);color:#0b0b0c;border-color:var(--accent);font-weight:600}
-.btn.pri:hover{background:#e6ff7d;color:#0b0b0c}
+.btn.pri:hover{background:#e6e6ea;color:#0b0b0c}
 .btn.on{background:var(--accent);color:#0b0b0c;border-color:var(--accent)}
 .btn.sm{border-radius:.45em}
 .lbl{font-family:var(--mono);font-size:.7em;letter-spacing:.12em;color:var(--muted)}
@@ -252,7 +252,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 .tab.on{color:var(--fg);border-bottom-color:var(--accent)}
 .tools,.rpanel,.flybar,.apanel{border-radius:.6em;box-shadow:0 8px 30px rgba(0,0,0,.35)}
 .tool{border-radius:.4em}
-.tool:hover{background:rgba(215,255,74,.09)}
+.tool:hover{background:rgba(255,255,255,.09)}
 .pill{border-radius:.45em;background:rgba(11,11,12,.66)}
 .npcp,.npcb{border-radius:.6em}
 .npcb b{color:var(--accent)}
@@ -260,7 +260,7 @@ input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 .ov .box,.gpg{border-radius:.7em}
 .ov h2{letter-spacing:-.04em}
 .card{border-radius:.6em;background:var(--panel2);transition:border-color .15s,transform .15s}
-.card:hover{border-color:rgba(215,255,74,.55);transform:translateY(-2px)}
+.card:hover{border-color:rgba(255,255,255,.55);transform:translateY(-2px)}
 .card.new{background:transparent}
 .card .meta b{letter-spacing:-.02em}
 #home .hero h2{font-size:3.3em;letter-spacing:-.05em;line-height:1;border-left:.09em solid var(--accent);padding-left:.28em}
@@ -271,14 +271,18 @@ input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 .cin input{border-radius:.45em}
 .guil.edit .gui-el.sel{outline-color:var(--accent)}
 .joy{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22)}
-.jbtn{background:rgba(215,255,74,.14);border-color:rgba(215,255,74,.55)}
-.jbtn:active{background:rgba(215,255,74,.4)}
+.jbtn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.55)}
+.jbtn:active{background:rgba(255,255,255,.4)}
 /* ===== Телефон: экран во всю ширину, крупные зоны нажатия, панели не мешают ===== */
 @media (pointer:coarse) and (orientation:landscape){ #stage{width:100vw;height:100dvh} }
-.istouch #ui{font-size:clamp(12px,1.55cqw,19px)}
+.istouch #ui{font-size:clamp(11px,1.25cqw,17px)}
 .istouch .topbar{overflow-x:auto;scrollbar-width:none;gap:.5em;padding:0 max(.9em,env(safe-area-inset-left))}
 .istouch .topbar::-webkit-scrollbar{display:none}
 .istouch .topbar>*{flex:none}
+.istouch .topbar .btn{padding:.4em .65em;font-size:.92em;min-height:0}
+.istouch .topbar input.name{width:7em}
+.istouch .topbar .muted{display:none}
+.istouch .topbar{gap:.4em;padding:0 .7em}
 .istouch .topbar .sp{flex:1 0 .3em}
 .istouch .btn{min-height:2.5em;padding:.5em 1em}
 .istouch .btn.sm{min-height:2.3em}
@@ -2164,7 +2168,7 @@ const Ed={
       <button class="logo" id="edHome" title="Сохранить и выйти в меню">${LOGO}<span>Inblox</span></button>
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
       <span class="sp"></span>
-      <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Полёт камеры (основной режим) — нажмите, чтобы переключить на орбиту">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
+      <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
       <button class="btn sm" id="edVert" title="Режим: тянуть блок вверх и вниз" style="flex:none">↕ Высота</button>
       <label class="row" style="flex:none;gap:.5em"><span class="muted">Сетка</span>
         <select id="edSnap" style="width:5.2em"><option value="0">Выкл</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label>
@@ -2191,10 +2195,7 @@ const Ed={
     $$('#flyBar [data-go]').forEach(b=>b.onclick=()=>this.goTo(b.dataset.go));
     $('#flySp').onchange=e=>{ this.fly.speed=+e.target.value; };
     this.bindFly(); this.bindPanels(); this.renderBody();
-    const prevFly=this.fly.on?{p:this.fly.pos.clone(),y:this.fly.yaw,q:this.fly.pitch}:null;
     if(this.fly.on){ this.fly.on=false; this.fly.tw=null; }
-    /* режим полёта — основной: редактор открывается уже в полёте, обычная камера включается кнопкой «✈ Полёт» */
-    this._init=true; this.setFly(true); { const f=this.fly; if(prevFly){ f.pos.copy(prevFly.p); f.yaw=prevFly.y; f.pitch=prevFly.q; } else { this.goTo('start'); const w=f.tw; if(w){ f.pos.copy(w.p1); f.yaw=w.y1; f.pitch=w.q1; f.tw=null; } } } this._init=false;
   },
   bindPanels(){
     const st=this.ps||(this.ps={tools:true,panel:true});
