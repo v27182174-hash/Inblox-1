@@ -302,6 +302,20 @@ input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 .istouch .flybar>*{flex:none}
 .istouch .popen{top:3.8em}
 .istouch .thint{left:1em;right:1em;bottom:.5em;text-align:center}
+
+/* ===== кастомизация: вкладки и сетка лиц ===== */
+.atabs{position:sticky;top:0;z-index:3;display:flex;background:var(--bg);border-bottom:1px solid var(--line)}
+.atabs .tab{padding:.85em .1em;font-size:.74em;white-space:nowrap}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5em}
+.fcell{background:var(--panel2);border:1px solid var(--line);border-radius:.5em;padding:.3em;cursor:pointer;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:.25em;min-width:0}
+.fcell i{display:block;width:100%;aspect-ratio:1;border-radius:.35em}
+.fcell span{font-size:.62em;line-height:1.15;text-align:center;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.fcell:hover{border-color:rgba(255,255,255,.4)}
+.fcell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.fcell.on span{color:var(--fg)}
+.chip.more{background:transparent;border-style:dashed;color:var(--muted)}
+.istouch .apanel{width:min(22em,52%)}
+.istouch .fgrid{grid-template-columns:repeat(3,1fr)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -1453,8 +1467,9 @@ function drawAnimeClosed(g){
   g.fillStyle='#fff'; for(const [x,y,r] of [[14,44,4],[116,50,3]]) animeStar(g,x,y,r);
   g.restore();
 }
-function faceTex(cfg){
-  return canvasTex(128,128,(g,w,h)=>{
+function faceTex(cfg){ return canvasTex(128,128,(g,w,h)=>drawFace(g,w,h,cfg)); }
+function drawFace(g,w,h,cfg){
+  {
     g.fillStyle=cfg.skin; g.fillRect(0,0,w,h); g.fillStyle='#1b1b22'; g.strokeStyle='#1b1b22'; g.lineCap='round'; g.lineWidth=7;
     const eyes=(f)=>{ f(38,54); f(90,54); };
     if(ANIME[cfg.face]){ drawAnimeFace(g,ANIME[cfg.face]); return; }
@@ -1485,7 +1500,7 @@ function faceTex(cfg){
       case 'anime7': drawAnimeFace(g,{ew:18,eh:21,ix:1,iw:14,ih:18,sclera:'#fff7ea',shade:'#e6cfa8',c1:'#ffb100',c2:'#ff7a00',c3:'#ffe27a',glow:'#fff2b0',drop:'#ff5a00',star:1,hl:4.6,lash:'#3a1a0a',lw:4.2,brow:'#3a1a0a',bw:1.8,lid:'#c0703a',mouth:'smile'}); break;
       default: eyes((x,y)=>{g.beginPath();g.ellipse(x,y,8,12,0,0,7);g.fill();}); g.beginPath(); g.arc(64,72,26,.25,Math.PI-.25); g.stroke();
     }
-  });
+  }
 }
 function drawStar(g,cx,cy,R,r){ g.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r:R; g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } g.closePath(); g.fill(); }
 function torsoTex(cfg){
@@ -1528,6 +1543,8 @@ const TEXS=[
 ['galaxy','Галактика',(g,w,h)=>{ const gr=g.createLinearGradient(0,0,w,h); gr.addColorStop(0,'#1a0b3d'); gr.addColorStop(.55,'#5b2a9e'); gr.addColorStop(1,'#2a6fd6'); g.fillStyle=gr; g.fillRect(0,0,w,h); const r=seeded(5); g.fillStyle='#fff'; for(let i=0;i<46;i++){ g.globalAlpha=.4+r()*.6; const q=r()>.85?3:1.5; g.fillRect(r()*w,r()*h,q,q); } g.globalAlpha=1; }]
 ];
 const TEXTHUMB={};
+const FACETHUMB={};
+function faceThumb(id,skin){ const k=id+skin; if(FACETHUMB[k]!==undefined) return FACETHUMB[k]; let u=''; try{ const c=document.createElement('canvas'); c.width=c.height=96; const g=c.getContext('2d'); g.scale(.75,.75); drawFace(g,128,128,{skin,face:id}); u=c.toDataURL('image/png'); }catch(e){} return FACETHUMB[k]=u; }
 function texThumb(id){ if(TEXTHUMB[id]) return TEXTHUMB[id]; const d=TEXS.find(x=>x[0]===id); const c=document.createElement('canvas'); c.width=c.height=128; d[2](c.getContext('2d'),128,128); return TEXTHUMB[id]=c.toDataURL('image/png'); }
 const texCache={};
 /* своя картинка для одежды: обрезаем до квадрата 256×256 и сжимаем в JPEG, чтобы влезло в профиль */
@@ -2741,28 +2758,47 @@ const AvS={
   set(k,v){ S.avatar[k]=v; if(k==='shirt') delete S.avatar.shirtTex; if(k==='pants') delete S.avatar.pantsTex; saveAvatar(); this.rebuild(); this.mount(true); },
   mount(keepScroll){
     const a=S.avatar, el=$('#avatar'), sc=keepScroll&&$('.apanel',el)?$('.apanel',el).scrollTop:0;
+    const ui=this.ui||(this.ui={tab:'body',ff:'all',open:{}});
     const sws=(k,list)=>`<div class="sws">${list.map(c=>`<button class="sw ${a[k]===c?'on':''}" data-k="${k}" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
     const chips=(k,list)=>`<div class="chips">${list.map(([v,n])=>`<button class="chip ${a[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}</div>`;
+    /* длинные списки: показываем начало (и выбранный пункт), остальное — по кнопке «Показать все» */
+    const chipsC=(k,list,lim=14)=>{ const open=ui.open[k]||list.length<=lim+2; let sh=open?list:list.slice(0,lim); if(!open&&!sh.some(x=>x[0]===a[k])){ const cur=list.find(x=>x[0]===a[k]); if(cur) sh=sh.concat([cur]); }
+      return `<div class="chips">${sh.map(([v,n])=>`<button class="chip ${a[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}${list.length>lim+2?`<button class="chip more" data-more="${k}">${open?'Свернуть ▴':`Показать все (${list.length}) ▾`}</button>`:''}</div>`; };
+    const isM=f=>/парень/.test(f[1]), isA=f=>/^anime/.test(f[0]);
+    const FF=[['all','Все'],['classic','Классика'],['af','Аниме ♀'],['am','Аниме ♂']];
+    const faceList=FACES.filter(f=>ui.ff==='all'||(ui.ff==='classic'&&!isA(f))||(ui.ff==='af'&&isA(f)&&!isM(f))||(ui.ff==='am'&&isM(f)));
+    const faceOpen=ui.open.face||faceList.length<=16, faceShown=faceOpen?faceList:faceList.slice(0,16);
+    const facesUI=`<div class="chips" style="margin-bottom:.7em">${FF.map(([v,n])=>`<button class="chip ${ui.ff===v?'on':''}" data-ff="${v}">${n}</button>`).join('')}</div>
+      <div class="fgrid">${faceShown.map(([v,n])=>`<button class="fcell ${a.face===v?'on':''}" data-k="face" data-v="${v}" title="${n}" aria-label="${n}"><i style="background:${a.skin} url(${faceThumb(v,a.skin)}) center/cover"></i><span>${n.replace(/^Аниме( парень)?:\s*/,'')}</span></button>`).join('')}</div>
+      ${faceList.length>16?`<button class="btn sm" style="margin-top:.7em;width:100%" data-more="face">${faceOpen?'Свернуть ▴':`Показать все лица (${faceList.length}) ▾`}</button>`:''}`;
     const texUI=k=>`<span class="lbl" style="margin-top:.7em;display:block">Текстура</span><div class="sws">${TEXS.map(([id,n])=>`<button class="sw ${a[k]==='p:'+id?'on':''}" data-tk="${k}" data-tv="p:${id}" title="${n}" aria-label="${n}" style="background:url(${texThumb(id)}) center/cover"></button>`).join('')}</div>
       <div style="margin-top:.9em;padding-top:.7em;border-top:1px solid rgba(255,255,255,.14)"><span class="lbl" style="display:block">Своя картинка</span>
       <div style="display:flex;gap:.5em;align-items:center;flex-wrap:wrap;margin-top:.3em"><label class="btn sm" style="position:relative;overflow:hidden;cursor:pointer;display:inline-block">📁 Загрузить текстуру<input type="file" accept="image/*" data-tf="${k}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"></label>
       ${a[k]&&String(a[k]).startsWith('data:')?`<span class="sw on" title="Своя текстура" style="display:inline-block;width:34px;height:34px;border-radius:8px;background:url(${a[k]}) center/cover"></span>`:''}
       ${a[k]?`<button class="btn sm danger" data-texx="${k}">Убрать</button>`:''}</div></div>`;
+    const SEC={
+      body:`<div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
+        <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
+        <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>`,
+      face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div>`,
+      hair:`<div class="sec"><span class="lbl">Причёска</span>${chipsC('hair',HAIRS,16)}</div>${a.hair&&a.hair!=='none'?`<div class="sec"><span class="lbl">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="hairColor" value="${a.hairColor||'#2b2118'}" aria-label="Свой цвет волос"></div></div>`:''}`,
+      wear:`<div class="sec"><span class="lbl">Наряд</span>${chipsC('outfit',OUTFITS,14)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>${texUI('outfitTex')}`:''}</div>
+        <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
+        <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
+        <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>`,
+      acc:`<div class="sec"><span class="lbl">Головной убор</span>${chipsC('hat',HATS,14)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
+        ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}`
+    };
+    const TABS=[['body','Тело'],['face','Лицо'],['hair','Волосы'],['wear','Одежда'],['acc','Шапки']];
     el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
-      <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"><p class="muted" style="margin:.4em 0 0;font-size:.85em">Это ваш ник: он уникален, принадлежит только вам и его нельзя изменить.</p></div>
-      <div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
-      <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
-      <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>
-      <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
-      <div class="sec"><span class="lbl">Наряд</span>${chips('outfit',OUTFITS)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>${texUI('outfitTex')}`:''}</div>
-      <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
-      <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
-      <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
-      <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="hairColor" value="${a.hairColor||'#2b2118'}" aria-label="Свой цвет волос"></div>`:''}</div>
-      <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
-      ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}
+      <div class="atabs">${TABS.map(([v,n])=>`<button class="tab ${ui.tab===v?'on':''}" data-atab="${v}">${n}</button>`).join('')}</div>
+      <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"></div>
+      ${SEC[ui.tab]||SEC.body}
     </aside><div class="ahint">Тяните, чтобы повернуть</div>`;
+    $$('[data-atab]',el).forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.atab; this.mount(false); });
+    $$('[data-more]',el).forEach(b=>b.onclick=()=>{ ui.open[b.dataset.more]=!ui.open[b.dataset.more]; this.mount(true); });
+    $$('[data-ff]',el).forEach(b=>b.onclick=()=>{ ui.ff=b.dataset.ff; ui.open.face=false; this.mount(true); });
     $$('[data-v]',el).forEach(b=>b.onclick=()=>this.set(b.dataset.k,b.dataset.v));
     $$('input[type=color]',el).forEach(i=>i.addEventListener('change',()=>this.set(i.dataset.k,i.value)));
     $$('[data-vip]',el).forEach(b=>b.onclick=()=>{ if(!Acc.cur||Acc.cur.role!=='admin') return; this.set(b.dataset.vip,!S.avatar[b.dataset.vip]); });
@@ -2770,7 +2806,7 @@ const AvS={
     $$('[data-tf]',el).forEach(inp=>inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; const u=await imgToTex(f); if(!u){ toast('Не удалось прочитать картинку'); return; } this.set(inp.dataset.tf,u); toast('Текстура применена'); });
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
-    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0]}); saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
+    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0],outfit:Math.random()<.5?r(OUTFITS)[0]:'none',outfitColor:r(CLOTHES)}); delete S.avatar.shirtTex; delete S.avatar.pantsTex; delete S.avatar.outfitTex; saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
     if(sc) $('.apanel',el).scrollTop=sc;
   },
   pd(e){ this.drag=e.clientX; this.auto=false; canvas.setPointerCapture(e.pointerId); },
