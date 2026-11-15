@@ -232,7 +232,7 @@ label.drop{position:relative;display:block;overflow:hidden}
 body{background:var(--bg)}
 #stage{background:var(--bg)}
 h1,h2,h3{letter-spacing:-.025em;font-weight:600}
-.btn{border-radius:3px;background:transparent;font-weight:500;letter-spacing:0;transition:background .12s,color .12s,border-color .12s}
+.btn{border-radius:3px;background:var(--panel2);font-weight:500;letter-spacing:0;transition:background .12s,color .12s,border-color .12s}
 .btn:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .btn.pri:hover{background:transparent;color:var(--fg)}
@@ -260,8 +260,8 @@ input[type=range],input[type=checkbox]{accent-color:var(--fg)}
 .tools,.rpanel,.flybar{border-radius:3px}
 .tool{border-radius:3px}
 .tool:hover{background:var(--panel2)}
-.pill{border-radius:3px;background:rgba(15,15,14,.78);backdrop-filter:none}
-.phud{border-radius:3px;background:rgba(15,15,14,.78)}
+.pill{border-radius:3px;background:var(--panel2);backdrop-filter:none}
+.phud{border-radius:3px;background:var(--panel2);border:1px solid var(--line)}
 .npcp,.npcb{border-radius:3px}
 .npcb b{color:var(--fg)}
 #toast{background:var(--fg);color:var(--bg);border-radius:3px;font-family:var(--body);font-size:.95em}
@@ -279,9 +279,10 @@ input[type=range],input[type=checkbox]{accent-color:var(--fg)}
 .cmsg{border-radius:3px}.cmsg b{color:var(--fg)}
 .cin input{border-radius:3px}
 .hint,.stat,.hintp,.thint,.istouch .thint{text-shadow:none;color:var(--muted)}
-.joy{background:transparent;border:1px solid rgba(235,232,225,.35)}
-.jbtn{background:transparent;border:1px solid rgba(235,232,225,.5)}
-.jbtn:active{background:rgba(235,232,225,.25)}
+.joy{background:var(--panel2);border:1px solid #4a4a45}
+.joy i{background:var(--fg)}
+.jbtn{background:var(--fg);color:var(--bg);border:1px solid var(--fg)}
+.jbtn:active{background:#b9b6ae}
 /* ===== Телефон: экран во всю ширину, крупные зоны нажатия, панели не мешают ===== */
 @media (pointer:coarse) and (orientation:landscape){ #stage{width:100vw;height:100dvh} }
 .istouch #ui{font-size:clamp(11px,1.25cqw,17px)}
@@ -664,8 +665,8 @@ function tplObby(){
   /* финиш */
   hop(14,3.5,.4,0,'solid','#ffffff','tiles'); const fin=c;
   A('box','goal',fin.x,fin.y+1.5,fin.z-3,3,3,3,'#ffd23d');
-  N(fin.x-4.5,fin.y,fin.z+2,{name:'Софи',pose:'kawaii',look:{build:'petite',face:'anime31',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'cheer',outfitColor:'#e86aa5'},say:'Ура-а-а! Ты почти у цели!\nКоснись золотого куба — и ты победитель!'});
-  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'victory',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'spiky',hairColor:'#8a5a2b',outfit:'hoodie',outfitColor:'#e8433f'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
+  N(fin.x-4.5,fin.y,fin.z+2,{name:'Софи',pose:'kpop',look:{build:'petite',face:'anime31',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'cheer',outfitColor:'#e86aa5'},say:'Ура-а-а! Ты почти у цели!\nКоснись золотого куба — и ты победитель!'});
+  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'disco',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'spiky',hairColor:'#8a5a2b',outfit:'hoodie',outfitColor:'#e8433f'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
   for(let i=0;i<5;i++) coin(fin.x-4+i*2,fin.y+1.8,fin.z+5);
   A('box','kill',0,-14,-110,300,1,420,'#ff4d3d',0,null,'lava'); g.parts=P; g.sounds.music='b:music2'; return g;
 }
@@ -679,7 +680,7 @@ function tplIsland(){
   A('box','spawn',0,.6,0,4,.4,4,'#e8e8ee',0,null,'tiles');
   /* холмы */
   [[14,-16,'#8fd17a'],[-4,-22,'#9be085']].forEach(([hx,hz,col])=>{ A('cyl','solid',hx,1.7,hz,14,3,14,col,0,null,'grass'); A('cyl','solid',hx,4.7,hz,7,3,7,'#8b6a4a',0,null,'dirt'); coin(hx,7.8,hz); tree(hx+8,.4,hz+4,1); });
-  [[8,8],[-10,10],[22,8],[-24,-2],[4,-6]].forEach(([tx,tz])=>tree(tx,.4,tz,1+((tx*7+tz*3)%3)*.12,'#3f9b4f'));
+  [[8,8],[-26,6],[22,8],[-24,-2],[4,-6]].forEach(([tx,tz])=>tree(tx,.4,tz,1+((tx*7+tz*3)%3)*.12,'#3f9b4f'));
   for(let i=0;i<10;i++){ const a=i/10*Math.PI*2+.2; palm(Math.cos(a)*30,0,Math.sin(a)*30); }
   [[-6,4],[18,-4],[-18,-18]].forEach(([rx,rz])=>A('cyl','solid',rx,1,rz,3,1.4,3,'#9aa0aa',0,null,'stone'));
   /* кольца монет */
@@ -706,6 +707,11 @@ function tplIsland(){
   A('box','solid',87,1.6,2,2.4,1.2,2.4,'#d9a520',0,null,'planks'); coin(87,3.8,2);
   N(91,1,6,{name:'Капитан Рэй',pose:'hips',look:{build:'normal',skin:'#c68642',face:'anime37',hair:'bangs',hairColor:'#5a3a22',outfit:'pirate',outfitColor:'#b3262d',hat:'tophat',hatColor:'#15151a'},
     say:'Хо-хо! Ты добрался до клада!\nЗабирай монеты — они твои.\nЕсли собрал все на острове, победа за тобой!'});
+  /* танцпол у воды */
+  A('box','solid',-12,.5,8,12,.3,10,'#1b1b20',0,null,'neon');
+  N(-14,.65,6,{name:'Диджей Нова',pose:'hiphop',look:{build:'sport',skin:'#e0a370',face:'anime33',hair:'mohawk',hairColor:'#d9d9de',outfit:'streetwear',outfitColor:'#2a2a2e'},say:'Давай к нам, тут всегда музыка!\nПодойди ближе — и мы подвинемся.'});
+  N(-10,.65,6,{name:'Рин',pose:'kpop',look:{build:'slimgirl',skin:'#f8d9b8',face:'anime24',head:'cutie',hair:'highponytail',hairColor:'#1b1b1b',outfit:'idolstage',outfitColor:'#e9e5dc'},say:'Танцуем весь вечер!'});
+  N(-12,.65,10,{name:'Эми',pose:'ballroom',look:{build:'girl',skin:'#f8d9b8',face:'anime27',head:'soft',hair:'lob',hairColor:'#5a3a22',outfit:'qipao',outfitColor:'#1d1d21'},say:'Вальс под волны — что может быть лучше?'});
   /* жители острова */
   N(3,.4,5,{name:'Мэри',pose:'hair',look:{build:'girl',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#e8d28a',outfit:'sundress',outfitColor:'#ff8fb8'},
     say:'Привет, путешественник!\nНа острове спрятано много монет: на холмах, у маяка и на небесной площадке.\nСобери их все — и ты победишь!'});
@@ -1710,8 +1716,9 @@ function buildAvatar(cfg){
   return {group:g,body,head,armL,armR,legL,legR};
 }
 /* Позы NPC: [id, название, женская?]. Руки вращаются от плеча: x<0 — вперёд/вверх, z — в сторону (левая рука наружу при z<0, правая при z>0) */
-const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['dance','Танцует',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
+const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
   ['jacks','Прыжки «звёздочка»',0],['march','Марширует',0],['clap','Хлопает',0],['point','Показывает вперёд',0],['flex','Силач',0],['bow','Кланяется',0],['robot','Робот',0],['guard','Боевая стойка',0],['run','Бежит на месте',0],['yawn','Зевает',0],['victory','Победа',0],
+  ['dance','Танец',2],['disco','Диско',2],['hiphop','Хип-хоп',2],['twist','Твист',2],['shuffle','Шафл',2],['kpop','К-поп',2],['ballroom','Вальс',2],['robotdance','Танец робота',2],
   ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1],
   ['twirl','Кружится',1],['kiss','Воздушный поцелуй',1],['peace','Знак «мир»',1],['catwalk','Подиум',1],['giggle','Хихикает',1],['ballet','Балет',1],['hugself','Обнимает себя',1],['tantrum','Дуется и топает',1],['flirt','Кокетничает',1],['sway','Покачивается',1],['wave2','Машет двумя',1],['bunny','Зайка',1],['idol','Поза айдола',1]];
 function npcPoseOf(n){ const v=n&&n.pose; return typeof v==='string'&&NPC_POSES.some(x=>x[0]===v)?v:'stand'; }
@@ -1738,6 +1745,13 @@ function applyNpcPose(av,pose,t){
     case 'clap': { const z=.45+.45*Math.sin(t*14); A([-1.3,z],[-1.3,-z]); break; }
     case 'point': A([0,-.05],[-1.55+s*.05,0]); break;
     case 'flex': A([-.2,-1.5+s2*.08],[-.2,1.5-s2*.08]); B.position.y+=Math.sin(t*3)*.02; break;
+    case 'disco': { const q=Math.sin(t*3)>0; A(q?[-.1,-2.4]:[.2,-.5],q?[.2,.5]:[-.1,2.4]); G([Math.sin(t*6)*.25,0],[-Math.sin(t*6)*.25,0]); B.rotation.z=(q?1:-1)*.08; B.position.y+=Math.abs(Math.sin(t*6))*.08; break; }
+    case 'hiphop': { const d=(Math.sin(t*8)+1)/2; B.position.y-=.2*d; A([-1.0+Math.sin(t*8)*.5,.5],[-1.0-Math.sin(t*8)*.5,-.5]); G([-.3*d,-.25],[-.3*d,.25]); B.rotation.z=Math.sin(t*4)*.06; break; }
+    case 'twist': { B.rotation.y+=Math.sin(t*6)*.5; A([-.3,-.9],[-.3,.9]); G([0,Math.sin(t*6)*.12],[0,Math.sin(t*6)*.12]); B.position.y+=Math.abs(Math.sin(t*6))*.04; break; }
+    case 'shuffle': { const m=Math.sin(t*9); G([0,-Math.max(0,m)*.5],[0,Math.max(0,-m)*.5]); A([-.7+m*.4,.3],[-.7-m*.4,-.3]); B.position.y+=Math.abs(m)*.05; B.rotation.z=m*.05; break; }
+    case 'kpop': { const m=Math.sin(t*6); A([-2.6+m*.3,-.6+m*.3],[-2.6-m*.3,.6+m*.3]); G([m*.3,.06],[-m*.3,-.06]); B.rotation.z=Math.sin(t*3)*.1; B.position.y+=Math.abs(Math.sin(t*6))*.1; break; }
+    case 'ballroom': { A([-1.0,-.9],[-1.2,.25]); G([Math.sin(t*3)*.3,0],[-Math.sin(t*3)*.3,0]); B.rotation.y+=Math.sin(t*1.5)*.5; B.rotation.z=Math.sin(t*3)*.05; break; }
+    case 'robotdance': { const q=Math.floor(t*3)%4; A([-1.57*(q===0||q===1?1:0),-(q===1||q===2?1.4:0)],[-1.57*(q===2||q===3?1:0),(q===0||q===3?1.4:0)]); B.rotation.z=(q-1.5)*.04; break; }
     case 'bow': { const d=(Math.sin(t*1.6)+1)/2; lean(.75*d); A([.1,-.1],[.1,.1]); break; }
     case 'robot': { const q=Math.sin(t*3)>0?1:0; A([-1.57*q,0],[-1.57*(1-q),0]); G([0,0],[0,0]); B.rotation.z=(q-.5)*.05; break; }
     case 'guard': A([-1.3,.3],[-1.0,-.3]); G([.2,0],[-.4,0]); B.rotation.z=s*.03; B.position.y+=Math.abs(s)*.03; break;
@@ -2017,7 +2031,7 @@ const Play={
     this.respawn(true); this.orb.yaw=0; this.orb.pitch=.38; this.orb.dist=15; this.orb.t.set(this.pl.x,this.pl.y+2,this.pl.z);
     $('#play').innerHTML=`<div class="hud"><div class="pill"><b>${esc(game.name)}</b></div><div class="sp"></div>
       <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill">Падения <b id="hd">0</b></div><div class="pill" id="pyStat" hidden></div>
-      <button class="btn sm fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
+      <button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
       <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · F — поговорить с NPC · Enter — чат · Esc — пауза</div>
       <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
       <div class="guil" id="pGui"></div><div class="phud" id="pHud"></div><div class="pban" id="pBan"></div>
@@ -2355,7 +2369,7 @@ const Ed={
       <button class="logo" id="edHome" title="Сохранить и выйти в меню">${LOGO}<span>Inblox</span></button>
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
       <span class="sp"></span>
-      <button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
+      <button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
       <button class="btn sm" id="edVert" title="Режим: тянуть блок вверх и вниз" style="flex:none">↕ Высота</button>
       <label class="row" style="flex:none;gap:.5em"><span class="muted">Сетка</span>
         <select id="edSnap" style="width:5.2em"><option value="0">Выкл</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label>
@@ -2637,7 +2651,7 @@ const Ed={
       <label class="row" style="justify-content:flex-start;margin-top:.5em"><input type="checkbox" data-nf="turn" ${n.turn!==false?'checked':''} style="flex:none"><span style="flex:none">Поворачиваться к игроку</span></label>
       <label class="row" style="justify-content:flex-start"><input type="checkbox" data-nf="solid" ${n.solid!==false?'checked':''} style="flex:none"><span style="flex:none">Твёрдый (нельзя пройти насквозь)</span></label>
       <p class="muted" style="margin:.5em 0 0;font-size:.85em">В игре: подойти и нажать F (или кнопку на экране). Чтобы NPC ходил, задайте «Движение» ниже.</p>
-      <span class="lbl" style="margin-top:.7em;display:block">Поза</span><div class="chips">${NPC_POSES.filter(x=>!x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div><span class="lbl" style="margin-top:.5em;display:block">Женские позы</span><div class="chips">${NPC_POSES.filter(x=>x[2]).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div>
+      <span class="lbl" style="margin-top:.7em;display:block">Поза</span><div class="chips">${NPC_POSES.filter(x=>x[2]===0).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div><span class="lbl" style="margin-top:.5em;display:block">Танцы</span><div class="chips">${NPC_POSES.filter(x=>x[2]===2).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div><span class="lbl" style="margin-top:.5em;display:block">Женские позы</span><div class="chips">${NPC_POSES.filter(x=>x[2]===1).map(([v,t])=>`<button class="chip ${npcPoseOf(n)===v?'on':''}" data-np="${v}">${t}</button>`).join('')}</div>
       <span class="lbl" style="margin-top:.7em;display:block">Ходьба</span><div class="chips">${[['none','Стоит на месте'],['wander','Бродит рядом'],['follow','Идёт за игроком']].map(([v,t])=>`<button class="chip ${(n.walk||'none')===v?'on':''}" data-nw="${v}">${t}</button>`).join('')}</div>
       ${n.walk&&n.walk!=='none'?`<label style="display:block;margin-top:.5em"><span class="lbl">Скорость: ${(+n.wspeed||3)}</span><input type="range" data-nf="wspeed" min="1" max="8" step=".5" value="${+n.wspeed||3}"></label><label style="display:block"><span class="lbl">${n.walk==='follow'?'Дальность (замечает игрока на ×2,5 этого)':'Радиус прогулки'}: ${+n.wr||8}</span><input type="range" data-nf="wr" min="2" max="30" step="1" value="${+n.wr||8}"></label>`:''}
       <div class="chips" style="margin-top:.6em"><button class="chip" id="npcMine">👤 Мой аватар</button><button class="chip" id="npcRnd">🎲 Случайный</button></div></div>
@@ -2882,7 +2896,7 @@ const AvS={
         ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}`
     };
     const TABS=[['body','Тело'],['face','Лицо'],['hair','Волосы'],['wear','Одежда'],['acc','Шапки']];
-    el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn fitb" title="16:9 / полный экран">⛶ 16:9</button><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
+    el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
       <div class="atabs">${TABS.map(([v,n])=>`<button class="tab ${ui.tab===v?'on':''}" data-atab="${v}">${n}</button>`).join('')}</div>
       <div class="sec"><span class="lbl">Ник</span><input type="text" id="avName" value="${esc(Acc.cur?Acc.cur.name:a.name)}" readonly aria-readonly="true" style="opacity:.8"></div>
@@ -2913,11 +2927,12 @@ const AvS={
 const HomeBG={scene:null,cam:null,chars:[],t:0,
   /* четыре героя главной: две девушки (женственные позы) и два парня */
   CAST:[
-    {fx:.47,z:-.9,rot:.35,pose:'think',look:{build:'normal',skin:'#f1c27d',shirt:'#2f3552',pants:'#1c1d26',face:'anime36',head:'cube',hair:'short',hairColor:'#2b2118',outfit:'suit',outfitColor:'#b3262d'}},
-    {fx:.6,z:.5,rot:-.2,pose:'hair',look:{build:'curvy',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#c9a26a',outfit:'sundress',outfitColor:'#ff8fb8'}},
-    {fx:.73,z:-.6,rot:.2,pose:'victory',look:{build:'wide',skin:'#c68642',shirt:'#e86a3a',pants:'#2b2f3a',face:'anime37',head:'cube',hair:'spiky',hairColor:'#1b1b1b',outfit:'hoodie',outfitColor:'#e8433f'}},
-    {fx:.86,z:.5,rot:-.35,pose:'kawaii',look:{build:'petite',skin:'#f8d9b8',face:'anime15',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'idolstage',outfitColor:'#6a5acd'}}
+    {fx:.47,z:-.9,rot:.35,pose:'think',look:{build:'normal',skin:'#f1c27d',shirt:'#f2f2f0',pants:'#17171b',face:'anime36',head:'cube',hair:'short',hairColor:'#2b2118',outfit:'suit',outfitColor:'#1b1b20'}},
+    {fx:.6,z:.5,rot:-.2,pose:'hair',look:{build:'curvy',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#8a5a2b',outfit:'sundress',outfitColor:'#e9e5dc'}},
+    {fx:.73,z:-.6,rot:.2,pose:'victory',look:{build:'wide',skin:'#c68642',shirt:'#e8e6e1',pants:'#26262b',face:'anime37',head:'cube',hair:'spiky',hairColor:'#141414',outfit:'hoodie',outfitColor:'#3a3a3f'}},
+    {fx:.86,z:.5,rot:-.35,pose:'kawaii',look:{build:'petite',skin:'#f8d9b8',face:'anime15',head:'cutie',hair:'twinbuns',hairColor:'#d9d9de',outfit:'pinafore',outfitColor:'#1d1d21'}}
   ],
+
   init(){
     const s=this.scene=new THREE.Scene(); s.background=new THREE.Color(0x0b0b0c); s.fog=new THREE.Fog(0x0b0b0c,18,48);
     s.add(new THREE.HemisphereLight(0xffffff,0x444455,.9)); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(4,9,9); s.add(d);
@@ -3053,7 +3068,7 @@ const Home={
     try{ HomeBG.rebuild(); }catch(e){ console.error(e); }
     const el=$('#home'), builtins=BUILTIN.map(f=>f());
     el.innerHTML=`<div class="head"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span><span class="sp"></span>
-      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span>${installEv?'<button class="btn pri" id="hInst">Установить приложение</button>':''}<button class="btn" id="hProf" title="Мой профиль">${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hFr" title="Друзья и заявки">Друзья</button><button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button><button class="btn ico fitb" title="16:9 / полный экран">⛶ 16:9</button></div>
+      <span class="muted cloudst" style="font-size:.8em">${esc(Cloud.txt)}</span>${installEv?'<button class="btn pri" id="hInst">Установить приложение</button>':''}<button class="btn" id="hProf" title="Мой профиль">${esc(Acc.cur?Acc.cur.name:'')}</button>${Acc.cur&&Acc.cur.role==='admin'?'<button class="btn" id="hAdm">Админ</button>':''}<button class="btn" id="hFr" title="Друзья и заявки">Друзья</button><button class="btn" id="hAv">Аватар</button><button class="btn pri" id="hNew">+ Создать игру</button><button class="btn" id="hOut">Выйти</button></div>
     <div class="scroll"><div class="hero"><h2>Создавай игры в 3D</h2><p class="muted" style="margin:0">Играйте во встроенные карты или соберите свою в редакторе.</p></div><div class="shelf"><h3 style="font-size:1.4em">Игры</h3>
       <div class="grid"><div class="card new" id="cNew" tabindex="0" role="button"><span class="plus">+</span>Новая игра</div>
       ${S.games.map(g=>this.card(g,false)).join('')}${builtins.map(g=>this.card(g,true)).join('')}</div>
