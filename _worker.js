@@ -68,7 +68,7 @@ function lookOf(a,role){
 let schemaOk=false;
 async function ensureSchema(db){
   if(schemaOk) return;
-  for(const [col,def] of [['bio',"TEXT NOT NULL DEFAULT ''"],['look','TEXT']]){
+  for(const [col,def] of [['bio',"TEXT NOT NULL DEFAULT ''"],['look','TEXT'],['info',"TEXT NOT NULL DEFAULT ''"]]){
     try{ await db.prepare('SELECT '+col+' FROM users LIMIT 1').first(); }
     catch(e){ try{ await db.prepare('ALTER TABLE users ADD COLUMN '+col+' '+def).run(); }catch(e2){ console.error(e2); } }
   }
@@ -80,7 +80,9 @@ async function ensureSchema(db){
       db.prepare('CREATE INDEX IF NOT EXISTS freq_dst ON freq(dst)'),
       db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))'),
       db.prepare('CREATE TABLE IF NOT EXISTS pub_snd(pub TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(pub,id))'),
-      db.prepare('CREATE TABLE IF NOT EXISTS pub_snd_chunk(pub TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(pub,id,i))')
+      db.prepare('CREATE TABLE IF NOT EXISTS pub_snd_chunk(pub TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(pub,id,i))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS pcomment(id INTEGER PRIMARY KEY AUTOINCREMENT,pub TEXT NOT NULL,user_id TEXT NOT NULL,name TEXT NOT NULL,text TEXT NOT NULL,ts INTEGER NOT NULL)'),
+      db.prepare('CREATE INDEX IF NOT EXISTS pcomment_pub ON pcomment(pub,id)')
     ]);
   }catch(e){ console.error(e); }
   schemaOk=true;
@@ -141,6 +143,16 @@ async function api(req,env,url){
   };
 
   if(p==='me'&&m==='GET') return me(db,u,null);
+  if(p==='password'&&m==='POST'){
+    if(!await throttle(db,'pw:'+u.id,10,3600000)) return err('Слишком много попыток, попробуйте позже',429);
+    const b=await body()||{}, old=String(b.old||'').slice(0,64), pw=String(b.pw||'');
+    if(pw.length<4||pw.length>64) return err('Новый пароль: от 4 до 64 символов');
+    const row=await db.prepare('SELECT salt,hash FROM users WHERE id=?').bind(u.id).first();
+    if(!row||!eq(await pbk(old,row.salt),row.hash)) return err('Текущий пароль неверный',403);
+    const salt=rnd(16), hash=await pbk(pw,salt);
+    await db.batch([db.prepare('UPDATE users SET salt=?,hash=? WHERE id=?').bind(salt,hash,u.id),db.prepare('DELETE FROM sessions WHERE user_id=? AND token<>?').bind(u.id,u.token)]);
+    return J({ok:1});
+  }
   if(p==='logout'&&m==='POST'){ await db.prepare('DELETE FROM sessions WHERE token=?').bind(u.token).run(); return J({ok:1}); }
 
   if(seg[0]==='games'&&seg.length===2){
@@ -253,10 +265,10 @@ async function api(req,env,url){
     }
     const id=seg[1]; if(!id||!ID_RE.test(id)) return err('Неверный id',400);
     if(seg.length===2&&m==='GET'){
-      const r=await db.prepare('SELECT p.*,x.name author,x.role arole,x.look,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p JOIN users x ON x.id=p.owner WHERE p.id=?').bind(u.id,id).first();
+      const r=await db.prepare('SELECT p.*,x.name author,x.role arole,x.look,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked,(SELECT COUNT(*) FROM pcomment WHERE pub=p.id) cm FROM pub p JOIN users x ON x.id=p.owner WHERE p.id=?').bind(u.id,id).first();
       if(!r) return err('Игра не найдена',404);
       const ps=(await db.prepare('SELECT id,name,size FROM pub_snd WHERE pub=? ORDER BY id').bind(id).all()).results||[];
-      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,game:parse(r.json),sounds:(parse(r.sounds)||[]).concat(ps.map(x=>({id:x.id,name:x.name,size:x.size})))}});
+      return J({item:{id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,authorRole:r.arole,look:parse(r.look),ts:r.ts,plays:r.plays,likes:r.likes,liked:!!r.liked,comments:r.cm||0,game:parse(r.json),sounds:(parse(r.sounds)||[]).concat(ps.map(x=>({id:x.id,name:x.name,size:x.size})))}});
     }
     if(seg.length===2&&m==='PATCH'){
       const b=await body()||{}; let ch=0;
@@ -268,7 +280,7 @@ async function api(req,env,url){
     if(seg.length===2&&m==='DELETE'){
       const r=u.role==='admin'?await db.prepare('DELETE FROM pub WHERE id=?').bind(id).run():await db.prepare('DELETE FROM pub WHERE id=? AND owner=?').bind(id,u.id).run();
       if(!(r.meta&&r.meta.changes)) return err('Нет доступа',403);
-      await db.batch([db.prepare('DELETE FROM likes WHERE pub_id=?').bind(id),db.prepare('DELETE FROM pub_snd_chunk WHERE pub=?').bind(id),db.prepare('DELETE FROM pub_snd WHERE pub=?').bind(id)]); return J({ok:1});
+      await db.batch([db.prepare('DELETE FROM likes WHERE pub_id=?').bind(id),db.prepare('DELETE FROM pcomment WHERE pub=?').bind(id),db.prepare('DELETE FROM pub_snd_chunk WHERE pub=?').bind(id),db.prepare('DELETE FROM pub_snd WHERE pub=?').bind(id)]); return J({ok:1});
     }
     if(seg.length===4&&seg[2]==='sound'&&m==='GET'){
       const sid=seg[3]; if(!ID_RE.test(sid)) return err('Неверный id звука');
@@ -283,6 +295,28 @@ async function api(req,env,url){
       if(!(d.meta&&d.meta.changes)){ await db.prepare('INSERT OR IGNORE INTO likes(pub_id,user_id) VALUES(?,?)').bind(id,u.id).run(); liked=true; }
       const c=(await db.prepare('SELECT COUNT(*) n FROM likes WHERE pub_id=?').bind(id).first()).n; return J({liked,count:c});
     }
+    /* комментарии к игре */
+    if(seg.length===3&&seg[2]==='comments'&&m==='GET'){
+      const rs=(await db.prepare('SELECT c.id,c.user_id uid,c.name,c.text,c.ts,x.role FROM pcomment c LEFT JOIN users x ON x.id=c.user_id WHERE c.pub=? ORDER BY c.id DESC LIMIT 100').bind(id).all()).results||[];
+      return J({comments:rs});
+    }
+    if(seg.length===3&&seg[2]==='comments'&&m==='POST'){
+      const g=await db.prepare('SELECT 1 x FROM pub WHERE id=?').bind(id).first(); if(!g) return err('Игра не найдена',404);
+      const b=await body(), text=cleanText(b&&b.text,300); if(!text) return err('Пустой комментарий');
+      const last=await db.prepare('SELECT ts FROM pcomment WHERE user_id=? ORDER BY id DESC LIMIT 1').bind(u.id).first();
+      if(last&&Date.now()-last.ts<3000) return err('Не так быстро — подождите пару секунд',429);
+      if(!await throttle(db,'cm:'+u.id,40,3600000)) return err('Слишком много комментариев, попробуйте позже',429);
+      const ts=Date.now(), r=await db.prepare('INSERT INTO pcomment(pub,user_id,name,text,ts) VALUES(?,?,?,?,?)').bind(id,u.id,u.name,text,ts).run();
+      const cid=r.meta.last_row_id;
+      await db.prepare('DELETE FROM pcomment WHERE pub=? AND id<?').bind(id,cid-400).run();
+      return J({comment:{id:cid,uid:u.id,name:u.name,text,ts,role:u.role}});
+    }
+    if(seg.length===4&&seg[2]==='comments'&&m==='DELETE'){
+      const cid=parseInt(seg[3])||0, c=await db.prepare('SELECT c.user_id,p.owner FROM pcomment c JOIN pub p ON p.id=c.pub WHERE c.id=? AND c.pub=?').bind(cid,id).first();
+      if(!c) return err('Комментарий не найден',404);
+      if(c.user_id!==u.id&&c.owner!==u.id&&u.role!=='admin') return err('Нет доступа',403);
+      await db.prepare('DELETE FROM pcomment WHERE id=?').bind(cid).run(); return J({ok:1});
+    }
     if(seg.length===3&&seg[2]==='play'&&m==='POST'){ await db.prepare('UPDATE pub SET plays=plays+1 WHERE id=?').bind(id).run(); return J({ok:1}); }
   }
 
@@ -290,15 +324,17 @@ async function api(req,env,url){
   if(seg[0]==='profile'){
     if(seg.length===2&&m==='GET'){
       const id=seg[1]; if(!ID_RE.test(id)) return err('Неверный id');
-      const r=await db.prepare('SELECT id,name,role,created,bio,look FROM users WHERE id=?').bind(id).first(); if(!r) return err('Игрок не найден',404);
+      const r=await db.prepare('SELECT id,name,role,created,bio,look,info FROM users WHERE id=?').bind(id).first(); if(!r) return err('Игрок не найден',404);
       const gs=(await db.prepare('SELECT p.id,p.name,p.descr,p.ts,p.plays,p.thumb,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id) likes,(SELECT COUNT(*) FROM likes WHERE pub_id=p.id AND user_id=?) liked FROM pub p WHERE p.owner=? ORDER BY p.ts DESC LIMIT 40').bind(u.id,id).all()).results||[];
       const look=parse(r.look), games=gs.map(g=>({id:g.id,name:g.name,desc:g.descr,authorId:r.id,authorName:r.name,authorRole:r.role,look,ts:g.ts,plays:g.plays,likes:g.likes,liked:!!g.liked,game:parse(g.thumb)||{parts:[]}}));
-      return J({profile:{id:r.id,name:r.name,role:r.role,created:r.created,bio:r.bio||'',rel:await relOf(r.id),look,games,stats:{games:games.length,likes:games.reduce((a,g)=>a+g.likes,0),plays:games.reduce((a,g)=>a+(g.plays||0),0)}}});
+      return J({profile:{id:r.id,name:r.name,role:r.role,created:r.created,bio:r.bio||'',info:parse(r.info)||{},rel:await relOf(r.id),look,games,stats:{games:games.length,likes:games.reduce((a,g)=>a+g.likes,0),plays:games.reduce((a,g)=>a+(g.plays||0),0)}}});
     }
     if(seg.length===1&&m==='PATCH'){
       const b=await body(); if(!b) return err('Неверные данные');
-      const bio=String(b.bio==null?'':b.bio).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,'').replace(/\r/g,'').trim().slice(0,300);
-      await db.prepare('UPDATE users SET bio=? WHERE id=?').bind(bio,u.id).run(); return J({ok:1,bio});
+      const cur=await db.prepare('SELECT bio,info FROM users WHERE id=?').bind(u.id).first()||{}; let bio=cur.bio||'', info=parse(cur.info)||{};
+      if(b.bio!==undefined) bio=String(b.bio==null?'':b.bio).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g,'').replace(/\r/g,'').trim().slice(0,500);
+      if(b.info&&typeof b.info==='object'){ for(const [k,n] of [['status',60],['from',40],['interests',120],['contact',80]]) if(b.info[k]!==undefined) info[k]=cleanText(b.info[k],n); for(const k of Object.keys(info)) if(!info[k]) delete info[k]; }
+      await db.prepare('UPDATE users SET bio=?,info=? WHERE id=?').bind(bio,JSON.stringify(info),u.id).run(); return J({ok:1,bio,info});
     }
   }
 

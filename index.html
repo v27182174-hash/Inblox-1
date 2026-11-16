@@ -198,6 +198,12 @@ label.drop{position:relative;display:block;overflow:hidden}
 .auth:hover b{text-decoration:underline}
 .au{display:inline-flex;align-items:center;gap:.35em}
 .bio{white-space:pre-wrap;word-break:break-word;color:#dcdce2;line-height:1.45;margin:.8em 0}
+.pinf{display:flex;gap:1em;padding:.4em 0;border-bottom:1px solid var(--line)}
+.pinf>span:first-child{width:6em;flex:none}
+.cm{padding:.7em 0;border-bottom:1px solid var(--line)}
+.cmh{display:flex;align-items:center;gap:.6em}
+.cmh .auth{background:none;border:0;padding:0;color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:.4em}
+.cmt{white-space:pre-wrap;word-break:break-word;margin-top:.25em;color:#dcdce2;line-height:1.4}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(13em,1fr));gap:.8em;margin-top:.8em}
 .acts{flex-wrap:wrap}
 .sechead{display:flex;align-items:center;gap:.6em;margin-top:2.2em}
@@ -666,7 +672,7 @@ function tplObby(){
   hop(14,3.5,.4,0,'solid','#ffffff','tiles'); const fin=c;
   A('box','goal',fin.x,fin.y+1.5,fin.z-3,3,3,3,'#ffd23d');
   N(fin.x-4.5,fin.y,fin.z+2,{name:'Софи',pose:'kpop',look:{build:'petite',face:'anime31',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'cheer',outfitColor:'#e86aa5'},say:'Ура-а-а! Ты почти у цели!\nКоснись золотого куба — и ты победитель!'});
-  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'disco',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'spiky',hairColor:'#8a5a2b',outfit:'hoodie',outfitColor:'#e8433f'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
+  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'jumpstyle',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'spiky',hairColor:'#8a5a2b',outfit:'hoodie',outfitColor:'#e8433f'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
   for(let i=0;i<5;i++) coin(fin.x-4+i*2,fin.y+1.8,fin.z+5);
   A('box','kill',0,-14,-110,300,1,420,'#ff4d3d',0,null,'lava'); g.parts=P; g.sounds.music='b:music2'; return g;
 }
@@ -1718,7 +1724,7 @@ function buildAvatar(cfg){
 /* Позы NPC: [id, название, женская?]. Руки вращаются от плеча: x<0 — вперёд/вверх, z — в сторону (левая рука наружу при z<0, правая при z>0) */
 const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
   ['jacks','Прыжки «звёздочка»',0],['march','Марширует',0],['clap','Хлопает',0],['point','Показывает вперёд',0],['flex','Силач',0],['bow','Кланяется',0],['robot','Робот',0],['guard','Боевая стойка',0],['run','Бежит на месте',0],['yawn','Зевает',0],['victory','Победа',0],
-  ['dance','Танец',2],['disco','Диско',2],['hiphop','Хип-хоп',2],['twist','Твист',2],['shuffle','Шафл',2],['kpop','К-поп',2],['ballroom','Вальс',2],['robotdance','Танец робота',2],
+  ['dance','Танец',2],['disco','Диско',2],['hiphop','Хип-хоп',2],['twist','Твист',2],['shuffle','Шафл',2],['jumpstyle','Джампстайл',2],['kpop','К-поп',2],['ballroom','Вальс',2],['robotdance','Танец робота',2],
   ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1],
   ['twirl','Кружится',1],['kiss','Воздушный поцелуй',1],['peace','Знак «мир»',1],['catwalk','Подиум',1],['giggle','Хихикает',1],['ballet','Балет',1],['hugself','Обнимает себя',1],['tantrum','Дуется и топает',1],['flirt','Кокетничает',1],['sway','Покачивается',1],['wave2','Машет двумя',1],['bunny','Зайка',1],['idol','Поза айдола',1]];
 function npcPoseOf(n){ const v=n&&n.pose; return typeof v==='string'&&NPC_POSES.some(x=>x[0]===v)?v:'stand'; }
@@ -1746,6 +1752,7 @@ function applyNpcPose(av,pose,t){
     case 'point': A([0,-.05],[-1.55+s*.05,0]); break;
     case 'flex': A([-.2,-1.5+s2*.08],[-.2,1.5-s2*.08]); B.position.y+=Math.sin(t*3)*.02; break;
     case 'disco': { const q=Math.sin(t*3)>0; A(q?[-.1,-2.4]:[.2,-.5],q?[.2,.5]:[-.1,2.4]); G([Math.sin(t*6)*.25,0],[-Math.sin(t*6)*.25,0]); B.rotation.z=(q?1:-1)*.08; B.position.y+=Math.abs(Math.sin(t*6))*.08; break; }
+    case 'jumpstyle': { const m=Math.sin(t*10), k=Math.max(0,m), k2=Math.max(0,-m); G([-k*1.15,-k*.35],[-k2*1.15,k2*.35]); A([-.3+m*.9,-.45],[-.3-m*.9,.45]); B.position.y+=Math.abs(Math.sin(t*10))*.22; B.rotation.z=m*.05; B.rotation.x=.1; break; }
     case 'hiphop': { const d=(Math.sin(t*8)+1)/2; B.position.y-=.2*d; A([-1.0+Math.sin(t*8)*.5,.5],[-1.0-Math.sin(t*8)*.5,-.5]); G([-.3*d,-.25],[-.3*d,.25]); B.rotation.z=Math.sin(t*4)*.06; break; }
     case 'twist': { B.rotation.y+=Math.sin(t*6)*.5; A([-.3,-.9],[-.3,.9]); G([0,Math.sin(t*6)*.12],[0,Math.sin(t*6)*.12]); B.position.y+=Math.abs(Math.sin(t*6))*.04; break; }
     case 'shuffle': { const m=Math.sin(t*9); G([0,-Math.max(0,m)*.5],[0,Math.max(0,-m)*.5]); A([-.7+m*.4,.3],[-.7-m*.4,-.3]); B.position.y+=Math.abs(m)*.05; B.rotation.z=m*.05; break; }
@@ -3165,13 +3172,23 @@ const Home={
   },
   async openProfile(id){
     const r=await Api.call('GET','profile/'+encodeURIComponent(id)), ov=$('#hOv'); if(!r.ok){ toast(r.error); return; }
-    const p=r.d.profile, mine=!!Acc.cur&&p.id===Acc.cur.id;
+    const p=r.d.profile, mine=!!Acc.cur&&p.id===Acc.cur.id; const inf=p.info=p.info||{};
     const draw=editing=>{
       ov.innerHTML=`<div class="gpg"><div class="gb">
         <div class="row" style="gap:1em;flex-wrap:nowrap">${avImg(p.look,'l')}<div style="flex:1;min-width:0"><h2 style="margin:0;word-break:break-word">${esc(p.name)}${p.role==='admin'?'<span class="adm">admin</span>':''}</h2><div class="muted">С нами с ${new Date(p.created).toLocaleDateString('ru-RU')}</div></div><button class="btn" id="prX">Закрыть</button></div>
         <div class="row" style="margin-top:.8em"><span class="pill">🎮 игр: <b>${p.stats.games}</b></span><span class="pill">❤ <b>${p.stats.likes}</b></span><span class="pill">▶ <b>${p.stats.plays}</b></span></div>
-        ${editing?`<span class="lbl" style="margin-top:.9em;display:block">О себе</span><textarea class="gta" id="prBio" maxlength="300" placeholder="Расскажите о себе…">${esc(p.bio)}</textarea><div class="row" style="margin-top:.6em"><button class="btn pri" id="prSave">Сохранить</button><button class="btn" id="prNo">Отмена</button></div>`
-          :`<p class="bio">${p.bio?esc(p.bio):'<span class="muted">Игрок пока ничего не рассказал о себе.</span>'}</p>${mine?'<div class="row"><button class="btn" id="prEdit">Изменить описание</button><button class="btn" id="prAv">Аватар</button></div>':`<div class="row"><button class="btn ${p.rel==='none'||p.rel==='in'?'pri':''}" id="prFr">${{friend:'✓ В друзьях (убрать)',out:'Заявка отправлена (отменить)',in:'Принять заявку',none:'+ Добавить в друзья'}[p.rel]||'+ Добавить в друзья'}</button></div>`}`}
+        ${editing==='pw'?`<span class="lbl" style="margin-top:.9em;display:block">Смена пароля</span>
+          <input type="password" id="pwOld" placeholder="Текущий пароль" autocomplete="current-password" style="margin-bottom:.5em"><input type="password" id="pwNew" placeholder="Новый пароль (от 4 символов)" autocomplete="new-password" style="margin-bottom:.5em"><input type="password" id="pwNew2" placeholder="Повторите новый пароль" autocomplete="new-password">
+          <div class="row" style="margin-top:.6em"><button class="btn pri" id="pwSave">Сменить пароль</button><button class="btn" id="prNo">Отмена</button></div><p class="muted" style="margin:.6em 0 0;font-size:.85em">Остальные устройства будут разлогинены.</p>`
+        :editing?`<span class="lbl" style="margin-top:.9em;display:block">Статус</span><input type="text" id="prSt" maxlength="60" placeholder="Например: строю карты по вечерам" value="${esc(inf.status||'')}">
+          <span class="lbl" style="margin-top:.7em;display:block">О себе</span><textarea class="gta" id="prBio" maxlength="500" placeholder="Расскажите о себе…">${esc(p.bio)}</textarea>
+          <span class="lbl" style="margin-top:.7em;display:block">Откуда</span><input type="text" id="prFrom" maxlength="40" placeholder="Город или страна" value="${esc(inf.from||'')}">
+          <span class="lbl" style="margin-top:.7em;display:block">Интересы</span><input type="text" id="prInt" maxlength="120" placeholder="Паркур, аниме, музыка…" value="${esc(inf.interests||'')}">
+          <span class="lbl" style="margin-top:.7em;display:block">Контакты</span><input type="text" id="prCt" maxlength="80" placeholder="Telegram, Discord…" value="${esc(inf.contact||'')}">
+          <div class="row" style="margin-top:.8em"><button class="btn pri" id="prSave">Сохранить</button><button class="btn" id="prNo">Отмена</button></div>`
+          :`${inf.status?`<p style="margin:.8em 0 0;font-style:italic">«${esc(inf.status)}»</p>`:''}<p class="bio">${p.bio?esc(p.bio):'<span class="muted">Игрок пока ничего не рассказал о себе.</span>'}</p>
+          ${[['Откуда',inf.from],['Интересы',inf.interests],['Контакты',inf.contact]].filter(x=>x[1]).map(([k,v])=>`<div class="pinf"><span class="muted">${k}</span><span>${esc(v)}</span></div>`).join('')}
+          ${mine?'<div class="row" style="margin-top:.8em"><button class="btn" id="prEdit">Изменить профиль</button><button class="btn" id="prPw">Сменить пароль</button><button class="btn" id="prAv">Аватар</button></div>':`<div class="row"><button class="btn ${p.rel==='none'||p.rel==='in'?'pri':''}" id="prFr">${{friend:'✓ В друзьях (убрать)',out:'Заявка отправлена (отменить)',in:'Принять заявку',none:'+ Добавить в друзья'}[p.rel]||'+ Добавить в друзья'}</button></div>`}`}
         <h3 style="margin:1.2em 0 0;font-size:1.2em">Игры игрока</h3>
         <div class="pgrid">${p.games.length?p.games.map(e=>this.commCard(e)).join(''):'<p class="muted" style="grid-column:1/-1;margin:0">Пока нет опубликованных игр.</p>'}</div></div></div>`;
       ov.classList.add('on'); ov.onclick=ev=>{ if(ev.target===ov) ov.classList.remove('on'); };
@@ -3182,12 +3199,27 @@ const Home={
       };
       if(mine){
         if($('#prEdit')) $('#prEdit').onclick=()=>draw(true);
+        if($('#prPw')) $('#prPw').onclick=()=>draw('pw');
+        if($('#pwSave')) $('#pwSave').onclick=async()=>{ const o=$('#pwOld').value, n=$('#pwNew').value, n2=$('#pwNew2').value; if(n.length<4){ toast('Новый пароль: от 4 символов'); return; } if(n!==n2){ toast('Пароли не совпадают'); return; } const x=await Api.call('POST','password',{old:o,pw:n}); if(!x.ok){ toast(x.error); return; } toast('Пароль изменён'); draw(false); };
         if($('#prAv')) $('#prAv').onclick=()=>{ ov.classList.remove('on'); AvS.open(); };
         if($('#prNo')) $('#prNo').onclick=()=>draw(false);
-        if($('#prSave')) $('#prSave').onclick=async()=>{ const b=$('#prBio').value.trim().slice(0,300); const x=await Api.call('PATCH','profile',{bio:b}); if(!x.ok){ toast(x.error); return; } p.bio=x.d.bio||''; toast('Описание сохранено'); draw(false); };
+        if($('#prSave')) $('#prSave').onclick=async()=>{ const b=$('#prBio').value.trim().slice(0,500), info={status:$('#prSt').value,from:$('#prFrom').value,interests:$('#prInt').value,contact:$('#prCt').value}; const x=await Api.call('PATCH','profile',{bio:b,info}); if(!x.ok){ toast(x.error); return; } p.bio=x.d.bio||''; p.info=x.d.info||{}; Object.keys(inf).forEach(k=>delete inf[k]); Object.assign(inf,p.info); toast('Профиль сохранён'); draw(false); };
       }
     };
     draw(false);
+  },
+  /* комментарии к опубликованной игре */
+  async loadComments(id,e){
+    const box=$('#cmList'), me=Acc.cur, mine=e.authorId===me.id; if(!box) return;
+    const draw=list=>{
+      const b=$('#cmList'); if(!b) return; $('#cmN').textContent=list.length?'· '+list.length:'';
+      b.innerHTML=list.length?list.map(c=>`<div class="cm"><div class="cmh"><button class="auth" data-cprof="${esc(c.uid)}"><b>${esc(c.name)}</b>${c.role==='admin'?'<span class="adm">admin</span>':''}</button><span class="muted">${new Date(c.ts).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><span class="sp"></span>${(c.uid===me.id||mine||me.role==='admin')?`<button class="btn sm danger" data-cdel="${c.id}" aria-label="Удалить комментарий">Удалить</button>`:''}</div><div class="cmt">${esc(c.text)}</div></div>`).join(''):'<span class="muted">Пока нет комментариев. Будьте первым!</span>';
+      $$('[data-cprof]',b).forEach(x=>x.onclick=()=>this.openProfile(x.dataset.cprof));
+      $$('[data-cdel]',b).forEach(x=>x.onclick=async()=>{ const r=await Api.call('DELETE','pub/'+encodeURIComponent(id)+'/comments/'+x.dataset.cdel); if(!r.ok){ toast(r.error); return; } list=list.filter(c=>String(c.id)!==x.dataset.cdel); draw(list); });
+    };
+    const r=await Api.call('GET','pub/'+encodeURIComponent(id)+'/comments'); let list=r.ok&&Array.isArray(r.d.comments)?r.d.comments:[]; draw(list);
+    const send=async()=>{ const inp=$('#cmIn'); if(!inp) return; const t=inp.value.trim(); if(!t) return; const x=await Api.call('POST','pub/'+encodeURIComponent(id)+'/comments',{text:t}); if(!x.ok){ toast(x.error); return; } inp.value=''; list=[x.d.comment].concat(list); draw(list); };
+    $('#cmSend').onclick=send; $('#cmIn').onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') send(); };
   },
   async openPage(id){
     const e=await Net.get(id), ov=$('#hOv'); if(!e){ toast('Игра не найдена'); ov.classList.remove('on'); this.render(); return; }
@@ -3199,7 +3231,10 @@ const Home={
       <p class="desc">${e.desc?esc(e.desc):'<span class="muted">Автор не добавил описание.</span>'}</p>
       <div class="row"><button class="btn pri" id="gpPlay">▶ Играть</button><button class="btn like ${liked?'on':''}" id="gpLike">${liked?'❤ Нравится':'♡ Нравится'}</button>
       ${mine?`<button class="btn" id="gpEdit">Описание</button><button class="btn" id="gpUpd" title="Обновить опубликованную версию из вашей игры">Обновить версию</button>`:''}${(mine||me.role==='admin')?`<button class="btn danger" id="gpDel">${mine?'Снять с публикации':'Удалить (админ)'}</button>`:''}
-      <span class="sp"></span><button class="btn" id="gpX">Закрыть</button></div></div></div>`;
+      <span class="sp"></span><button class="btn" id="gpX">Закрыть</button></div>
+      <h3 style="margin:1.3em 0 .4em;font-size:1.15em">Комментарии <span class="muted" id="cmN"></span></h3><div id="cmList"><span class="muted">Загрузка…</span></div>
+      <div class="row" style="margin-top:.7em;flex-wrap:nowrap"><input type="text" id="cmIn" maxlength="300" placeholder="Написать комментарий…" autocomplete="off"><button class="btn pri" id="cmSend">Отправить</button></div></div></div>`;
+    this.loadComments(id,e);
     ov.classList.add('on'); ov.onclick=ev=>{ if(ev.target===ov) ov.classList.remove('on'); };
     $('#gpX').onclick=()=>{ ov.classList.remove('on'); this.render(); };
     $$('[data-prof]',ov).forEach(b=>b.onclick=()=>this.openProfile(b.dataset.prof));
