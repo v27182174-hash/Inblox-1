@@ -423,7 +423,7 @@ const Api={tok:store.get('inblox.token',null),
     catch(e){ return {ok:false,net:true,status:0,d:{},error:'Нет связи с сервером'}; }
     try{ d=await r.json(); }catch(e){ d={}; }
     d=d||{};
-    if(d.banned&&Acc.cur) Acc.kick('Аккаунт заблокирован'+(d.reason?': '+d.reason:'')+banUntil(d.until));
+    if(d.banned&&Acc.cur) Acc.kick(d.nameBan?'Ваш ник неприемлем'+(d.reason&&d.reason!=='Неприемлемый ник'?': '+d.reason:'')+'. Войдите, чтобы сменить ник':'Аккаунт заблокирован'+(d.reason?': '+d.reason:'')+banUntil(d.until));
     else if(r.status===401&&this.tok&&Acc.cur&&path!=='login') Acc.kick('Сессия закончилась. Войдите снова');
     return {ok:r.ok,status:r.status,d,error:d.error||(r.ok?'':'Сервер недоступен ('+r.status+')')};
   }
@@ -450,7 +450,7 @@ const Acc={cur:null,list:[],persist:true,
     }catch(e){ console.error(e); }
   },
   async register(name,pw){ const r=await Api.call('POST','register',{name,pw}); if(!r.ok||!r.d.user) return r.error||'Сервер недоступен'; this.enter(r.d); return null; },
-  async login(name,pw){ const r=await Api.call('POST','login',{name,pw}); if(!r.ok||!r.d.user) return r.d.banned?'Аккаунт заблокирован'+(r.d.reason?': '+r.d.reason:'')+banUntil(r.d.until):(r.error||'Сервер недоступен'); this.enter(r.d); return null; },
+  async login(name,pw){ const r=await Api.call('POST','login',{name,pw}); if(!r.ok&&r.d.banned&&r.d.nameBan){ Auth.nickForm(name,pw,r.d); return 'nb'; } if(!r.ok||!r.d.user) return r.d.banned?'Аккаунт заблокирован'+(r.d.reason?': '+r.d.reason:'')+banUntil(r.d.until):(r.error||'Сервер недоступен'); this.enter(r.d); return null; },
   out(){ Snd.stopMusic(); this.cur=null; Api.tok=null; store.set('inblox.token',null); S.games=[]; S.sounds=[]; S.avatar=Object.assign({},DEF_AVATAR); Sync.reset(); Home.pub=[]; },
   logout(){ Api.call('POST','logout'); this.out(); Auth.show('login'); },
   kick(msg){ if(!this.cur) return; if(Play.on) Play.teardown(); this.out(); Auth.show('login'); Auth.err=msg; const e=$('#aErr'); if(e) e.textContent=msg; }
@@ -3092,19 +3092,28 @@ const Admin={tab:'users',q:'',
     if(!r.ok){ el.innerHTML='<p class="muted">'+esc(r.error)+'</p>'; return; }
     const now=Date.now();
     el.innerHTML=`<input type="text" id="adQ" placeholder="Поиск по имени (Enter)" value="${esc(this.q)}" style="width:100%;margin-bottom:.7em">`+(r.d.users.map(u=>{ const b=u.ban_until>now;
-      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">Бан${banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span><button class="btn sm" data-pr="${u.id}">Профиль</button>${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
+      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">${u.ban_name?'Бан за ник (до смены)':'Бан'+banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span><button class="btn sm" data-pr="${u.id}">Профиль</button>${u.role==='admin'?'':`<button class="btn sm" data-rn="${u.id}" data-nm="${esc(u.name)}">Ник</button>`}${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
     $('#adQ').onkeydown=e=>{ if(e.key==='Enter'){ this.q=e.target.value.trim(); this.users(); } };
     $$('[data-pr]',el).forEach(b=>b.onclick=()=>Home.openProfile(b.dataset.pr));
+    $$('[data-rn]',el).forEach(b=>b.onclick=async()=>{ const n=prompt('Новый ник для «'+b.dataset.nm+'»',b.dataset.nm); if(n===null) return; const x=await Api.call('POST','admin/rename',{userId:b.dataset.rn,name:n.trim()}); toast(x.ok?'Ник изменён':x.error); this.users(); });
     $$('[data-ban]',el).forEach(b=>b.onclick=()=>this.banForm(b.dataset.ban,b.dataset.nm));
     $$('[data-unban]',el).forEach(b=>b.onclick=async()=>{ const x=await Api.call('POST','admin/unban',{userId:b.dataset.unban}); toast(x.ok?'Разбанен':x.error); this.users(); });
   },
   banForm(id,name){
-    const el=$('#adBody'); el.innerHTML=`<h3 style="margin:.2em 0 .6em;font-size:1.2em">Бан: ${esc(name)}</h3><span class="lbl">Срок</span>
-      <select id="adH" style="width:100%;margin-bottom:.7em"><option value="1">1 час</option><option value="24" selected>1 день</option><option value="168">7 дней</option><option value="720">30 дней</option><option value="0">Навсегда</option></select>
-      <span class="lbl">Причина (увидит игрок)</span><input type="text" id="adR" maxlength="200" style="width:100%;margin-bottom:.9em">
+    const el=$('#adBody'); el.innerHTML=`<h3 style="margin:.2em 0 .6em;font-size:1.2em">Бан: ${esc(name)}</h3>
+      <span class="lbl">Тип бана</span>
+      <select id="adT" style="width:100%;margin-bottom:.7em"><option value="t">Обычный бан (на срок)</option><option value="n">Неприемлемый ник — до смены ника</option></select>
+      <div id="adTime"><span class="lbl">Срок</span>
+        <div class="row" style="flex-wrap:nowrap;margin-bottom:.7em"><input type="number" id="adA" min="1" value="1" style="width:6em"><select id="adU" style="flex:1"><option value="m">минут</option><option value="h">часов</option><option value="d" selected>дней</option><option value="f">Навсегда</option></select></div></div>
+      <span class="lbl">Причина (увидит игрок)</span><input type="text" id="adR" maxlength="200" style="width:100%;margin-bottom:.7em" placeholder="Например: оскорбительный ник">
+      <span class="lbl">Изменить ник игрока (необязательно)</span><input type="text" id="adN" maxlength="16" style="width:100%;margin-bottom:.4em" placeholder="Новый ник вместо «${esc(name)}»">
+      <p class="muted" id="adHint" style="margin:0 0 .9em;font-size:.85em"></p>
       <div class="row"><button class="btn danger" id="adOk">Забанить</button><button class="btn" id="adNo">Отмена</button></div>`;
+    const sync=()=>{ const n=$('#adT').value==='n'; $('#adTime').style.display=n?'none':''; $('#adHint').textContent=n?'Игрок сможет войти только на экран смены ника: выберет свободный ник (или оставит заданный вами) — и бан снимется. Срок не нужен.':''; if(n&&!$('#adR').value) $('#adR').value='Неприемлемый ник'; $('#adA').disabled=$('#adU').value==='f'; };
+    $('#adT').onchange=sync; $('#adU').onchange=sync; sync();
     $('#adNo').onclick=()=>this.render();
-    $('#adOk').onclick=async()=>{ const x=await Api.call('POST','admin/ban',{userId:id,hours:+$('#adH').value,reason:$('#adR').value.trim()}); toast(x.ok?'Игрок забанен':x.error); this.render(); };
+    $('#adOk').onclick=async()=>{ const nb=$('#adT').value==='n', u=$('#adU').value, a=+$('#adA').value; if(!nb&&u!=='f'&&!(a>0)){ toast('Укажите срок'); return; }
+      const x=await Api.call('POST','admin/ban',{userId:id,amount:a,unit:u==='f'?'h':u,forever:u==='f',reason:$('#adR').value.trim(),nameBan:nb,newName:$('#adN').value.trim()}); toast(x.ok?'Игрок забанен':x.error); if(x.ok) this.render(); };
   },
   async chat(){
     const r=await Api.call('GET','admin/chat'), el=$('#adBody'); if(!el) return;
@@ -3364,6 +3373,23 @@ const Auth={tab:'login',err:'',busy:false,
     $$('input',el).forEach(i=>i.onkeydown=e=>{ if(e.key==='Enter') this.submit(); });
     if(!stage.classList.contains('istouch')) setTimeout(()=>{ const n=$('#aName'); if(n) n.focus(); },50);
   },
+  /* экран смены ника при бане «за ник» */
+  nickForm(oldName,pw,d){
+    const el=$('#auth'), cur=d.name||oldName, ch=cur.toLowerCase()!==String(oldName).toLowerCase();
+    el.innerHTML=`<div class="ov on" style="background:rgba(5,5,8,.55)"><div class="box" style="min-width:25em;text-align:left">
+      <h3 style="margin:0 0 .5em">Ник нужно сменить</h3>
+      <p style="margin:0 0 .6em">Ваш ник признан неприемлемым${d.reason&&d.reason!=='Неприемлемый ник'?': '+esc(d.reason):''}.${ch?` Администратор изменил его на <b>${esc(cur)}</b>.`:''}</p>
+      <p class="muted" style="margin:0 0 .8em;font-size:.9em">Выберите свободный ник — и вы сразу сможете играть.${ch?' Если новый ник не нравится — придумайте свой.':''}</p>
+      <div class="field"><span class="lbl">Новый ник</span><input type="text" id="nbName" maxlength="16" autocapitalize="off" spellcheck="false" value="${ch?esc(cur):''}"></div>
+      <p id="nbErr" style="color:var(--danger);margin:0 0 .8em;min-height:1.35em"></p>
+      <button class="btn pri" id="nbGo" style="width:100%">${ch?'Сохранить ник и войти':'Сменить ник и войти'}</button>
+      <button class="btn" id="nbBack" style="width:100%;margin-top:.5em">Назад</button></div></div>`;
+    $('#nbBack').onclick=()=>this.show('login');
+    const go2=async()=>{ const n=$('#nbName').value.trim(), er=m=>{ $('#nbErr').textContent=m; }; if(n.length<2) return er('Ник — минимум 2 символа');
+      const x=await Api.call('POST','rename-banned',{name:oldName,pw,newName:n}); if(!x.ok) return er(x.error);
+      const r=await Acc.login(x.d.name,pw); if(r) return er(r); go('home'); Home.render(); toast('Привет, '+Acc.cur.name+'!'); };
+    $('#nbGo').onclick=go2; $('#nbName').onkeydown=e=>{ if(e.key==='Enter') go2(); };
+  },
   async submit(){
     if(this.busy) return;
     const name=$('#aName').value.trim(), pw=$('#aPw').value, reg=this.tab==='reg', fail=m=>{ this.err=m; $('#aErr').textContent=m; };
@@ -3372,6 +3398,7 @@ const Auth={tab:'login',err:'',busy:false,
     if(reg&&pw!==$('#aPw2').value) return fail('Пароли не совпадают');
     this.busy=true; let r;
     try{ r=reg?await Acc.register(name,pw):await Acc.login(name,pw); } catch(e){ r='Не удалось войти: '+(e&&e.message||e); } finally{ this.busy=false; }
+    if(r==='nb') return;
     if(r) return fail(r);
     go('home'); Home.render(); toast('Привет, '+Acc.cur.name+'!');
   }

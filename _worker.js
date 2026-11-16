@@ -36,9 +36,22 @@ async function throttle(db,key,max,win){
 }
 async function auth(req,db){
   const h=req.headers.get('Authorization')||''; if(!h.startsWith('Bearer ')) return null;
-  return await db.prepare('SELECT u.id,u.name,u.role,u.ban_until,u.ban_reason,s.token FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.exp>?').bind(await sha(h.slice(7)),Date.now()).first();
+  return await db.prepare('SELECT u.id,u.name,u.role,u.ban_until,u.ban_reason,u.ban_name,s.token FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.exp>?').bind(await sha(h.slice(7)),Date.now()).first();
 }
-const banInfo=u=>u.ban_until>Date.now()?{banned:true,reason:u.ban_reason||'',until:u.ban_until}:null;
+const banInfo=u=>u.ban_until>Date.now()?{banned:true,reason:u.ban_reason||'',until:u.ban_until,nameBan:!!u.ban_name,name:u.name}:null;
+/* проверка ника; selfId — свой аккаунт не считается занятым */
+async function checkNick(db,name,selfId,skipReserved){
+  if(!/^[\p{L}\p{N}_\- ]{2,16}$/u.test(name)) return 'Имя: 2–16 символов — буквы, цифры, _ - и пробел';
+  if(!skipReserved&&/^(admin|админ|moder|модер|inblox)/i.test(name)) return 'Это имя зарезервировано';
+  const lc=name.toLowerCase(), skel=lc.replace(/[ _\-]/g,'');
+  const a=await db.prepare('SELECT id FROM users WHERE name_lc=?').bind(lc).first(); if(a&&a.id!==selfId) return 'Такой ник уже занят';
+  if(skel){ const b=await db.prepare("SELECT id FROM users WHERE REPLACE(REPLACE(REPLACE(name_lc,' ',''),'_',''),'-','')=? AND id<>?").bind(skel,selfId).first(); if(b) return 'Такой ник уже занят или слишком похож на чужой'; }
+  return null;
+}
+async function renameUser(db,id,name,prevLc){
+  await db.batch([db.prepare('UPDATE users SET name=?,name_lc=?,prev_lc=? WHERE id=?').bind(name,name.toLowerCase(),prevLc||null,id),
+    db.prepare('UPDATE chat SET name=? WHERE user_id=?').bind(name,id),db.prepare('UPDATE pcomment SET name=? WHERE user_id=?').bind(name,id)]);
+}
 
 async function me(db,u,token){
   const gs=(await db.prepare('SELECT json FROM games WHERE owner=? ORDER BY ts').bind(u.id).all()).results||[];
@@ -53,6 +66,7 @@ async function newSession(db,userId){
   await db.prepare('INSERT INTO sessions(token,user_id,created,exp) VALUES(?,?,?,?)').bind(await sha(token),userId,now,now+60*DAY).run();
   return token;
 }
+async function findLogin(db,lc){ return await db.prepare('SELECT * FROM users WHERE name_lc=? OR (prev_lc=? AND ban_name=1 AND ban_until>?) ORDER BY (name_lc=?) DESC LIMIT 1').bind(lc,lc,Date.now(),lc).first(); }
 const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } };
 /* Короткое «лицо» игрока для кружка-аватара (только безопасные поля) */
 function lookOf(a,role){
@@ -68,7 +82,7 @@ function lookOf(a,role){
 let schemaOk=false;
 async function ensureSchema(db){
   if(schemaOk) return;
-  for(const [col,def] of [['bio',"TEXT NOT NULL DEFAULT ''"],['look','TEXT'],['info',"TEXT NOT NULL DEFAULT ''"]]){
+  for(const [col,def] of [['bio',"TEXT NOT NULL DEFAULT ''"],['look','TEXT'],['info',"TEXT NOT NULL DEFAULT ''"],['ban_name','INTEGER NOT NULL DEFAULT 0'],['prev_lc','TEXT']]){
     try{ await db.prepare('SELECT '+col+' FROM users LIMIT 1').first(); }
     catch(e){ try{ await db.prepare('ALTER TABLE users ADD COLUMN '+col+' '+def).run(); }catch(e2){ console.error(e2); } }
   }
@@ -120,10 +134,21 @@ async function api(req,env,url){
     catch(e){ return err('Такое имя уже занято',409); }
     return me(db,{id,name,role},await newSession(db,id));
   }
+  /* игрок с баном «за ник» сам выбирает новый ник (или оставляет тот, что поставил админ) — бан снимается */
+  if(p==='rename-banned'&&m==='POST'){
+    if(!await throttle(db,'rb:'+ip,20,600000)) return err('Слишком много попыток, подождите 10 минут',429);
+    const b=await body()||{}, nm=String(b.name||'').trim().toLowerCase(), pw=String(b.pw||'').slice(0,64), nn=String(b.newName||'').trim();
+    const u=await findLogin(db,nm);
+    if(!u||!eq(await pbk(pw,u.salt),u.hash)) return err('Неверное имя или пароль',401);
+    if(!(u.ban_until>Date.now()&&u.ban_name)) return err('Смена ника сейчас не требуется',400);
+    if(nn&&nn!==u.name){ const e=await checkNick(db,nn,u.id,false); if(e) return err(e,e.startsWith('Такой')?409:400); try{ await renameUser(db,u.id,nn,null); }catch(x){ return err('Такой ник уже занят',409); } }
+    await db.prepare("UPDATE users SET ban_until=0,ban_reason='',ban_name=0,prev_lc=NULL WHERE id=?").bind(u.id).run();
+    return J({ok:1,name:nn||u.name});
+  }
   if(p==='login'&&m==='POST'){
     if(!await throttle(db,'l:'+ip,30,600000)) return err('Слишком много попыток, подождите 10 минут',429);
     const b=await body(), name=String(b&&b.name||'').trim().toLowerCase(), pw=String(b&&b.pw||'').slice(0,64);
-    const u=await db.prepare('SELECT * FROM users WHERE name_lc=?').bind(name).first();
+    const u=await findLogin(db,name);
     if(!u||!eq(await pbk(pw,u.salt),u.hash)) return err('Неверное имя или пароль',401);
     const bi=banInfo(u); if(bi) return err('Аккаунт заблокирован',403,bi);
     return me(db,u,await newSession(db,u.id));
@@ -407,18 +432,28 @@ async function api(req,env,url){
     if(u.role!=='admin') return err('Нет доступа',403);
     if(p==='admin/users'&&m==='GET'){
       const q=String(url.searchParams.get('q')||'').toLowerCase().replace(/[%_\\]/g,'').slice(0,16);
-      const rs=(await db.prepare('SELECT id,name,role,created,ban_until,ban_reason,(SELECT COUNT(*) FROM games WHERE owner=users.id) gn FROM users WHERE name_lc LIKE ? ORDER BY created DESC LIMIT 100').bind('%'+q+'%').all()).results||[];
+      const rs=(await db.prepare('SELECT id,name,role,created,ban_until,ban_reason,ban_name,(SELECT COUNT(*) FROM games WHERE owner=users.id) gn FROM users WHERE name_lc LIKE ? ORDER BY created DESC LIMIT 100').bind('%'+q+'%').all()).results||[];
       return J({users:rs});
     }
     if(p==='admin/ban'&&m==='POST'){
-      const b=await body(), id=String(b&&b.userId||''), hrs=+(b&&b.hours)||0, reason=cleanText(b&&b.reason,200);
-      const t=await db.prepare('SELECT id,role FROM users WHERE id=?').bind(id).first();
+      const b=await body()||{}, id=String(b.userId||''), reason=cleanText(b.reason,200), nameBan=!!b.nameBan, newName=String(b.newName||'').trim();
+      const t=await db.prepare('SELECT id,name,role FROM users WHERE id=?').bind(id).first();
       if(!t) return err('Игрок не найден',404); if(t.role==='admin') return err('Нельзя заблокировать админа');
-      const until=hrs>0?Date.now()+Math.min(hrs,24*3650)*3600000:FOREVER;
-      await db.prepare('UPDATE users SET ban_until=?,ban_reason=? WHERE id=?').bind(until,reason,id).run(); return J({ok:1});
+      const amt=+b.amount||0, mul={m:60000,h:3600000,d:86400000}[b.unit]||3600000;
+      let ms=b.forever?0:(b.amount!==undefined?amt*mul:(+b.hours||0)*3600000);
+      const until=ms>0?Date.now()+Math.min(ms,3650*86400000):FOREVER;
+      if(newName&&newName!==t.name){ const e=await checkNick(db,newName,id,true); if(e) return err(e,e.startsWith('Такой')?409:400); await renameUser(db,id,newName,nameBan?t.name.toLowerCase():null); }
+      await db.prepare('UPDATE users SET ban_until=?,ban_reason=?,ban_name=? WHERE id=?').bind(nameBan?FOREVER:until,reason||(nameBan?'Неприемлемый ник':''),nameBan?1:0,id).run();
+      await db.prepare('DELETE FROM sessions WHERE user_id=?').bind(id).run(); return J({ok:1});
+    }
+    if(p==='admin/rename'&&m==='POST'){
+      const b=await body()||{}, id=String(b.userId||''), nn=String(b.name||'').trim();
+      const t=await db.prepare('SELECT id,name,role FROM users WHERE id=?').bind(id).first(); if(!t) return err('Игрок не найден',404); if(t.role==='admin') return err('Нельзя менять ник админа');
+      const e=await checkNick(db,nn,id,true); if(e) return err(e,e.startsWith('Такой')?409:400);
+      try{ await renameUser(db,id,nn,null); }catch(x){ return err('Такой ник уже занят',409); } return J({ok:1});
     }
     if(p==='admin/unban'&&m==='POST'){
-      const b=await body(); await db.prepare("UPDATE users SET ban_until=0,ban_reason='' WHERE id=?").bind(String(b&&b.userId||'')).run(); return J({ok:1});
+      const b=await body(); await db.prepare("UPDATE users SET ban_until=0,ban_reason='',ban_name=0,prev_lc=NULL WHERE id=?").bind(String(b&&b.userId||'')).run(); return J({ok:1});
     }
     if(p==='admin/chat'&&m==='GET'){
       const rs=(await db.prepare('SELECT id,room,user_id uid,name,text,ts FROM chat ORDER BY id DESC LIMIT 60').all()).results||[]; return J({messages:rs});
