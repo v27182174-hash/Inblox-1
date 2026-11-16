@@ -2,7 +2,7 @@
 <title>Inblox</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#101014"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Inblox">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@600;700;800&family=Rajdhani:wght@600;700&display=swap">
 <style>
 /* Layout: фиксированная сцена 16:9, интерфейс поверх 3D-канваса. Чёрно-белая палитра логотипа + один синий акцент. */
 :root{
@@ -333,8 +333,75 @@ input[type=range],input[type=checkbox]{accent-color:var(--fg)}
 .istouch .apanel{width:min(22em,52%)}
 .istouch .fgrid{grid-template-columns:repeat(3,1fr)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Дизайн v4: стекло (glassmorphism), игровая типографика, живые наведения ===== */
+:root{--display:'Montserrat','Rajdhani',system-ui,-apple-system,'Segoe UI',sans-serif;--body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --glass:rgba(18,20,30,.55);--gline:rgba(255,255,255,.16);--gbtn:rgba(40,44,60,.92);--gbtn2:rgba(66,72,98,.96);--a1:#59a8ff;--a2:#7c5cff;--a3:#c04cff;--r:12px}
+#stage{background:radial-gradient(ellipse at 18% 12%,rgba(89,168,255,.16),transparent 55%),radial-gradient(ellipse at 85% 80%,rgba(124,92,255,.16),transparent 55%),var(--bg)}
+h1,h2,h3,.logo,.btn,.tab,.chip,.pill b,.card .meta b,.jbtn,.sechead h3,.cmh b,#toast{font-family:var(--display)}
+h1,h2,h3{font-weight:800;letter-spacing:-.01em}
+.logo{font-weight:800;letter-spacing:.01em}
+.btn,.jbtn{font-weight:700;letter-spacing:.015em}
+.chip,.tab{font-weight:600}
+#home .hero h2{font-weight:800;letter-spacing:-.03em;background:linear-gradient(120deg,#fff 30%,#a9c8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* стеклянные панели */
+.topbar,#home .head,.tools,.rpanel,.flybar,.apanel,.ov .box,.gpg,.pill,.phud,.npcp,.npcb,.cmsg,#home .shelf,.card{background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid var(--gline)}
+.topbar,#home .head{border-width:0 0 1px 0;background:rgba(14,16,24,.5)}
+.apanel{border-width:0 0 0 1px;border-radius:0}
+.tools,.rpanel,.flybar,.pill,.phud,.npcp,.npcb,.cmsg{border-radius:var(--r)}
+.ov{background:rgba(6,7,12,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.ov .box,.gpg{border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}
+#home .shelf{border-width:1px 0 0 0;background:rgba(14,16,24,.42)}
+.sec{border-bottom-color:rgba(255,255,255,.09)}
+.card{border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.28)}
+.card.new{background:rgba(255,255,255,.04);border-style:dashed;border-color:rgba(255,255,255,.28)}
+input[type=text],input[type=password],input[type=number],select,textarea,input[type=color]{background:rgba(8,9,14,.55);border-color:rgba(255,255,255,.16);border-radius:9px}
+input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-shadow:0 0 0 3px rgba(89,168,255,.2)}
+/* кнопки */
+.btn{border-radius:10px;background:var(--gbtn);border-color:rgba(255,255,255,.16);transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,background .18s,border-color .18s,color .18s,filter .18s}
+.btn:hover{background:var(--gbtn2);color:var(--fg);border-color:rgba(255,255,255,.38)}
+.btn.pri{background:#fff;color:#0a0a0c;border-color:#fff}
+.btn.pri:hover{background:#fff;color:#0a0a0c;filter:brightness(.94)}
+.btn.on,.chip.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;border-color:transparent}
+.btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.chip{border-radius:9px;background:rgba(255,255,255,.05);transition:transform .15s,background .15s,border-color .15s}
+.chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.4)}
+.tab{transition:color .15s,border-color .15s}
+.tab:hover{color:var(--fg)}.tab.on{border-bottom-color:var(--a1)}
+.tool{border-radius:9px;transition:transform .15s,background .15s}
+.tool:hover{background:rgba(255,255,255,.12)}
+/* акцентная кнопка «+ Создать игру» */
+#hNew{background:linear-gradient(135deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);color:#fff;border:0;padding:.55em 1.25em;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 4px 18px rgba(124,92,255,.5),0 0 26px rgba(89,168,255,.35);animation:glowp 3.2s ease-in-out infinite}
+#hNew:hover{background:linear-gradient(135deg,#7bbaff 0%,#8f74ff 55%,#d46aff 100%);color:#fff;filter:none;box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 6px 26px rgba(124,92,255,.7),0 0 38px rgba(89,168,255,.55)}
+@keyframes glowp{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 4px 18px rgba(124,92,255,.45),0 0 22px rgba(89,168,255,.28)}50%{box-shadow:0 0 0 1px rgba(255,255,255,.22) inset,0 4px 22px rgba(124,92,255,.7),0 0 34px rgba(89,168,255,.5)}}
+.card.new:hover{border-color:var(--a1);color:var(--fg);background:rgba(89,168,255,.08)}
+/* наведения: лёгкий подъём, масштаб и тень */
+.card{transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s,border-color .22s,background .22s}
+.card .thumb img,.card .thumb svg{transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover:not([disabled]){transform:translateY(-1px) scale(1.045);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .btn:active{transform:scale(.97);box-shadow:none}
+  #hNew:hover{transform:translateY(-2px) scale(1.07)}
+  .chip:hover{transform:scale(1.05)}
+  .tool:hover{transform:scale(1.08)}
+  .card:hover{transform:translateY(-5px) scale(1.03);box-shadow:0 18px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.22);border-color:rgba(255,255,255,.4)}
+  .card:hover .thumb img,.card:hover .thumb svg{transform:scale(1.06)}
+  .card .thumb{overflow:hidden}
+}
+@media (prefers-reduced-motion:reduce){ .btn:hover,.card:hover,.chip:hover,.tool:hover{transform:none!important} #hNew{animation:none} }
+/* загрузка сайта */
+#boot{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1em;background:radial-gradient(ellipse at 50% 40%,#1a1d2e,#0a0a0f 70%);color:#fff;font-family:'Montserrat',system-ui,sans-serif;transition:opacity .5s,visibility .5s;animation:bootsafe .5s 25s forwards}
+#boot.off{opacity:0;visibility:hidden;pointer-events:none}
+@keyframes bootsafe{to{opacity:0;visibility:hidden;pointer-events:none}}
+#boot svg{width:92px;height:92px;display:block;animation:bootspin 1.8s cubic-bezier(.65,0,.35,1) infinite;filter:drop-shadow(0 0 18px rgba(124,92,255,.65)) drop-shadow(0 0 30px rgba(89,168,255,.4))}
+@keyframes bootspin{0%{transform:rotateY(0) rotate(0)}100%{transform:rotateY(360deg) rotate(0)}}
+#boot b{font-size:1.5em;font-weight:800;letter-spacing:.32em;padding-left:.32em}
+#boot i{display:block;width:150px;height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;position:relative}
+#boot i::after{content:'';position:absolute;inset:0;width:40%;border-radius:3px;background:linear-gradient(90deg,var(--a1,#59a8ff),var(--a2,#7c5cff));animation:bootbar 1.2s ease-in-out infinite}
+@keyframes bootbar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
 </style>
 
+<div id="boot" aria-label="Загрузка"><svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(45 50 50)"><rect x="22" y="22" width="56" height="56" rx="11" fill="#fff"/><rect x="33.5" y="33.5" width="33" height="33" rx="6" fill="#12141f"/></g><rect x="46.9" y="35.6" width="6.2" height="28.6" fill="#fff"/></svg><b>INBLOX</b><i></i></div>
 <div id="stage">
   <canvas id="gl"></canvas>
   <div id="ui">
@@ -415,6 +482,7 @@ let installEv=null;
 addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEv=e; if(typeof Home!=='undefined'&&Home.on) Home.render(); });
 addEventListener('appinstalled',()=>{ installEv=null; if(typeof Home!=='undefined'&&Home.on) Home.render(); });
 if('serviceWorker' in navigator&&location.protocol==='https:') addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+const hideBoot=()=>{ const b=document.getElementById('boot'); if(!b||b._h) return; b._h=1; setTimeout(()=>{ b.classList.add('off'); setTimeout(()=>b.remove(),700); },Math.max(0,1000-performance.now())); };
 const banUntil=u=>u?(u<4e12?' (до '+new Date(u).toLocaleString('ru-RU')+')':' (навсегда)'):'';
 const Api={tok:store.get('inblox.token',null),
   async call(method,path,body){
@@ -3489,12 +3557,13 @@ Fit.apply();
 if(Api.tok){
   go('auth'); $('#auth').innerHTML='<div class="ov on" style="background:rgba(5,5,8,.55)"><div class="box"><p style="margin:0">Подключение к серверу…</p></div></div>';
   Api.call('GET','me').then(r=>{
+    hideBoot();
     if(r.ok&&r.d.user){ Acc.enter(r.d); go('home'); Home.render(); return; }
     if(!r.net&&(r.status===401||r.status===403)){ Api.tok=null; store.set('inblox.token',null); }
     const msg=r.net?'Нет связи с сервером':(r.d.banned?'Аккаунт заблокирован'+(r.d.reason?': '+r.d.reason:'')+banUntil(r.d.until):'');
     Auth.show('login'); if(msg){ Auth.err=msg; const e=$('#aErr'); if(e) e.textContent=msg; }
   });
-} else Auth.show('login');
+} else { Auth.show('login'); hideBoot(); }
 requestAnimationFrame(frame);
 Cloud.init();
 </script>
