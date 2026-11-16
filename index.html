@@ -398,14 +398,14 @@ const sndOptsHTML=sel=>`<option value="none">Нет</option><optgroup label="В�
 function npcDefault(){ return {name:'Житель',say:'Привет! Рад тебя видеть.\nЗаходи ещё!',turn:true,solid:true,look:{skin:'#f1c27d',shirt:'#ff8fb8',pants:'#2b2f3a',hat:'none',hatColor:'#ff5a4d',face:'smile',emblem:'none',head:'cube',build:'normal',hair:'short',hairColor:'#5a3a22',outfit:'none',outfitColor:'#e8433f'}}; }
 function npcLook(n){
   const l=(n&&n.look)||{}, o=Object.assign({},npcDefault().look);
-  for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
-  for(const k of ['hat','face','head','build','hair','outfit','emblem']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor','accColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['hat','face','head','build','hair','outfit','emblem','glasses','neck','back']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
   for(const k of ['shirtTex','pantsTex']) if(typeof l[k]==='string'&&/^p:[a-z]{1,12}$/.test(l[k])) o[k]=l[k];
   return o;
 }
 const npcText=n=>String(n&&n.say!=null?n.say:'').replace(/[\u0000-\u0009\u000b-\u001f]/g,'').slice(0,600).split('\n').map(t=>t.trim().slice(0,200)).filter(Boolean).slice(0,12);
 const npcName=n=>String(n&&n.name!=null?n.name:'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24);
-const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f'};
+const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',glasses:'none',neck:'none',back:'none',accColor:'#f2f2f2',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
@@ -1002,7 +1002,10 @@ function makeWorld(game,editor){
    ============================================================ */
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
-const HATS=[['none','Без шапки'],['cap','Кепка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Ушки'],['antenna','Антенна']];
+const HATS=[['none','Без шапки'],['cap','Кепка'],['beanie','Шапка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Кошачьи ушки'],['bunny','Ушки зайца'],['horns','Рожки'],['halo','Нимб'],['witch','Шляпа ведьмы'],['headphones','Наушники'],['bow','Бантик'],['flower','Цветок'],['antenna','Антенна']];
+const GLASSES=[['none','Без очков'],['round','Круглые'],['square','Квадратные'],['sun','Солнцезащитные'],['heartg','Сердечки'],['monocle','Монокль']];
+const NECKS=[['none','Ничего'],['scarf','Шарф'],['bowtie','Бабочка'],['tie','Галстук'],['chain','Цепочка'],['collar','Ошейник с бубенчиком']];
+const BACKS=[['none','Ничего'],['backpack','Рюкзак'],['wings','Крылья ангела'],['batwings','Крылья летучей мыши'],['cape','Плащ'],['foxtail','Лисий хвост'],['bunnytail','Пушистый хвостик'],['guitar','Гитара'],['satchel','Сумка через плечо']];
 const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот'],['anime23','Аниме: фиолетовые'],['anime24','Аниме: бирюзовые, смущение'],['anime25','Аниме: янтарные, улыбка'],['anime26','Аниме: лавандовые, подмигивание'],['anime27','Аниме: мятные, веснушки'],['anime28','Аниме: розовые, сердечки'],['anime29','Аниме: небесные, сонные'],['anime30','Аниме: рубиновые, веснушки'],['anime31','Аниме: счастливая'],['anime32','Аниме: слёзы радости'],['anime33','Аниме парень: дерзкий'],['anime34','Аниме парень: серьёзный'],['anime35','Аниме парень: клык'],['anime36','Аниме парень: спокойный'],['anime37','Аниме парень: хитрый'],['anime38','Аниме парень: тёмный'],['anime39','Аниме парень: подмигивает'],['anime40','Аниме парень: ухмылка'],['anime41','Аниме парень: скучает'],['anime42','Аниме парень: радость'],['anime43','Аниме парень: веснушки'],['anime44','Аниме парень: мягкий']];
 const HEADS=[['cube','Куб'],['cutie','Милая'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},cutie:{w:.78,h:.78,d:.76,k:.5},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
@@ -1707,7 +1710,54 @@ function buildAvatar(cfg){
     case 'tophat': add(new THREE.CylinderGeometry(.38,.38,.65,24),0,3.32,0); add(new THREE.CylinderGeometry(.6,.6,.06,28),0,3.02,0); break;
     case 'crown': { const r=add(new THREE.CylinderGeometry(.42,.42,.25,10,1,true),0,3.12,0); r.material=new THREE.MeshLambertMaterial({color:cfg.hatColor,side:THREE.DoubleSide}); for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; add(new THREE.ConeGeometry(.1,.3,6),Math.cos(a)*.38,3.38,Math.sin(a)*.38); } break; }
     case 'ears': add(new THREE.ConeGeometry(.17,.38,4),-.26,3.18,0,0,.25); add(new THREE.ConeGeometry(.17,.38,4),.26,3.18,0,0,-.25); break;
+    case 'beanie': { const d=add(new THREE.SphereGeometry(.48,20,12,0,Math.PI*2,0,Math.PI/2),0,2.98,0); d.scale.set(1,.9,1); add(new THREE.CylinderGeometry(.49,.49,.14,20),0,2.99,0); add(new THREE.SphereGeometry(.1,10,8),0,3.44,0); break; }
+    case 'bunny': for(const sx of [-1,1]){ const b=add(new THREE.SphereGeometry(.16,10,10),sx*.17,3.45,0,0,sx*.12); b.scale.set(.5,2.3,.35); } break;
+    case 'horns': for(const sx of [-1,1]) add(new THREE.ConeGeometry(.1,.42,8),sx*.24,3.2,.02,0,-sx*.4); break;
+    case 'halo': { const hl=add(new THREE.TorusGeometry(.32,.04,8,28),0,3.45,0,Math.PI/2,0); hl.material=new THREE.MeshBasicMaterial({color:cfg.hatColor}); break; }
+    case 'witch': { add(new THREE.CylinderGeometry(.66,.66,.05,24),0,3.02,0); const c=add(new THREE.ConeGeometry(.38,.85,16),0,3.45,0,0,.1); add(new THREE.CylinderGeometry(.4,.4,.1,16),0,3.1,0).material=new THREE.MeshLambertMaterial({color:'#2b2118'}); break; }
+    case 'headphones': { add(new THREE.TorusGeometry(.47,.035,8,24,Math.PI),0,2.62,0); for(const sx of [-1,1]){ const c=add(new THREE.CylinderGeometry(.17,.17,.12,16),sx*.44,2.62,0,0,Math.PI/2); } break; }
+    case 'bow': { for(const sx of [-1,1]){ const w=add(new THREE.SphereGeometry(.12,10,8),.27+sx*.13,3.0,.12); w.scale.set(1.2,.8,.6); } add(new THREE.SphereGeometry(.07,8,8),.27,3.0,.13); break; }
+    case 'flower': { for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; add(new THREE.SphereGeometry(.07,8,8),.28+Math.cos(a)*.1,3.0+Math.sin(a)*.1,.2); } add(new THREE.SphereGeometry(.06,8,8),.28,3.0,.22).material=new THREE.MeshLambertMaterial({color:'#ffd84a'}); break; }
     case 'antenna': add(new THREE.CylinderGeometry(.03,.03,.45,8),0,3.22,0); add(new THREE.SphereGeometry(.1,12,10),0,3.5,0); break;
+  }
+  /* ---- аксессуары: очки, шея, спина ---- */
+  {
+    const am=M(cfg.accColor||'#f2f2f2'), dark=M('#15151a'), glass=new THREE.MeshPhongMaterial({color:'#bfe3ff',transparent:true,opacity:.35,shininess:90}), tn=bd.td, tw0=bd.tw;
+    const hb=(w,h,d,m,x,y,z,rx=0,ry=0,rz=0)=>{ const b=box(w,h,d,m,x,y,z,hat); b.rotation.set(rx,ry,rz); return b; };
+    const gl=cfg.glasses;
+    if(gl&&gl!=='none'){
+      const gy=2.64, gz=.43;
+      if(gl==='monocle'){ const r=new THREE.Mesh(new THREE.TorusGeometry(.13,.015,6,18),M('#d4af37')); r.position.set(.17,gy,gz); hat.add(r); const l=new THREE.Mesh(new THREE.CircleGeometry(.12,16),glass); l.position.set(.17,gy,gz); hat.add(l); hb(.01,.3,.01,M('#d4af37'),.3,gy-.2,gz); }
+      else {
+        for(const sx of [-1,1]){
+          if(gl==='round'){ const r=new THREE.Mesh(new THREE.TorusGeometry(.12,.016,6,18),am); r.position.set(sx*.18,gy,gz); hat.add(r); const l=new THREE.Mesh(new THREE.CircleGeometry(.115,16),glass); l.position.set(sx*.18,gy,gz); hat.add(l); }
+          else if(gl==='square'){ for(const [w,h,x,y] of [[.3,.025,0,.1],[.3,.025,0,-.1],[.025,.21,-.15,0],[.025,.21,.15,0]]) hb(w,h,.03,am,sx*.18+x,gy+y,gz); hb(.28,.19,.01,glass,sx*.18,gy,gz); }
+          else if(gl==='sun'){ hb(.32,.21,.03,dark,sx*.18,gy,gz+.005); hb(.1,.03,.01,M('#ffffff'),sx*.23,gy+.06,gz+.025); }
+          else if(gl==='heartg'){ const c=M(cfg.accColor&&cfg.accColor!=='#f2f2f2'?cfg.accColor:'#ff5a9a'); for(const q of [-1,1]){ const sp=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),c); sp.position.set(sx*.18+q*.05,gy+.035,gz); sp.scale.z=.3; hat.add(sp); } const tp=new THREE.Mesh(new THREE.ConeGeometry(.12,.17,4),c); tp.position.set(sx*.18,gy-.06,gz); tp.rotation.set(0,Math.PI/4,Math.PI); tp.scale.z=.3; hat.add(tp); }
+          hb(.025,.025,.42,gl==='sun'?dark:am,sx*.4,gy+.02,gz-.2);
+        }
+        hb(.09,.025,.03,gl==='sun'?dark:am,0,gy+.03,gz);
+      }
+    }
+    const nk=cfg.neck, ny=2.1;
+    if(nk==='scarf'){ box(tw0+.1,.26,tn+.1,am,0,ny+.02,0); box(.2,.75,.07,am,tw0*.22,ny-.42,tn/2+.07); box(.2,.5,.07,am,tw0*.22+.0,ny-.7,tn/2+.075); }
+    else if(nk==='bowtie'){ for(const sx of [-1,1]){ const w=new THREE.Mesh(new THREE.ConeGeometry(.15,.22,3),am); w.position.set(sx*.13,ny+.05,tn/2+.04); w.rotation.z=sx*Math.PI/2; w.scale.z=.3; body.add(w); } box(.08,.1,.08,am,0,ny+.05,tn/2+.05); }
+    else if(nk==='tie'){ box(.11,.1,.06,am,0,ny+.07,tn/2+.04); const t=box(.17,.7,.04,am,0,ny-.3,tn/2+.04); t.rotation.z=0; }
+    else if(nk==='chain'){ const c=new THREE.Mesh(new THREE.TorusGeometry(.27,.02,6,22,Math.PI),M('#d4af37')); c.position.set(0,ny+.1,tn/2+.02); c.rotation.z=Math.PI; c.scale.y=1.2; body.add(c); const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.06),am); gem.position.set(0,ny-.22,tn/2+.04); body.add(gem); }
+    else if(nk==='collar'){ box(tw0*.7,.1,tn*.8,M('#c43a3a'),0,ny+.12,0); const b=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),M('#e8c14a')); b.position.set(0,ny+.04,tn*.4+.05); body.add(b); }
+    const bk=cfg.back, bz=-tn/2;
+    if(bk==='backpack'){ box(tw0*.78,.95,.32,am,0,1.62,bz-.16); box(tw0*.78,.28,.36,M('#222630'),0,2.0,bz-.16); box(tw0*.5,.35,.1,M('#222630'),0,1.4,bz-.36); for(const sx of [-1,1]) box(.1,1.0,.04,M('#222630'),sx*tw0*.28,1.78,tn/2+.02); }
+    else if(bk==='wings'||bk==='batwings'){
+      const bat=bk==='batwings', wm=bat?M(cfg.accColor&&cfg.accColor!=='#f2f2f2'?cfg.accColor:'#3a2a4a'):am;
+      for(const sx of [-1,1]){ const wg=new THREE.Group(); wg.position.set(sx*.25,2.0,bz-.1); wg.rotation.set(0,sx*.55,sx*.35); body.add(wg);
+        const L=bat?[[1.0,.1],[.8,.2],[.6,.3]]:[[.85,.16],[.72,.17],[.58,.18],[.44,.19]];
+        L.forEach(([l,h],ix)=>{ const f=new THREE.Mesh(new THREE.BoxGeometry(l,h,.05),wm); f.position.set(sx*(l/2+.05),-ix*(bat?.26:.17),0); f.castShadow=true; wg.add(f); }); }
+    }
+    else if(bk==='cape'){ const cg=new THREE.Group(); cg.position.set(0,2.18,bz-.05); cg.rotation.x=.1; body.add(cg); const c=new THREE.Mesh(new THREE.BoxGeometry(tw0+.2,1.5,.06),am); c.position.y=-.75; c.castShadow=true; cg.add(c); box(tw0+.1,.1,tn+.12,M('#d4af37'),0,2.12,0); }
+    else if(bk==='foxtail'){ const tg=new THREE.Group(); tg.position.set(0,1.1,bz-.05); tg.rotation.x=-.85; body.add(tg); const c=new THREE.Mesh(new THREE.CylinderGeometry(.12,.2,.7,10),am); c.position.y=.38; tg.add(c); const tip=new THREE.Mesh(new THREE.SphereGeometry(.17,10,8),M('#ffffff')); tip.position.y=.78; tg.add(tip); }
+    else if(bk==='bunnytail'){ const t=new THREE.Mesh(new THREE.SphereGeometry(.18,12,10),am); t.position.set(0,1.1,bz-.15); body.add(t); }
+    else if(bk==='guitar'){ const gg=new THREE.Group(); gg.position.set(.1,1.55,bz-.12); gg.rotation.z=.55; body.add(gg); const b1=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.14,16),am); b1.rotation.x=Math.PI/2; b1.position.y=-.1; gg.add(b1); const hole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.16,12),M('#15151a')); hole.rotation.x=Math.PI/2; hole.position.y=-.1; gg.add(hole); const nk2=new THREE.Mesh(new THREE.BoxGeometry(.08,.9,.06),M('#5a3a22')); nk2.position.y=.55; gg.add(nk2); const hd=new THREE.Mesh(new THREE.BoxGeometry(.12,.2,.06),M('#2b2118')); hd.position.y=1.08; gg.add(hd); }
+    else if(bk==='satchel'){ const st=new THREE.Mesh(new THREE.BoxGeometry(.09,1.7,.05),M('#5a3a22')); st.position.set(0,1.65,0); st.rotation.z=-.62; st.scale.set(1,1,1); const sg=new THREE.Group(); sg.add(st); sg.position.set(0,0,tn/2+.02); body.add(sg); box(.45,.38,.22,am,tw0*.42,1.15,tn/2+.12,body); }
   }
   if(cfg.vipShades){
     const gold=new THREE.MeshLambertMaterial({color:'#d4af37',emissive:'#3a2a00'}), lens=new THREE.MeshPhongMaterial({color:'#0a0a12',specular:'#9fc4ff',shininess:110}), shine=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.4});
@@ -1719,7 +1769,7 @@ function buildAvatar(cfg){
     box(.1,.04,.04,gold,0,2.72,.41,sg);                                                                                           /* переносица */
   }
   if(bd.sc) body.scale.setScalar(bd.sc);   /* миниатюрное тело: всё немного меньше, ноги остаются на земле */
-  return {group:g,body,head,armL,armR,legL,legR};
+  return {group:g,body,head,armL,armR,legL,legR,sc:bd.sc||1};
 }
 /* Позы NPC: [id, название, женская?]. Руки вращаются от плеча: x<0 — вперёд/вверх, z — в сторону (левая рука наружу при z<0, правая при z>0) */
 const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
@@ -1790,28 +1840,45 @@ function applyNpcPose(av,pose,t){
   }
   /* лёгкое «дыхание» для всех поз */
   const br=Math.sin(t*2); L.rotation.x+=br*.03; R.rotation.x-=br*.03; B.position.y+=br*.01;
+  /* плавность: смена позы не рывком, а перетеканием; заодно гасит дрожь на быстрых танцах */
+  const Q=av._pq||(av._pq={}), nw=performance.now(), dq=Math.min(.05,Math.max(0,(nw-(Q.t||nw))/1000)), fq=1-Math.exp(-24*dq); Q.t=nw;
+  const tg=[L.rotation.x,L.rotation.z,R.rotation.x,R.rotation.z,LL.rotation.x,LL.rotation.z,RL.rotation.x,RL.rotation.z,B.rotation.x,B.rotation.z,B.position.x,B.position.y,B.position.z];
+  if(!Q.v) Q.v=tg.slice(); else for(let i=0;i<tg.length;i++) Q.v[i]+=(tg[i]-Q.v[i])*fq;
+  const v=Q.v; L.rotation.x=v[0]; L.rotation.z=v[1]; R.rotation.x=v[2]; R.rotation.z=v[3]; LL.rotation.x=v[4]; LL.rotation.z=v[5]; RL.rotation.x=v[6]; RL.rotation.z=v[7]; B.rotation.x=v[8]; B.rotation.z=v[9]; B.position.x=v[10]; B.position.y=v[11]; B.position.z=v[12];
 }
 function animAvatar(av,t,speed,air,vy){
   const now=performance.now(), dt=Math.min(.05,Math.max(0,(now-(av._pt||now))/1000)); av._pt=now;
-  const ex=r=>1-Math.exp(-r*dt), k=Math.min(1,speed/8), sw=Math.sin(t*11)*.95*k;
-  if(av._w===undefined){ av._w=0; av._s=0; av._lt=1; av._pa=false; }
-  /* плавный переход земля <-> воздух и плавная "фаза" полёта (взлёт -> падение) */
+  const ex=r=>1-Math.exp(-r*dt);
+  if(av._w===undefined){ av._w=0; av._s=0; av._lt=1; av._pa=false; av._ph=0; av._m=0; av._v=0; av.body.rotation.order='YXZ'; }
+  /* сглаженная скорость и «доля движения»: шаг начинается и заканчивается плавно */
+  av._v+=(speed-av._v)*ex(10); av._m+=((av._v>.4?1:0)-av._m)*ex(9);
+  const m=av._m, k=Math.min(1,av._v/8);
+  av._ph+=dt*(5+av._v*1.15);                        /* частота шагов растёт со скоростью — ноги не «скользят» */
+  const ph=av._ph, sw=Math.sin(ph)*m*(.38+.62*k);
+  /* плавный переход земля <-> воздух и фаза полёта (взлёт -> падение) */
   av._w+=((air?1:0)-av._w)*ex(air?16:11);
   av._s+=(clamp(vy/18,-1,1)-av._s)*ex(9);
   if(av._pa&&!air&&av._w>.35) av._lt=0;           /* приземление: лёгкое приседание */
   av._pa=air; av._lt=Math.min(1,av._lt+dt/.24);
-  const w=av._w, e=w*w*(3-2*w), f=(av._s+1)/2;     /* f=1 взлёт, f=0 падение */
-  const aA=-2.15-.8*f, lL=.18+.4*f, lR=-.12-.26*f;
-  av.armL.rotation.x=-sw*.9+(aA+sw*.9)*e; av.armR.rotation.x=sw*.9+(aA-sw*.9)*e;
-  av.legL.rotation.x=sw+(lL-sw)*e;        av.legR.rotation.x=-sw+(lR+sw)*e;
-  const sq=Math.sin(av._lt*Math.PI), st=Math.abs(av._s)*e;
-  const sy=1+st*.06-.11*sq, sxz=1-st*.03+.05*sq;
-  av.body.scale.set(sxz,sy,sxz);
-  av.body.position.y=(1-e)*Math.abs(Math.sin(t*11))*.06*k;
+  const w=av._w, e=w*w*(3-2*w), f=(av._s+1)/2, g=1-e;
+  const aA=-1.9-.7*f, lL=.18+.4*f, lR=-.12-.26*f;
+  const lean=m*(.04+.14*k)*g+e*.05, idle=Math.sin(t*1.7)*.018*(1-m)*g;
+  /* руки: противоход шагу, на бегу согнуты вперёд; в прыжке разведены; в покое чуть покачиваются */
+  av.armL.rotation.set(-sw*.85*g-m*k*.32*g+aA*e-lean*.4,0,-(.05+m*.03)*g-.5*e-idle);
+  av.armR.rotation.set( sw*.85*g-m*k*.32*g+aA*e-lean*.4,0, (.05+m*.03)*g+.5*e+idle);
+  av.legL.rotation.set((sw*g+lL*e)-lean,0,-.02*e); av.legR.rotation.set((-sw*g+lR*e)-lean,0,.02*e);
+  const sq=Math.sin(av._lt*Math.PI), st=Math.abs(av._s)*e, sc=av.sc||1;
+  const sy=1+st*.06-.11*sq+Math.sin(t*1.9)*.006*(1-m), sxz=1-st*.03+.05*sq;
+  av.body.scale.set(sxz*sc,sy*sc,sxz*sc);
+  /* корпус: наклон вперёд от бёдер, лёгкий поворот и крен на опорную ногу, покачивание вверх-вниз (выше всего, когда ноги вертикальны) */
+  const bob=m*g*(1+Math.cos(2*ph))/2*(.03+.07*k), tw=Math.sin(ph)*.07*m*g, yy=av.body.rotation.y;
+  av.body.rotation.y=yy+tw; av.body.rotation.x=lean; av.body.rotation.z=Math.sin(ph)*.03*m*g+Math.sin(t*.7)*.01*(1-m);
+  const fz=-1.2*Math.sin(lean)*sc;
+  av.body.position.set(fz*Math.sin(yy),bob+(1.2-1.2*Math.cos(lean))*sc,fz*Math.cos(yy));
 }
 const PICS={};
 function avatarPic(look){
-  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.face,L.head,L.build,L.hair,L.hairColor,L.outfit,L.outfitColor,L.vipSuit,L.vipShades]);
+  const L=Object.assign({},DEF_AVATAR,look||{}), key=JSON.stringify([L.skin,L.shirt,L.shirtTex,L.hat,L.hatColor,L.glasses,L.neck,L.back,L.accColor,L.face,L.head,L.build,L.hair,L.hairColor,L.outfit,L.outfitColor,L.vipSuit,L.vipShades]);
   if(PICS[key]) return PICS[key];
   const c=document.createElement('canvas'); c.width=c.height=160; const g=c.getContext('2d');
   const bg=g.createLinearGradient(0,0,0,160); bg.addColorStop(0,'#2b3050'); bg.addColorStop(1,'#171a28'); g.fillStyle=bg; g.fillRect(0,0,160,160);
@@ -2070,7 +2137,7 @@ const Play={
       else if((this.talk&&this.talk.n===n)||(d<9&&p.npc&&p.npc.turn!==false)) want=Math.atan2(dx,dz)-p.ry*DEG;
       let df=want-n.face; df=Math.atan2(Math.sin(df),Math.cos(df)); n.face+=df*Math.min(1,dt*8);
       n.av.body.rotation.y=n.face; animAvatar(n.av,this.clock+n.ph,hs>.5?Math.min(hs,8):0,false,0);
-      { const ps=npcPoseOf(p.npc); if(hs<=.5&&ps!=='stand'){ applyNpcPose(n.av,ps,this.clock+n.ph); n.av._pz=1; } else if(n.av._pz){ for(const a of [n.av.armL,n.av.armR,n.av.legL,n.av.legR]) a.rotation.z=0; n.av.body.rotation.z=0; n.av.body.rotation.x=0; n.av.body.position.x=0; n.av.body.position.z=0; for(const a of [n.av.legL,n.av.legR,n.av.armL,n.av.armR]) a.rotation.x=0; n.av._pz=0; } }
+      { const ps=npcPoseOf(p.npc); if(hs<=.5&&ps!=='stand'){ applyNpcPose(n.av,ps,this.clock+n.ph); n.av._pz=1; } else if(n.av._pz){ for(const a of [n.av.armL,n.av.armR,n.av.legL,n.av.legR]) a.rotation.z=0; n.av.body.rotation.z=0; n.av.body.rotation.x=0; n.av.body.position.x=0; n.av.body.position.z=0; for(const a of [n.av.legL,n.av.legR,n.av.armL,n.av.armR]) a.rotation.x=0; n.av._pz=0; n.av._pq=null; } }
       if(active){ if(d<5&&!n.gr){ n.gr=true; this.npcPlay(n,'sndNear'); } else if(d>9) n.gr=false; }
       if(active&&!this.talk&&d<3.4&&Math.abs(pl.y-(m.y-m.hy))<3.5&&d<bd){ best=n; bd=d; }
     }
@@ -2668,6 +2735,7 @@ const Ed={
     <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}${col('pants')}</div>
     <div class="sec"><span class="lbl">Наряд</span>${chips('outfit',OUTFITS)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}${col('outfitColor')}`:''}</div>
     <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<span class="lbl" style="margin-top:.7em;display:block">Цвет убора</span>${sws('hatColor',CLOTHES)}</div>
+    <div class="sec"><span class="lbl">Очки</span>${chips('glasses',GLASSES)}<span class="lbl" style="margin-top:.7em;display:block">Шея</span>${chips('neck',NECKS)}<span class="lbl" style="margin-top:.7em;display:block">Спина</span>${chips('back',BACKS)}<span class="lbl" style="margin-top:.7em;display:block">Цвет аксессуаров</span>${sws('accColor',CLOTHES)}</div>
     <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
     <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
     <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}${col('hairColor')}`:''}</div>
@@ -2900,9 +2968,13 @@ const AvS={
         <div class="sec"><span class="lbl">Штаны</span>${sws('pants',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="pants" value="${a.pants}" aria-label="Свой цвет штанов"></div>${texUI('pantsTex')}</div>
         <div class="sec"><span class="lbl">Эмблема</span>${chips('emblem',EMBLEMS)}</div>`,
       acc:`<div class="sec"><span class="lbl">Головной убор</span>${chipsC('hat',HATS,14)}<div style="margin-top:.7em"><span class="lbl">Цвет убора</span>${sws('hatColor',CLOTHES)}</div></div>
+        <div class="sec"><span class="lbl">Очки</span>${chips('glasses',GLASSES)}</div>
+        <div class="sec"><span class="lbl">Шея</span>${chips('neck',NECKS)}</div>
+        <div class="sec"><span class="lbl">Спина</span>${chips('back',BACKS)}</div>
+        <div class="sec"><span class="lbl">Цвет аксессуаров</span>${sws('accColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="accColor" value="${a.accColor||'#f2f2f2'}" aria-label="Свой цвет аксессуаров"></div></div>
         ${Acc.cur&&Acc.cur.role==='admin'?`<div class="sec"><span class="lbl">★ Эксклюзив админа</span><div class="chips"><button class="chip ${a.vipSuit?'on':''}" data-vip="vipSuit">🤵 Смокинг</button><button class="chip ${a.vipShades?'on':''}" data-vip="vipShades">🕶 Солнечные очки</button></div></div>`:''}`
     };
-    const TABS=[['body','Тело'],['face','Лицо'],['hair','Волосы'],['wear','Одежда'],['acc','Шапки']];
+    const TABS=[['body','Тело'],['face','Лицо'],['hair','Волосы'],['wear','Одежда'],['acc','Аксессуары']];
     el.innerHTML=`<div class="topbar"><button class="logo" id="avHome">${LOGO}<span>Inblox</span></button><span class="muted">Аватар</span><span class="sp"></span><button class="btn" id="avRnd">Случайный</button><button class="btn pri" id="avDone">Готово</button></div>
     <aside class="apanel">
       <div class="atabs">${TABS.map(([v,n])=>`<button class="tab ${ui.tab===v?'on':''}" data-atab="${v}">${n}</button>`).join('')}</div>
@@ -2919,7 +2991,7 @@ const AvS={
     $$('[data-tf]',el).forEach(inp=>inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; const u=await imgToTex(f); if(!u){ toast('Не удалось прочитать картинку'); return; } this.set(inp.dataset.tf,u); toast('Текстура применена'); });
     $$('[data-texx]',el).forEach(b=>b.onclick=()=>{ delete S.avatar[b.dataset.texx]; saveAvatar(); this.rebuild(); this.mount(true); });
     $('#avHome').onclick=$('#avDone').onclick=()=>{ go('home'); Home.render(); };
-    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0],outfit:Math.random()<.5?r(OUTFITS)[0]:'none',outfitColor:r(CLOTHES)}); delete S.avatar.shirtTex; delete S.avatar.pantsTex; delete S.avatar.outfitTex; saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
+    $('#avRnd').onclick=()=>{ const r=a=>a[Math.floor(Math.random()*a.length)]; Object.assign(S.avatar,{skin:r(SKINS),shirt:r(CLOTHES),pants:r(CLOTHES),hat:r(HATS)[0],hatColor:r(CLOTHES),glasses:Math.random()<.3?r(GLASSES)[0]:'none',neck:Math.random()<.3?r(NECKS)[0]:'none',back:Math.random()<.3?r(BACKS)[0]:'none',accColor:r(CLOTHES),face:r(FACES)[0],head:r(HEADS)[0],build:r(BUILDS)[0],hair:r(HAIRS)[0],hairColor:r(HAIR_COLORS),emblem:r(EMBLEMS)[0],outfit:Math.random()<.5?r(OUTFITS)[0]:'none',outfitColor:r(CLOTHES)}); delete S.avatar.shirtTex; delete S.avatar.pantsTex; delete S.avatar.outfitTex; saveAvatar(); this.rebuild(); this.mount(); Snd.play('b:click'); };
     if(sc) $('.apanel',el).scrollTop=sc;
   },
   pd(e){ this.drag=e.clientX; this.auto=false; canvas.setPointerCapture(e.pointerId); },
