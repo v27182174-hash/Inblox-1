@@ -96,6 +96,8 @@ async function ensureSchema(db){
       db.prepare('CREATE TABLE IF NOT EXISTS pub_snd(pub TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(pub,id))'),
       db.prepare('CREATE TABLE IF NOT EXISTS pub_snd_chunk(pub TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(pub,id,i))'),
       db.prepare('CREATE TABLE IF NOT EXISTS pwreset(token TEXT PRIMARY KEY,user_id TEXT NOT NULL,exp INTEGER NOT NULL)'),
+      db.prepare('CREATE TABLE IF NOT EXISTS models(id TEXT PRIMARY KEY,owner TEXT NOT NULL,name TEXT NOT NULL,descr TEXT NOT NULL DEFAULT \'\',json TEXT NOT NULL,pub INTEGER NOT NULL DEFAULT 1,n INTEGER NOT NULL DEFAULT 0,uses INTEGER NOT NULL DEFAULT 0,ts INTEGER NOT NULL)'),
+      db.prepare('CREATE INDEX IF NOT EXISTS models_pub ON models(pub,uses)'),
       db.prepare('CREATE TABLE IF NOT EXISTS pcomment(id INTEGER PRIMARY KEY AUTOINCREMENT,pub TEXT NOT NULL,user_id TEXT NOT NULL,name TEXT NOT NULL,text TEXT NOT NULL,ts INTEGER NOT NULL)'),
       db.prepare('CREATE INDEX IF NOT EXISTS pcomment_pub ON pcomment(pub,id)')
     ]);
@@ -359,6 +361,40 @@ async function api(req,env,url){
   }
 
   /* ---- профили ---- */
+  /* каталог моделей: наборы блоков, которые можно вставлять в любые игры */
+  if(seg[0]==='models'){
+    const num=(v,l)=>{ v=+v; return Number.isFinite(v)?Math.max(-l,Math.min(l,Math.round(v*1000)/1000)):0; };
+    const MT=new Set(['solid','kill','bounce','checkpoint','goal','coin','decor']);
+    const san=a=>{ const out=[]; for(const p of a.slice(0,200)){ if(!p||typeof p!=='object'||!MT.has(String(p.type))) continue;
+      const o={shape:/^[a-z0-9]{2,12}$/.test(String(p.shape))?p.shape:'box',type:p.type,x:num(p.x,2000),y:num(p.y,2000),z:num(p.z,2000),sx:Math.max(.1,Math.abs(num(p.sx,500))||1),sy:Math.max(.1,Math.abs(num(p.sy,500))||1),sz:Math.max(.1,Math.abs(num(p.sz,500))||1),ry:num(p.ry,360),color:/^#[0-9a-fA-F]{6}$/.test(String(p.color))?p.color:'#9aa0aa'};
+      if(typeof p.tex==='string'&&/^[a-z0-9_]{1,20}$/.test(p.tex)) o.tex=p.tex;
+      if(p.mv&&['x','y','z'].includes(p.mv.axis)) o.mv={axis:p.mv.axis,dist:Math.abs(num(p.mv.dist,100)),speed:Math.abs(num(p.mv.speed,20))};
+      if(typeof p.gid==='string'&&/^[\w-]{1,24}$/.test(p.gid)) o.gid=p.gid;
+      out.push(o); } return out; };
+    if(seg.length===1&&m==='GET'){
+      const q=String(url.searchParams.get('q')||'').toLowerCase().replace(/[%_\\]/g,'').trim().slice(0,30), mine=url.searchParams.get('mine')==='1';
+      const rs=(await db.prepare('SELECT d.id,d.name,d.descr,d.owner,d.pub,d.n,d.uses,d.ts,x.name author FROM models d JOIN users x ON x.id=d.owner WHERE '+(mine?'d.owner=? AND':'d.pub=1 AND')+' LOWER(d.name) LIKE ? ORDER BY d.uses DESC,d.ts DESC LIMIT 60').bind(...(mine?[u.id]:[]),`%${q}%`).all()).results||[];
+      return J({items:rs.map(r=>({id:r.id,name:r.name,desc:r.descr,authorId:r.owner,authorName:r.author,pub:!!r.pub,n:r.n,uses:r.uses,ts:r.ts}))});
+    }
+    if(seg.length===1&&m==='POST'){
+      if(!await throttle(db,'md:'+u.id,20,3600000)) return err('Слишком много моделей за час, попробуйте позже',429);
+      const b=await body()||{}, name=cleanText(b.name,40), desc=cleanText(b.desc,200); if(!name) return err('Введите название модели');
+      if(!Array.isArray(b.parts)) return err('Неверные данные модели'); const parts=san(b.parts); if(!parts.length) return err('В модели нет подходящих объектов'); const js=JSON.stringify(parts); if(js.length>150000) return err('Модель слишком большая',413);
+      const cnt=await db.prepare('SELECT COUNT(*) c FROM models WHERE owner=?').bind(u.id).first(); if(cnt.c>=60) return err('Не больше 60 моделей на аккаунт — удалите ненужные');
+      const id=rnd(8); await db.prepare('INSERT INTO models(id,owner,name,descr,json,pub,n,uses,ts) VALUES(?,?,?,?,?,?,?,0,?)').bind(id,u.id,name,desc,js,b.pub===false?0:1,parts.length,Date.now()).run();
+      return J({ok:1,id});
+    }
+    const mid=seg[1]; if(!ID_RE.test(mid||'')) return err('Модель не найдена',404);
+    const r=await db.prepare('SELECT d.*,x.name author FROM models d JOIN users x ON x.id=d.owner WHERE d.id=?').bind(mid).first(); if(!r) return err('Модель не найдена',404);
+    const mineM=r.owner===u.id;
+    if(seg.length===2&&m==='GET'){ if(!r.pub&&!mineM&&u.role!=='admin') return err('Нет доступа',403); return J({model:{id:r.id,name:r.name,desc:r.descr,authorName:r.author,pub:!!r.pub,n:r.n,parts:parse(r.json)||[]}}); }
+    if(seg.length===3&&seg[2]==='use'&&m==='POST'){ if(!r.pub&&!mineM) return err('Нет доступа',403); await db.prepare('UPDATE models SET uses=uses+1 WHERE id=?').bind(mid).run(); return J({ok:1}); }
+    if(seg.length===2&&m==='PATCH'){ if(!mineM) return err('Нет доступа',403); const b=await body()||{};
+      const name=b.name!==undefined?cleanText(b.name,40):r.name, desc=b.desc!==undefined?cleanText(b.desc,200):r.descr, pub=b.pub!==undefined?(b.pub?1:0):r.pub; if(!name) return err('Введите название');
+      await db.prepare('UPDATE models SET name=?,descr=?,pub=? WHERE id=?').bind(name,desc,pub,mid).run(); return J({ok:1}); }
+    if(seg.length===2&&m==='DELETE'){ if(!mineM&&u.role!=='admin') return err('Нет доступа',403); await db.prepare('DELETE FROM models WHERE id=?').bind(mid).run(); return J({ok:1}); }
+    return err('Не найдено',404);
+  }
   if(seg[0]==='profile'){
     if(seg.length===2&&m==='GET'){
       const id=seg[1]; if(!ID_RE.test(id)) return err('Неверный id');

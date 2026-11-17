@@ -445,6 +445,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-sha
 .pfpl{position:absolute;right:.5em;bottom:.5em;width:2em;height:2em;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(10,12,20,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font-size:.8em;cursor:pointer;opacity:0;transform:scale(.8);transition:opacity .18s,transform .18s}
 .pfc:hover .pfpl,.pfc:focus-visible .pfpl{opacity:1;transform:none}
 @media (pointer:coarse){.pfpl{opacity:1;transform:none}}
+.mdc{padding:.7em 0;border-bottom:1px solid rgba(255,255,255,.08)}.mdc:last-child{border-bottom:0}
+.mdt{display:flex;align-items:center;gap:.5em}.mdt b{font-family:var(--display);font-weight:700}
+.mdpv{font-size:.7em;padding:.1em .5em;border-radius:99px;border:1px solid rgba(255,255,255,.25);color:var(--muted)}
+.mdm{font-size:.82em;margin-top:.15em}.mdd{font-size:.9em;margin-top:.3em;color:#cfd2dc}
 /* карточки лиц */
 .lnk{background:none;border:0;padding:0;color:#8ec2ff;cursor:pointer;font:inherit;font-size:.9em;text-decoration:underline;text-underline-offset:3px}.lnk:hover{color:#fff}
 .fgrid{gap:.55em}
@@ -2654,7 +2658,7 @@ const Ed={
       <button class="btn" id="edSave">Сохранить</button><button class="btn pri" id="edTest">▶ Тест</button>
     </div>
     <aside class="tools" id="edTools"><div class="row" style="padding:.2em .2em 0 .5em"><span class="lbl" style="margin:0">Добавить</span><button class="pclose" id="edToolsX" aria-label="Скрыть панель">✕</button></div>${KINDS.map((k,i)=>`<button class="tool" data-k="${i}"><i class="${k.shape==='box'?'':k.shape}" style="background:${k.c}"></i>${k.n}</button>`).join('')}</aside>
-    <aside class="rpanel"><nav class="tabs"><button class="tab" data-t="props">Свойства</button><button class="tab" data-t="game">Игра</button><button class="tab" data-t="sound">Звуки</button><button class="tab" data-t="gui">GUI</button><button class="tab" data-t="script">Python</button><button class="pclose" id="edPanelX" aria-label="Скрыть панель">✕</button></nav><div id="edBody"></div></aside>
+    <aside class="rpanel"><nav class="tabs"><button class="tab" data-t="props">Свойства</button><button class="tab" data-t="models">Модели</button><button class="tab" data-t="game">Игра</button><button class="tab" data-t="sound">Звуки</button><button class="tab" data-t="gui">GUI</button><button class="tab" data-t="script">Python</button><button class="pclose" id="edPanelX" aria-label="Скрыть панель">✕</button></nav><div id="edBody"></div></aside>
     <div class="stat" id="edStat"></div>
     <button class="btn sm popen l" id="edToolsO" hidden>＋ Блоки</button><button class="btn sm popen r" id="edPanelO" hidden>⚙ Параметры</button>
     <div class="hint">ЛКМ — выбрать и двигать · Shift+ЛКМ или жёлтые стрелки — по высоте · ПКМ — вращать камеру · Колесо — зум · WASD — камера · Del — удалить · Ctrl+D — копия · R — повернуть</div>
@@ -2693,6 +2697,7 @@ const Ed={
     this.mvh=[1,-1].map(sg=>{ const m=new THREE.Mesh(new THREE.ConeGeometry(.5,1,18),new THREE.MeshBasicMaterial({color:0xffd23d,depthTest:false,transparent:true,opacity:.95})); m.renderOrder=1001; m.visible=false; m.userData.mv=sg; if(sg<0) m.rotation.x=Math.PI; this.handles.add(m); return m; });
     const lm=new THREE.LineBasicMaterial({color:0x59a8ff,depthTest:false}); this.oB=new THREE.LineSegments(EBOX,lm); this.oC=new THREE.LineSegments(ECYL,lm);
     [this.oB,this.oC].forEach(o=>{ o.renderOrder=999; o.visible=false; this.world.scene.add(o); });
+    this.mo=[]; this.moM=new THREE.LineBasicMaterial({color:0xffa63d,depthTest:false});
     if(this.sel&&!this.part()) this.sel=null;
   },
   leave(){ if(this.pyw){ try{ this.pyw.terminate(); }catch(e){} this.pyw=null; this.pyP=null; } this.stopMusicPreview(); if(this.world){ this.world.dispose(); this.world=null; } go('home'); Home.render(); },
@@ -2757,14 +2762,75 @@ const Ed={
     this.game.parts.push(p); this.world.add(p); this.select(p.id); Snd.play('b:click');
   },
   select(id){ this.sel=id; if(this.tab!=='props'&&id) this.tab='props'; this.renderBody(); },
-  del(){ const p=this.part(); if(!p) return; this.pushUndo(); this.game.parts=this.game.parts.filter(x=>x!==p); this.world.remove(p.id); this.sel=null; this.renderBody(); },
-  dup(){ const p=this.part(); if(!p) return; this.pushUndo(); const c=clone(p); c.id=uid(); c.x+=this.snapV||1; c.z+=this.snapV||1; this.game.parts.push(c); this.world.add(c); this.select(c.id); },
-  rot(){ const p=this.part(); if(!p) return; this.pushUndo(); p.ry=(p.ry+90)%360; this.world.xform(p); this.fillProps(); },
+  grp(p){ return p.gid?this.game.parts.filter(q=>q.gid===p.gid):[p]; },
+  del(){ const p=this.part(); if(!p) return; this.pushUndo(); const gs=this.grp(p); this.game.parts=this.game.parts.filter(x=>!gs.includes(x)); gs.forEach(q=>this.world.remove(q.id)); this.sel=null; this.renderBody(); },
+  /* --- группы и выбор нескольких объектов --- */
+  groupMake(ids){ const ps=this.game.parts.filter(p=>ids.has(p.id)); if(ps.length<2){ toast('Выберите хотя бы два объекта'); return; } this.pushUndo(); const g=uid(); ps.forEach(p=>p.gid=g); this.multi=null; this.dirty=true; this.select(ps[0].id); toast('Сгруппировано: '+ps.length+' объектов'); },
+  ungroup(){ const p=this.part(); if(!p||!p.gid) return; this.pushUndo(); this.grp(p).forEach(q=>{ delete q.gid; }); this.renderBody(); toast('Группа разобрана'); },
+  renderMulti(el){
+    const n=this.multi.ids.size;
+    el.innerHTML=`<div class="sec"><span class="lbl">Выбор нескольких объектов</span><p class="muted" style="margin:0 0 .7em">Нажимайте на объекты на сцене — они подсветятся оранжевым (повторный клик снимает выбор). Выбрано: <b style="color:var(--fg)">${n}</b>.</p>
+      <div class="row" style="flex-wrap:wrap;gap:.5em"><button class="btn sm pri" id="mG" ${n<2?'disabled':''}>Сгруппировать</button><button class="btn sm" id="mM" ${n<1?'disabled':''}>Сохранить как модель</button><button class="btn sm" id="mX">Готово</button></div></div>`;
+    $('#mG').onclick=()=>this.groupMake(this.multi.ids); $('#mX').onclick=()=>{ this.multi=null; this.renderBody(); };
+    $('#mM').onclick=()=>{ this.msave={ids:[...this.multi.ids]}; this.multi=null; this.tab='models'; this.renderBody(); };
+  },
+  /* --- модели --- */
+  modelFrom(ids){
+    const ps=this.game.parts.filter(p=>ids.includes(p.id)&&p.type!=='spawn'&&p.type!=='npc'); if(!ps.length) return null;
+    let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9,y0=1e9; const hh=p=>(p.type==='coin'?p.sx:p.sy)/2;
+    for(const p of ps){ const r=Math.hypot(p.sx,p.sz)/2; x0=Math.min(x0,p.x-r); x1=Math.max(x1,p.x+r); z0=Math.min(z0,p.z-r); z1=Math.max(z1,p.z+r); y0=Math.min(y0,p.y-hh(p)); }
+    const cx=(x0+x1)/2, cz=(z0+z1)/2;
+    return ps.map(p=>{ const o=clone(p); delete o.id; delete o.name; delete o.img; delete o.imgFace; delete o.npc; o.x=+(p.x-cx).toFixed(3); o.z=+(p.z-cz).toFixed(3); o.y=+(p.y-y0).toFixed(3); return o; });
+  },
+  insertModel(m){
+    const ps=Array.isArray(m.parts)?m.parts.slice(0,200):[]; if(!ps.length) return; this.pushUndo();
+    const gid=ps.length>1?uid():null, tx=this.snap(this.orb.t.x), tz=this.snap(this.orb.t.z), made=[], n=v=>Number.isFinite(+v)?+v:0, sz=v=>Math.min(500,Math.max(.1,Math.abs(n(v))||1));
+    for(const q of ps){ if(!q||!TYPES[q.type]||q.type==='npc'||q.type==='spawn') continue; const shape=SHAPES.some(x=>x[0]===q.shape)?q.shape:'box', col=/^#[0-9a-fA-F]{6}$/.test(q.color)?q.color:'#9aa0aa';
+      const p=mk(shape,q.type,tx+n(q.x),n(q.y),tz+n(q.z),sz(q.sx),sz(q.sy),sz(q.sz),col,n(q.ry));
+      if(typeof q.tex==='string'&&BTEXS.some(b=>b[0]===q.tex)) p.tex=q.tex;
+      if(q.mv&&['x','y','z'].includes(q.mv.axis)) p.mv={axis:q.mv.axis,dist:Math.abs(n(q.mv.dist)),speed:Math.abs(n(q.mv.speed))};
+      if(gid) p.gid=gid; made.push(p); }
+    if(!made.length){ toast('В модели нет подходящих объектов'); return; }
+    for(const p of made){ this.game.parts.push(p); this.world.add(p); }
+    this.multi=null; this.tab='props'; this.select(made[0].id); toast('Модель добавлена: '+made.length+' объектов'+(gid?' (в группе)':''));
+  },
+  async renderModels(el){
+    const st=this.mdl||(this.mdl={tab:'cat',q:''}), ms=this.msave;
+    el.innerHTML=`${ms?`<div class="sec"><span class="lbl">Новая модель · объектов: ${ms.ids.length}</span>
+        <input type="text" id="mdName" maxlength="40" placeholder="Название модели" style="width:100%;margin-bottom:.5em"><textarea id="mdDesc" maxlength="200" rows="2" placeholder="Короткое описание (необязательно)" style="width:100%;resize:vertical"></textarea>
+        <label class="row" style="justify-content:flex-start;margin-top:.4em"><input type="checkbox" id="mdPub" checked style="flex:none"><span style="flex:none">Опубликовать в каталоге (видят все игроки)</span></label>
+        <div class="row" style="margin-top:.6em"><button class="btn sm pri" id="mdSave">Сохранить модель</button><button class="btn sm" id="mdCancel">Отмена</button></div></div>`:''}
+      <div class="sec"><div class="chips"><button class="chip ${st.tab==='cat'?'on':''}" data-mt="cat">Каталог</button><button class="chip ${st.tab==='mine'?'on':''}" data-mt="mine">Мои модели</button></div>
+        <input type="text" id="mdQ" placeholder="Поиск по названию…" value="${esc(st.q)}" style="width:100%;margin-top:.5em"></div>
+      <div class="sec" id="mdList"><span class="muted">Загрузка…</span></div>
+      <div class="sec"><span class="lbl">Свои модели</span><p class="muted" style="margin:0 0 .6em;font-size:.9em">Соберите объект из блоков, выберите их («Выбрать несколько») или сгруппируйте — и сохраните как модель. Её можно оставить личной или опубликовать в каталоге.</p><button class="btn sm" id="mdNew">☑ Выбрать объекты для модели</button></div>`;
+    $$('[data-mt]',el).forEach(b=>b.onclick=()=>{ st.tab=b.dataset.mt; this.renderModels(el); });
+    $('#mdQ').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter'){ st.q=e.target.value.trim(); this.renderModels(el); } };
+    $('#mdNew').onclick=()=>{ this.multi={ids:new Set()}; this.sel=null; this.tab='props'; this.renderBody(); };
+    if(ms){ $('#mdCancel').onclick=()=>{ this.msave=null; this.renderModels(el); };
+      $('#mdSave').onclick=async()=>{ const name=$('#mdName').value.trim(); if(!name){ toast('Введите название'); return; } const parts=this.modelFrom(ms.ids); if(!parts){ toast('Нет подходящих объектов (старт и NPC в модели не входят)'); return; }
+        const r=await Api.call('POST','models',{name,desc:$('#mdDesc').value.trim(),pub:$('#mdPub').checked,parts}); if(!r.ok){ toast(r.error); return; } toast('Модель сохранена'); this.msave=null; st.tab='mine'; this.renderModels(el); }; }
+    const r=await Api.call('GET','models?'+(st.tab==='mine'?'mine=1&':'')+'q='+encodeURIComponent(st.q)), box=$('#mdList'); if(!box||this.tab!=='models') return;
+    const list=r.ok&&Array.isArray(r.d.items)?r.d.items:[]; if(!r.ok){ box.innerHTML='<span class="muted">'+esc(r.error||'Не удалось загрузить')+'</span>'; return; }
+    const mine=id=>st.tab==='mine';
+    box.innerHTML=list.length?list.map(m=>`<div class="mdc"><div class="mdt"><b>${esc(m.name)}</b>${st.tab==='mine'&&!m.pub?'<span class="mdpv">личная</span>':''}</div><div class="muted mdm">${esc(m.authorName)} · ${m.n} объектов · добавлена ${m.uses} раз</div>${m.desc?`<div class="mdd">${esc(m.desc)}</div>`:''}
+      <div class="row" style="margin-top:.5em;gap:.4em;flex-wrap:wrap"><button class="btn sm pri" data-ma="${m.id}">Добавить в игру</button>${st.tab==='mine'||Acc.cur.role==='admin'?`${st.tab==='mine'?`<button class="btn sm" data-mp="${m.id}" data-pub="${m.pub?1:0}">${m.pub?'Скрыть':'Опубликовать'}</button>`:''}<button class="btn sm danger" data-md="${m.id}">Удалить</button>`:''}</div></div>`).join(''):`<span class="muted">${st.tab==='mine'?'У вас пока нет моделей.':'Каталог пока пуст — опубликуйте первую модель!'}</span>`;
+    $$('[data-ma]',box).forEach(b=>b.onclick=async()=>{ b.disabled=true; const x=await Api.call('GET','models/'+b.dataset.ma); b.disabled=false; if(!x.ok){ toast(x.error); return; } this.insertModel(x.d.model); Api.call('POST','models/'+b.dataset.ma+'/use',{}); });
+    $$('[data-mp]',box).forEach(b=>b.onclick=async()=>{ const x=await Api.call('PATCH','models/'+b.dataset.mp,{pub:b.dataset.pub!=='1'}); toast(x.ok?'Готово':x.error); this.renderModels(el); });
+    $$('[data-md]',box).forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить модель из каталога? Блоки, уже добавленные в игры, останутся.')) return; const x=await Api.call('DELETE','models/'+b.dataset.md); toast(x.ok?'Модель удалена':x.error); this.renderModels(el); });
+  },
+  dup(){ const p=this.part(); if(!p) return; this.pushUndo(); const gs=this.grp(p), ng=p.gid?uid():null, off=this.snapV||1; let first=null; for(const q of gs){ const c=clone(q); c.id=uid(); c.x+=off; c.z+=off; if(ng) c.gid=ng; this.game.parts.push(c); this.world.add(c); if(q===p) first=c; } this.select((first||this.game.parts[this.game.parts.length-1]).id); },
+  rot(){
+    const p=this.part(); if(!p) return; this.pushUndo(); const gs=this.grp(p);
+    if(gs.length>1){ let cx=0,cz=0; gs.forEach(q=>{ cx+=q.x; cz+=q.z; }); cx/=gs.length; cz/=gs.length; for(const q of gs){ const rx=q.x-cx, rz=q.z-cz; q.x=this.snap(cx+rz); q.z=this.snap(cz-rx); q.ry=(q.ry+90)%360; this.world.xform(q); } }
+    else{ p.ry=(p.ry+90)%360; this.world.xform(p); }
+    this.fillProps();
+  },
   /* --- панели --- */
   renderBody(){
     $$('#editor .tab').forEach(b=>b.classList.toggle('on',b.dataset.t===this.tab));
     const el=$('#edBody'); if(!el) return;
-    if(this.tab==='props') this.renderProps(el); else if(this.tab==='game') this.renderGame(el); else if(this.tab==='script') this.renderScript(el); else if(this.tab==='gui') this.renderGui(el); else this.renderSound(el);
+    if(this.tab==='props') this.renderProps(el); else if(this.tab==='models') this.renderModels(el); else if(this.tab==='game') this.renderGame(el); else if(this.tab==='script') this.renderScript(el); else if(this.tab==='gui') this.renderGui(el); else this.renderSound(el);
     this.guiShow();
     $('#edStat').textContent=this.game.parts.length+' объектов';
   },
@@ -2866,6 +2932,7 @@ const Ed={
     $$('[data-gz]',el).forEach(b=>b.onclick=()=>{ const i=arr.findIndex(e=>e.id===this.guiSelId), j=i+(+b.dataset.gz); if(i<0||j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; this.dirty=true; this.renderBody(); });
   },
   renderProps(el){
+    if(this.multi) return this.renderMulti(el);
     const p=this.part();
     if(!p){ el.innerHTML=`<div class="sec"><p class="muted" style="margin:0">Выберите объект на сцене или добавьте новый слева. Тяните за цветные ручки на гранях, чтобы менять размер.</p></div>
       <div class="sec"><span class="lbl">Типы объектов</span><p class="muted" style="margin:0;font-size:.9em">Лава убивает, батут подбрасывает, чекпоинт запоминает место, финиш завершает игру, монеты можно собирать. «Старт» — точка появления.</p></div>`; return; }
@@ -2883,7 +2950,11 @@ const Ed={
       ${p.type==='npc'?`<span class="lbl" style="margin-top:.8em">Рост (масштаб)</span><div class="g3">${num('sy','Высота',.2)}</div>`:`<span class="lbl" style="margin-top:.8em">Размер</span><div class="g3">${num('sx','X')}${num('sy','Y')}${num('sz','Z')}</div>`}
       <span class="lbl" style="margin-top:.8em">Поворот (°)</span><div class="g3">${num('ry','Y',15)}</div></div>
     <div class="sec"><span class="lbl">Движение</span><div class="g3"><label><span>Ось</span><select data-k="mvaxis"><option value="">Нет</option><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>${num('mvdist','Размах',1)}${num('mvspeed','Скорость',.2)}</div></div>
-    <div class="sec row"><button class="btn sm" id="pDup">Копия</button><button class="btn sm" id="pRot">Повернуть</button><button class="btn sm danger" id="pDel">Удалить</button></div>`;
+    <div class="sec"><span class="lbl">Группа и модель</span>${p.gid?`<p class="muted" style="margin:0 0 .5em;font-size:.9em">В группе ${this.grp(p).length} объектов: они двигаются, поворачиваются, копируются и удаляются вместе.</p><div class="chips"><button class="chip" id="pUng">Разгруппировать</button><button class="chip" id="pGM">Сохранить как модель</button></div>`:`<div class="chips"><button class="chip" id="pMulti">☑ Выбрать несколько</button><button class="chip" id="pGM">Сохранить как модель</button></div>`}</div>
+    <div class="sec row"><button class="btn sm" id="pDup">Копия</button><button class="btn sm" id="pRot">Повернуть</button><button class="btn sm danger" id="pDel">${p.gid?'Удалить группу':'Удалить'}</button></div>`;
+    if($('#pUng')) $('#pUng').onclick=()=>this.ungroup();
+    if($('#pMulti')) $('#pMulti').onclick=()=>{ this.multi={ids:new Set([p.id])}; this.sel=null; this.renderBody(); };
+    $('#pGM').onclick=()=>{ this.msave={ids:this.grp(p).map(q=>q.id)}; this.tab='models'; this.renderBody(); };
     $$('[data-k]',el).forEach(i=>{
       i.addEventListener('focus',()=>this.pushUndo());
       i.addEventListener('input',()=>this.setProp(i.dataset.k,i.type==='number'?parseFloat(i.value):i.value));
@@ -3025,6 +3096,7 @@ const Ed={
     if(e.button===1||(e.button===2&&e.shiftKey)){ this.drag={k:'pan',...d}; return; }
     if(e.button===2){ this.drag={k:'orbit',...d}; return; }
     const rc=this.ray(e);
+    if(this.multi){ const h=rc.intersectObjects([...this.world.items.values()].map(i=>i.mesh),false)[0]; if(h){ const id=h.object.userData.pid, ids=this.multi.ids; if(ids.has(id)) ids.delete(id); else ids.add(id); this.renderBody(); } else this.drag={k:this.fly.on?'look':'orbit',...d}; return; }
     if(this.sel){ const va=rc.intersectObjects(this.mvh.filter(h=>h.visible),false)[0]; if(va){ this.startMove(rc,true); return; } const hh=rc.intersectObjects(this.hl.filter(h=>h.visible),false)[0]; if(hh){ this.startResize(hh.object.userData.handle,rc); return; } }
     const hit=rc.intersectObjects([...this.world.items.values()].map(i=>i.mesh),false)[0];
     if(hit){ const id=hit.object.userData.pid; if(this.sel!==id) this.select(id); this.startMove(rc,e.shiftKey||this.vmode); }
@@ -3048,8 +3120,8 @@ const Ed={
     if(d.k==='pan'){ const sc=o.dist*.0016, cs=Math.cos(o.yaw), sn=Math.sin(o.yaw); const dx=e.clientX-d.x, dy=e.clientY-d.y;
       o.t.x+=(-cs*dx+sn*dy)*sc; o.t.z+=(sn*dx+cs*dy)*sc; d.x=e.clientX; d.y=e.clientY; return; }
     const p=this.part(); if(!p) return; const rc=this.ray(e), hit=new THREE.Vector3();
-    if(d.k==='move'){ if(!rc.ray.intersectPlane(d.pl,hit)) return; p.x=this.snap(hit.x+d.ox); p.z=this.snap(hit.z+d.oz); }
-    else if(d.k==='vert'){ if(!rc.ray.intersectPlane(d.pl,hit)) return; p.y=this.snap(hit.y+d.off); }
+    if(d.k==='move'){ if(!rc.ray.intersectPlane(d.pl,hit)) return; const nx=this.snap(hit.x+d.ox), nz=this.snap(hit.z+d.oz), dx=nx-p.x, dz=nz-p.z; if(p.gid&&(dx||dz)) for(const q of this.grp(p)) if(q!==p){ q.x+=dx; q.z+=dz; this.world.xform(q); } p.x=nx; p.z=nz; }
+    else if(d.k==='vert'){ if(!rc.ray.intersectPlane(d.pl,hit)) return; const ny=this.snap(hit.y+d.off), dy=ny-p.y; if(p.gid&&dy) for(const q of this.grp(p)) if(q!==p){ q.y+=dy; this.world.xform(q); } p.y=ny; }
     else if(d.k==='size'){
       const t=this.lineT(d.p0,d.u,rc.ray); let ns=Math.max(.2,this.snapV?Math.round((d.s0+(t-d.t0))/this.snapV)*this.snapV:d.s0+(t-d.t0)); if(ns<.2) ns=.2;
       const act=ns-d.s0; p[d.key]=ns; const c=d.c0.clone().add(d.u.clone().multiplyScalar(act/2)); p.x=c.x; p.y=c.y; p.z=c.z;
@@ -3071,7 +3143,7 @@ const Ed={
     if(ctrl) return;
     const p=this.part(), st=this.snapV||1;
     if(p&&(e.code==='Delete'||e.code==='Backspace')){ e.preventDefault(); this.del(); return; }
-    if(e.code==='Escape'){ this.sel=null; this.renderBody(); return; }
+    if(e.code==='Escape'){ this.sel=null; this.multi=null; this.renderBody(); return; }
     if(e.code==='KeyR'&&p){ this.rot(); return; }
     if(e.code==='KeyF'&&p){ if(this.fly.on) this.goTo('sel'); else this.orb.t.set(p.x,p.y,p.z); return; }
     if(p&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','PageUp','PageDown'].includes(e.code)){
@@ -3098,6 +3170,9 @@ const Ed={
       orbitPlace(this.cam,o); this.world.follow(o.t);
     }
     const p=this.part();
+    { const hs=this.multi?[...this.multi.ids].map(id=>this.game.parts.find(q=>q.id===id)).filter(Boolean):(p&&p.gid?this.grp(p):[]);
+      this.mo.forEach(o=>o.visible=false);
+      hs.forEach((q,i)=>{ let o=this.mo[i]; if(!o){ o=new THREE.LineSegments(EBOX,this.moM); o.renderOrder=998; this.world.scene.add(o); this.mo[i]=o; } o.visible=true; o.position.set(q.x,q.y,q.z); o.rotation.y=q.type==='coin'?0:q.ry*DEG; if(q.type==='coin') o.scale.set(q.sx*1.1,q.sx*1.1,q.sx*.3); else o.scale.set(q.sx*1.04,q.sy*1.04,q.sz*1.04); }); }
     this.oB.visible=this.oC.visible=false; this.hl.forEach(h=>h.visible=false); this.mvh.forEach(h=>h.visible=false);
     if(p){
       const coin=p.type==='coin', ol=!coin&&ROUND.has(p.shape)?this.oC:this.oB; ol.visible=true; ol.position.set(p.x,p.y,p.z);
