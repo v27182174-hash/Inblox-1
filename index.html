@@ -446,6 +446,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-sha
 .pfc:hover .pfpl,.pfc:focus-visible .pfpl{opacity:1;transform:none}
 @media (pointer:coarse){.pfpl{opacity:1;transform:none}}
 /* карточки лиц */
+.lnk{background:none;border:0;padding:0;color:#8ec2ff;cursor:pointer;font:inherit;font-size:.9em;text-decoration:underline;text-underline-offset:3px}.lnk:hover{color:#fff}
 .fgrid{gap:.55em}
 .fcell{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.45em .4em .4em;gap:.4em;transition:transform .15s,border-color .15s,background .15s,box-shadow .15s}
 .fcell i{border-radius:26%;box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.1)}
@@ -3295,9 +3296,10 @@ const Admin={tab:'users',q:'',
     if(!r.ok){ el.innerHTML='<p class="muted">'+esc(r.error)+'</p>'; return; }
     const now=Date.now();
     el.innerHTML=`<input type="text" id="adQ" placeholder="Поиск по имени (Enter)" value="${esc(this.q)}" style="width:100%;margin-bottom:.7em">`+(r.d.users.map(u=>{ const b=u.ban_until>now;
-      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">${u.ban_name?'Бан за ник (до смены)':'Бан'+banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span><button class="btn sm" data-pr="${u.id}">Профиль</button>${u.role==='admin'?'':`<button class="btn sm" data-rn="${u.id}" data-nm="${esc(u.name)}">Ник</button>`}${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
+      return `<div class="row" style="padding:.45em 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:9em"><b>${esc(u.name)}</b>${u.role==='admin'?' · админ':''} <span class="muted" style="font-size:.85em">игр: ${u.gn}</span>${b?`<br><span style="color:var(--danger);font-size:.85em">${u.ban_name?'Бан за ник (до смены)':'Бан'+banUntil(u.ban_until)}${u.ban_reason?': '+esc(u.ban_reason):''}</span>`:''}</span><button class="btn sm" data-pr="${u.id}">Профиль</button>${u.role==='admin'?'':`<button class="btn sm" data-rn="${u.id}" data-nm="${esc(u.name)}">Ник</button><button class="btn sm" data-rl="${u.id}" data-nm="${esc(u.name)}" title="Ссылка для сброса пароля">Пароль</button>`}${u.role==='admin'?'':(b?`<button class="btn sm" data-unban="${u.id}">Разбанить</button>`:`<button class="btn sm danger" data-ban="${u.id}" data-nm="${esc(u.name)}">Бан</button>`)}</div>`; }).join('')||'<p class="muted">Никого не найдено.</p>');
     $('#adQ').onkeydown=e=>{ if(e.key==='Enter'){ this.q=e.target.value.trim(); this.users(); } };
     $$('[data-pr]',el).forEach(b=>b.onclick=()=>Home.openProfile(b.dataset.pr));
+    $$('[data-rl]',el).forEach(b=>b.onclick=async()=>{ const x=await Api.call('POST','admin/reset-link',{userId:b.dataset.rl}); if(!x.ok){ toast(x.error); return; } const url=location.origin+location.pathname+'#reset='+x.d.token; let ok=false; try{ await navigator.clipboard.writeText(url); ok=true; }catch(e){} toast(ok?'Ссылка скопирована':'Ссылка создана'); prompt('Ссылка для сброса пароля «'+b.dataset.nm+'» (одноразовая, 24 часа). Отправьте её игроку:',url); });
     $$('[data-rn]',el).forEach(b=>b.onclick=async()=>{ const n=prompt('Новый ник для «'+b.dataset.nm+'»',b.dataset.nm); if(n===null) return; const x=await Api.call('POST','admin/rename',{userId:b.dataset.rn,name:n.trim()}); toast(x.ok?'Ник изменён':x.error); this.users(); });
     $$('[data-ban]',el).forEach(b=>b.onclick=()=>this.banForm(b.dataset.ban,b.dataset.nm));
     $$('[data-unban]',el).forEach(b=>b.onclick=async()=>{ const x=await Api.call('POST','admin/unban',{userId:b.dataset.unban}); toast(x.ok?'Разбанен':x.error); this.users(); });
@@ -3577,12 +3579,32 @@ const Auth={tab:'login',err:'',busy:false,
       ${reg?'<div class="field"><span class="lbl">Повторите пароль</span><input type="password" id="aPw2" maxlength="64" autocomplete="new-password"></div>':''}
       <p id="aErr" style="color:var(--danger);margin:0 0 .8em;min-height:1.35em">${esc(this.err)}</p>
       <button class="btn pri" id="aGo" style="width:100%">${reg?'Создать аккаунт':'Войти'}</button>
+      ${reg?'':'<p style="margin:.7em 0 0;text-align:center"><button class="lnk" id="aForgot" type="button">Забыли пароль?</button></p><p class="muted" id="aForgotTx" hidden style="margin:.5em 0 0;font-size:.88em;text-align:center;line-height:1.4">Напишите администратору Inblox — он пришлёт вам личную ссылку для сброса пароля. Ссылка одноразовая и действует 24 часа.</p>'}
       <p class="muted cloudst" style="margin:.9em 0 0;font-size:.85em;text-align:center">${esc(Cloud.txt)}</p>
       <p class="muted" style="margin:.4em 0 0;font-size:.85em;text-align:center">Аккаунт, игры и аватар хранятся на сервере: войти можно с любого устройства.</p>
     </div></div>`;
     $('#aTL').onclick=()=>this.show('login'); $('#aTR').onclick=()=>this.show('reg'); $('#aGo').onclick=()=>this.submit();
+    if($('#aForgot')) $('#aForgot').onclick=()=>{ const t=$('#aForgotTx'); t.hidden=!t.hidden; };
     $$('input',el).forEach(i=>i.onkeydown=e=>{ if(e.key==='Enter') this.submit(); });
     if(!stage.classList.contains('istouch')) setTimeout(()=>{ const n=$('#aName'); if(n) n.focus(); },50);
+  },
+  /* экран нового пароля по ссылке из #reset=… */
+  async resetForm(token){
+    go('auth'); const el=$('#auth');
+    const shell=h=>{ el.innerHTML=`<div class="ov on" style="background:rgba(5,5,8,.55)"><div class="box" style="min-width:25em;text-align:left"><div style="display:flex;justify-content:center;margin-bottom:.8em"><span class="logo" style="cursor:default">${LOGO}<span>Inblox</span></span></div>${h}</div></div>`; };
+    const done=(name)=>{ history.replaceState(null,'',location.pathname+location.search); this.show('login'); if(name){ const n=$('#aName'); if(n) n.value=name; } };
+    shell('<p style="margin:0">Проверяем ссылку…</p>');
+    const c=await Api.call('POST','reset-check',{token});
+    if(!c.ok){ shell(`<h3 style="margin:0 0 .5em">Ссылка не работает</h3><p class="muted" style="margin:0 0 1em">${esc(c.error||'Ссылка недействительна или устарела')}. Попросите администратора выдать новую.</p><button class="btn pri" id="rsBack" style="width:100%">Ко входу</button>`); $('#rsBack').onclick=()=>done(); return; }
+    shell(`<h3 style="margin:0 0 .3em">Новый пароль</h3><p class="muted" style="margin:0 0 .9em">для игрока <b style="color:var(--fg)">${esc(c.d.name)}</b></p>
+      <div class="field"><span class="lbl">Новый пароль</span><input type="password" id="rsPw" maxlength="64" autocomplete="new-password"></div>
+      <div class="field"><span class="lbl">Повторите пароль</span><input type="password" id="rsPw2" maxlength="64" autocomplete="new-password"></div>
+      <p id="rsErr" style="color:var(--danger);margin:0 0 .8em;min-height:1.35em"></p>
+      <button class="btn pri" id="rsGo" style="width:100%">Сохранить пароль</button><button class="btn" id="rsBack" style="width:100%;margin-top:.5em">Отмена</button>`);
+    $('#rsBack').onclick=()=>done(c.d.name);
+    const go2=async()=>{ const a=$('#rsPw').value, b=$('#rsPw2').value, er=m=>{ $('#rsErr').textContent=m; }; if(a.length<4) return er('Пароль: минимум 4 символа'); if(a!==b) return er('Пароли не совпадают');
+      const x=await Api.call('POST','reset',{token,pw:a}); if(!x.ok) return er(x.error); toast('Пароль изменён — войдите с новым'); done(x.d.name); };
+    $('#rsGo').onclick=go2; $$('input',el).forEach(i=>i.onkeydown=e=>{ if(e.key==='Enter') go2(); }); $('#rsPw').focus();
   },
   /* экран смены ника при бане «за ник» */
   nickForm(oldName,pw,d){
@@ -3698,7 +3720,9 @@ function frame(now){
 }
 if(renderer){ try{ HomeBG.init(); }catch(err){ console.error(err); } }
 Fit.apply();
-if(Api.tok){
+const RST=(location.hash.match(/^#reset=([a-f0-9]{20,80})$/)||[])[1];
+if(RST){ Auth.resetForm(RST); hideBoot(); }
+else if(Api.tok){
   go('auth'); $('#auth').innerHTML='<div class="ov on" style="background:rgba(5,5,8,.55)"><div class="box"><p style="margin:0">Подключение к серверу…</p></div></div>';
   Api.call('GET','me').then(r=>{
     hideBoot();

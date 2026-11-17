@@ -95,6 +95,7 @@ async function ensureSchema(db){
       db.prepare('CREATE TABLE IF NOT EXISTS snd_chunk(owner TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(owner,id,i))'),
       db.prepare('CREATE TABLE IF NOT EXISTS pub_snd(pub TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL DEFAULT 0,n INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(pub,id))'),
       db.prepare('CREATE TABLE IF NOT EXISTS pub_snd_chunk(pub TEXT NOT NULL,id TEXT NOT NULL,i INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(pub,id,i))'),
+      db.prepare('CREATE TABLE IF NOT EXISTS pwreset(token TEXT PRIMARY KEY,user_id TEXT NOT NULL,exp INTEGER NOT NULL)'),
       db.prepare('CREATE TABLE IF NOT EXISTS pcomment(id INTEGER PRIMARY KEY AUTOINCREMENT,pub TEXT NOT NULL,user_id TEXT NOT NULL,name TEXT NOT NULL,text TEXT NOT NULL,ts INTEGER NOT NULL)'),
       db.prepare('CREATE INDEX IF NOT EXISTS pcomment_pub ON pcomment(pub,id)')
     ]);
@@ -135,6 +136,18 @@ async function api(req,env,url){
     return me(db,{id,name,role},await newSession(db,id));
   }
   /* игрок с баном «за ник» сам выбирает новый ник (или оставляет тот, что поставил админ) — бан снимается */
+  /* сброс пароля по одноразовой ссылке, выданной админом */
+  if((p==='reset-check'||p==='reset')&&m==='POST'){
+    if(!await throttle(db,'rs:'+ip,30,600000)) return err('Слишком много попыток, подождите 10 минут',429);
+    const b=await body()||{}, tk=String(b.token||''); if(!/^[a-f0-9]{20,80}$/.test(tk)) return err('Ссылка недействительна или устарела',400);
+    const th=await sha(tk), r=await db.prepare('SELECT r.user_id,u.name,u.role FROM pwreset r JOIN users u ON u.id=r.user_id WHERE r.token=? AND r.exp>?').bind(th,Date.now()).first();
+    if(!r) return err('Ссылка недействительна или устарела',400);
+    if(p==='reset-check') return J({name:r.name});
+    const pw=String(b.pw||''); if(pw.length<4||pw.length>64) return err('Пароль: от 4 до 64 символов');
+    const salt=rnd(16), hash=await pbk(pw,salt);
+    await db.batch([db.prepare('UPDATE users SET salt=?,hash=? WHERE id=?').bind(salt,hash,r.user_id),db.prepare('DELETE FROM sessions WHERE user_id=?').bind(r.user_id),db.prepare('DELETE FROM pwreset WHERE user_id=?').bind(r.user_id)]);
+    return J({ok:1,name:r.name});
+  }
   if(p==='rename-banned'&&m==='POST'){
     if(!await throttle(db,'rb:'+ip,20,600000)) return err('Слишком много попыток, подождите 10 минут',429);
     const b=await body()||{}, nm=String(b.name||'').trim().toLowerCase(), pw=String(b.pw||'').slice(0,64), nn=String(b.newName||'').trim();
@@ -445,6 +458,13 @@ async function api(req,env,url){
       if(newName&&newName!==t.name){ const e=await checkNick(db,newName,id,true); if(e) return err(e,e.startsWith('Такой')?409:400); await renameUser(db,id,newName,nameBan?t.name.toLowerCase():null); }
       await db.prepare('UPDATE users SET ban_until=?,ban_reason=?,ban_name=? WHERE id=?').bind(nameBan?FOREVER:until,reason||(nameBan?'Неприемлемый ник':''),nameBan?1:0,id).run();
       await db.prepare('DELETE FROM sessions WHERE user_id=?').bind(id).run(); return J({ok:1});
+    }
+    if(p==='admin/reset-link'&&m==='POST'){
+      const b=await body()||{}, id=String(b.userId||''), t=await db.prepare('SELECT id,name,role FROM users WHERE id=?').bind(id).first();
+      if(!t) return err('Игрок не найден',404); if(t.role==='admin') return err('Для админа ссылка не выдаётся');
+      const tk=rnd(24), exp=Date.now()+24*3600000;
+      await db.batch([db.prepare('DELETE FROM pwreset WHERE user_id=? OR exp<?').bind(id,Date.now()),db.prepare('INSERT INTO pwreset(token,user_id,exp) VALUES(?,?,?)').bind(await sha(tk),id,exp)]);
+      return J({token:tk,exp,name:t.name});
     }
     if(p==='admin/rename'&&m==='POST'){
       const b=await body()||{}, id=String(b.userId||''), nn=String(b.name||'').trim();
