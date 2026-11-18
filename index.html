@@ -465,6 +465,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-sha
 .vols label{display:grid;grid-template-columns:1fr auto;gap:.2em .6em;font-size:.95em}
 .vols label span{color:rgba(255,255,255,.75);font-weight:600}.vols label b{font-family:var(--display)}
 .vols input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--a1)}
+.perf{display:grid;gap:.5em;margin-top:1.1em;text-align:left}.perf .lbl{font-weight:700;font-size:.8em;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}.perf .chips{display:flex;flex-wrap:wrap;gap:.4em}
 .btn.sm,.btn.ico{border-radius:9px}
 :root{--gold:#ffd23d}
 .tools,.rpanel,.flybar{box-shadow:0 10px 36px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.07)}
@@ -482,7 +483,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-sha
 .pill b{color:#fff;font-weight:800}
 #hCoins{border-color:rgba(255,210,61,.5);background:linear-gradient(135deg,rgba(255,210,61,.18),rgba(18,20,30,.55));box-shadow:0 4px 16px rgba(0,0,0,.3),0 0 18px rgba(255,210,61,.16)}
 #hCoins b{color:var(--gold)}
-#hd{color:#ff8a7e}
 .phud{font-family:var(--display);color:#d9ecff;border-color:rgba(120,176,255,.45);box-shadow:0 0 18px rgba(89,168,255,.2)}
 .hintp,.hint,.stat,.thint{color:rgba(255,255,255,.78);font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .pban{font-family:var(--display);font-weight:800;letter-spacing:.02em;text-shadow:0 0 22px rgba(124,92,255,.85),0 2px 8px #000}
@@ -924,7 +924,22 @@ const SFX={
   click:(c,o,t,v)=>tn(c,o,t,900,500,.05,'square',.08*v)
 };
 const SFX_LIST=[['b:jump','Прыжок'],['b:coin','Монета'],['b:win','Победа'],['b:bounce','Батут'],['b:checkpoint','Чекпоинт'],['b:click','Клик']];
-const MUS_LIST=[['b:music1','Мелодия: спокойная'],['b:music2','Мелодия: бодрая']];
+const MUS_LIST=[['b:music1','Мелодия: спокойная'],['b:music2','Мелодия: бодрая'],['b:music3','Мелодия: космос']];
+/* параметры встроенных треков: аккорды Am-F-C-G (смещения от тоники), тонкая обработка и ударные */
+const MUS_TRACKS={
+  music1:{bpm:84,root:57,echo:3,sc:[0,3,5,7,10],pad:'triangle',padV:.035,padCut:1400,arp:1,arpStep:2,arpSeq:[0,1,2,4,2,1,3,1],arpLen:5,arpType:'triangle',arpV:.05,arpCut:2600,
+    bass:(n,t,k,r,st)=>{ if(k===0||k===10) n(t,r-24,st*(k?4:9),'sine',.16,500,.01); },
+    mel:[5,-1,-1,-1,4,-1,3,-1,-1,-1,-1,-1,-1,-1,-1,-1, 2,-1,-1,-1,3,-1,-1,-1,4,-1,-1,-1,-1,-1,-1,-1, 5,-1,-1,5,-1,-1,4,-1,3,-1,-1,-1,2,-1,-1,-1, 3,-1,-1,-1,2,-1,-1,-1,0,-1,-1,-1,-1,-1,-1,-1],melLen:6,melType:'sine',melV:.07,melCut:3000,
+    drums:(kick,hit,t,k,bar,st)=>{ if(k===0||k===8) kick(t,.28); if(k%2===1) hit(t,.05,.018,7000); if(k===12) hit(t,.12,.03,2500); }},
+  music2:{bpm:128,root:52,echo:3,sc:[0,3,5,7,10],pad:'sawtooth',padV:.018,padCut:900,arp:1,arpStep:1,arpSeq:[0,1,2,3,2,1,4,2],arpLen:1.6,arpType:'square',arpV:.032,arpCut:3200,
+    bass:(n,t,k,r,st)=>{ if(k%4===2) n(t,r-24,st*1.8,'sawtooth',.13,420,.005); if(k===0) n(t,r-24,st*1.8,'sawtooth',.14,420,.005); },
+    mel:[7,-1,-1,6,-1,-1,5,-1,-1,6,-1,-1,7,-1,-1,-1, 8,-1,-1,7,-1,-1,5,-1,-1,-1,-1,-1,4,-1,-1,-1, 7,-1,-1,6,-1,-1,5,-1,-1,6,-1,7,-1,8,-1,-1, 9,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,5,-1,-1,-1],melLen:3,melType:'sawtooth',melV:.04,melCut:2600,
+    drums:(kick,hit,t,k,bar,st)=>{ if(k%4===0) kick(t,.34); if(k%4===2) hit(t,.09,.05,8000); if(k===4||k===12) hit(t,.16,.09,1800); if(k%2===1) hit(t,.03,.016,9000); }},
+  music3:{bpm:64,root:50,echo:6,sc:[0,2,4,7,9],pad:'sine',padV:.05,padCut:1800,arp:1,arpStep:4,arpSeq:[2,1,0,2,1,3],arpLen:12,arpType:'sine',arpV:.06,arpCut:3500,
+    bass:(n,t,k,r,st)=>{ if(k===0) n(t,r-24,st*14,'sine',.14,400,.2); },
+    mel:[-1,-1,-1,-1,-1,-1,-1,-1,4,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1, -1,-1,-1,-1,5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],melLen:14,melType:'triangle',melV:.045,melCut:2800,
+    drums:(kick,hit,t,k)=>{ if(k===0) kick(t,.12); if(k%4===2) hit(t,.04,.008,9000); }}
+};
 const EVENTS=[['jump','Прыжок'],['coin','Монета'],['win','Победа'],['bounce','Батут'],['checkpoint','Чекпоинт'],['music','Музыка']];
 
 const Snd={ctx:null,master:null,mg:null,cache:{},timer:null,src:null,tok:0,vol:null,
@@ -964,23 +979,38 @@ const Snd={ctx:null,master:null,mg:null,cache:{},timer:null,src:null,tok:0,vol:n
     if(ref.startsWith('b:')){ const f=SFX[ref.slice(2)]; if(f) f(this.ctx,this.master,this.ctx.currentTime,vol); return; }
     if(ref.startsWith('s:')) this.buf(ref.slice(2)).then(b=>{ if(!b)return; const s=this.ctx.createBufferSource(); s.buffer=b; const g=this.ctx.createGain(); g.gain.value=vol; s.connect(g); g.connect(this.master); s.start(); });
   },
+  noise(c){ if(!this.nb){ const n=c.sampleRate*1, b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; this.nb=b; } return this.nb; },
   startMusic(ref){
     this.stopMusic(); if(!ref||ref==='none'||!this.init()) return; const tok=++this.tok, c=this.ctx;
     if(ref.startsWith('s:')){
       this.buf(ref.slice(2)).then(b=>{ if(!b||tok!==this.tok) return; const s=c.createBufferSource(); s.buffer=b; s.loop=true; s.connect(this.mg); s.start(); this.src=s; });
       return;
     }
-    const fast=ref==='b:music2', bpm=fast?128:92, st=60/bpm/2, sc=fast?[0,2,4,7,9,12]:[0,3,5,7,10,12], root=fast?196:164.8;
-    const pat=[0,2,4,2,5,4,2,1,3,2,4,5,4,2,1,0], f=d=>root*Math.pow(2,d/12); let i=0,t=c.currentTime+.1;
+    const T=MUS_TRACKS[ref]||MUS_TRACKS.music1, st=60/T.bpm/4, mf=m=>440*Math.pow(2,(m-69)/12), self=this;
+    /* шина с эхом */
+    const bus=c.createGain(), dl=c.createDelay(1), fb=c.createGain(), lp=c.createBiquadFilter(), snd=c.createGain();
+    dl.delayTime.value=st*T.echo; fb.gain.value=.34; lp.type='lowpass'; lp.frequency.value=2400; snd.gain.value=.3;
+    bus.connect(this.mg); bus.connect(snd); snd.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(this.mg); this.bus=bus;
+    const note=(t,m,dur,type,vol,cut,att)=>{ const o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter(); o.type=type; o.frequency.value=mf(m); f.type='lowpass'; f.frequency.value=cut||4000;
+      g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(vol,t+(att||.01)); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      o.connect(f); f.connect(g); g.connect(bus); o.start(t); o.stop(t+dur+.05); };
+    const kick=(t,v)=>{ const o=c.createOscillator(), g=c.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(42,t+.13); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+.22); o.connect(g); g.connect(bus); o.start(t); o.stop(t+.25); };
+    const hit=(t,dur,v,hp)=>{ const s=c.createBufferSource(), g=c.createGain(), f=c.createBiquadFilter(); s.buffer=self.noise(c); f.type='highpass'; f.frequency.value=hp; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur); s.connect(f); f.connect(g); g.connect(bus); s.start(t,Math.random()*.5,dur+.05); };
+    const PROG=[[0,3,7],[-4,0,3],[3,7,10],[-2,2,5]], ROOTS=[0,-4,3,-2];
+    let i=0,t=c.currentTime+.12;
     this.timer=setInterval(()=>{
-      while(t<c.currentTime+.3){
-        if(i%4===0) tn(c,this.mg,t,f(sc[Math.floor(i/4)%2?3:0])/2,f(sc[Math.floor(i/4)%2?3:0])/2,st*3.5,'triangle',.22);
-        if(i%2===0||fast){ const n=f(sc[pat[i%16]%6])*2; tn(c,this.mg,t,n,n,st*.9,fast?'square':'sine',.06); }
+      while(t<c.currentTime+.35){
+        const bar=Math.floor(i/16)%8, ph=Math.floor(bar/2)%4, k=i%16, ch=PROG[ph], r=T.root+ROOTS[ph], sec=Math.floor(i/128)%2;
+        if(k===0) ch.forEach((x,j)=>note(t,T.root+x+(j?12:0),st*15.5,T.pad,T.padV,T.padCut,.5));
+        if(T.bass) T.bass(note,t,k,r,st,sec);
+        if(T.arp&&(k%T.arpStep===0)){ const idx=(k/T.arpStep+(sec?2:0))%T.arpSeq.length, d=T.arpSeq[idx], m=T.root+ch[d%3]+12*(1+Math.floor(d/3)); note(t,m,st*T.arpLen,T.arpType,T.arpV,T.arpCut,.005); }
+        const ml=T.mel&&T.mel[(bar%4)*16+k]; if(ml!=null&&ml>=0){ const m=T.root+T.sc[ml%T.sc.length]+12*(1+Math.floor(ml/T.sc.length)); note(t,m,st*T.melLen,T.melType,T.melV,T.melCut,.02); }
+        if(T.drums) T.drums(kick,hit,t,k,bar,st);
         t+=st; i++;
       }
     },60);
   },
-  stopMusic(){ this.tok++; if(this.timer){clearInterval(this.timer);this.timer=null;} if(this.src){ try{this.src.stop();}catch(e){} this.src=null; } }
+  stopMusic(){ this.tok++; if(this.bus){ const b=this.bus; this.bus=null; try{ b.gain.setTargetAtTime(0,this.ctx.currentTime,.15); setTimeout(()=>{ try{b.disconnect();}catch(e){} },900); }catch(e){} } if(this.timer){clearInterval(this.timer);this.timer=null;} if(this.src){ try{this.src.stop();}catch(e){} this.src=null; } }
 };
 
 /* ============================================================
@@ -988,13 +1018,19 @@ const Snd={ctx:null,master:null,mg:null,cache:{},timer:null,src:null,tok:0,vol:n
    ============================================================ */
 let renderer;
 try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true}); }catch(e){ $('#nogl').style.display='flex'; }
-if(renderer){ renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; }
+const Perf={d:null,
+  get(){ if(!this.d){ const v=store.get('inblox.perf',null)||{}; this.d={sh:v.sh===0?0:1,q:['hi','mid','low'].includes(v.q)?v.q:'hi'}; } return this.d; },
+  dpr(){ const q=this.get().q; return q==='low'?.6:q==='mid'?1:Math.min(window.devicePixelRatio||1,2); },
+  set(k,x){ this.get()[k]=x; store.set('inblox.perf',this.d); this.apply(); },
+  apply(w){ const d=this.get(); if(renderer){ renderer.shadowMap.enabled=!!d.sh; } w=w||(window.Play&&Play.world); if(w){ if(w.dir) w.dir.castShadow=!!d.sh; w.scene.traverse(o=>{ const m=o.material; if(m) (Array.isArray(m)?m:[m]).forEach(x=>{ x.needsUpdate=true; }); }); } if(typeof resize==='function') resize(); }
+};
+if(renderer){ renderer.shadowMap.enabled=!!Perf.get().sh; renderer.shadowMap.type=THREE.PCFSoftShadowMap; }
 const cams=[];
 function mkCam(fov=60){ const c=new THREE.PerspectiveCamera(fov,16/9,.1,900); cams.push(c); return c; }
 let VW=1280,VH=720;
 function resize(){
   VW=Math.max(2,stage.offsetWidth); VH=Math.max(2,stage.offsetHeight);
-  if(renderer){ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.setSize(VW,VH,false); }
+  if(renderer){ renderer.setPixelRatio(Perf.dpr()); renderer.setSize(VW,VH,false); }
   cams.forEach(c=>{c.aspect=VW/VH;c.updateProjectionMatrix();});
   if(AvS.cam) AvS.fit();
 }
@@ -1077,7 +1113,7 @@ const SKY_NAMES={day:'День',sunset:'Закат',night:'Ночь',space:'Ко
 function makeWorld(game,editor){
   const scene=new THREE.Scene(), root=new THREE.Group(); scene.add(root);
   const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
-  const dir=new THREE.DirectionalLight(0xffffff,.5); dir.castShadow=true; dir.shadow.mapSize.set(2048,2048);
+  const dir=new THREE.DirectionalLight(0xffffff,.5); dir.castShadow=!!Perf.get().sh; dir.shadow.mapSize.set(2048,2048);
   const sc=dir.shadow.camera; sc.left=-48; sc.right=48; sc.top=48; sc.bottom=-48; sc.near=1; sc.far=220; dir.shadow.bias=-.0006;
   scene.add(dir); scene.add(dir.target);
   const items=new Map(); let base=null, grid=null, stars=null;
@@ -2299,7 +2335,7 @@ const Play={
     this.pl={x:0,y:0,z:0,vx:0,vy:0,vz:0,grounded:false,gp:null,face:Math.PI,coy:0,jb:0,bcd:0,wt:0};
     this.respawn(true); this.orb.yaw=0; this.orb.pitch=.38; this.orb.dist=15; this.orb.t.set(this.pl.x,this.pl.y+2,this.pl.z);
     $('#play').innerHTML=`<div class="hud"><div class="pill"><b>${esc(game.name)}</b></div><div class="sp"></div>
-      <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill">Падения <b id="hd">0</b></div><div class="pill" id="pyStat" hidden></div>
+      <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill" id="pyStat" hidden></div>
       <button class="btn sm" id="pSL" title="Shift Lock: камера за плечом, персонаж смотрит туда же, куда камера (клавиша Shift)">⇧ Shift Lock</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
       <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · F — поговорить с NPC · Enter — чат · Shift — Shift Lock · Esc — пауза</div>
       <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
@@ -2488,7 +2524,7 @@ const Play={
   respawn(first){
     const pl=this.pl,s=this.spawn; pl.x=s.x; pl.y=s.y; pl.z=s.z; pl.vx=pl.vy=pl.vz=0; pl.gp=null;
   },
-  die(){ if(this.state!=='play') return; this.deaths++; if(this.py) this.py.ev.die++; $('#hd').textContent=this.deaths; this.state='dying'; this.dyT=0; this.burst(); },
+  die(){ if(this.state!=='play') return; this.deaths++; if(this.py) this.py.ev.die++; this.state='dying'; this.dyT=0; this.burst(); },
   burst(){
     const w=this.world, pl=this.pl, ctr=new THREE.Vector3(pl.x,pl.y+1.6,pl.z); this.debris=[]; this.av.group.updateMatrixWorld(true);
     this.av.group.traverse(o=>{
@@ -2506,15 +2542,19 @@ const Play={
   },
   win(){
     if(this.state!=='play') return; this.state='won'; Snd.play(this.game.sounds.win); const tt=this.t;
-    const ov=$('#pOv'); ov.innerHTML=`<div class="box"><h2>Победа</h2><p class="muted">Монеты ${this.coins}/${this.coinsTotal} · падения ${this.deaths}</p>
+    const ov=$('#pOv'); ov.innerHTML=`<div class="box"><h2>Победа</h2><p class="muted">Монеты ${this.coins}/${this.coinsTotal}</p>
       <div class="btns"><button class="btn pri" id="oAgain">Играть снова</button><button class="btn" id="oExit">${this.ret==='editor'?'Назад в редактор':'В меню'}</button></div></div>`;
     ov.classList.add('on'); $('#oAgain').onclick=()=>this.restart(); $('#oExit').onclick=()=>this.stop();
   },
   pause(on){
     if(this.state!=='play') return; this.paused=on; const ov=$('#pOv'); if(!ov) return;
     if(document.pointerLockElement) document.exitPointerLock();
-    if(on){ ov.innerHTML=`<div class="box"><h2>Пауза</h2>${(()=>{ const v=Snd.getVol(); return `<div class="vols"><label><span>Громкость</span><b id="vMv">${Math.round(v.m*100)}%</b><input type="range" id="vM" min="0" max="100" value="${Math.round(v.m*100)}" aria-label="Общая громкость"></label><label><span>Музыка</span><b id="vMuv">${Math.round(v.mu*100)}%</b><input type="range" id="vMu" min="0" max="100" value="${Math.round(v.mu*100)}" aria-label="Громкость музыки"></label></div>`; })()}<div class="btns"><button class="btn pri" id="oRes">Продолжить</button><button class="btn" id="oRst">Начать заново</button><button class="btn" id="oExit">${this.ret==='editor'?'Назад в редактор':'В меню'}</button></div></div>`; ov.classList.add('on');
+    if(on){ ov.innerHTML=`<div class="box"><h2>Пауза</h2>${(()=>{ const v=Snd.getVol(); return `<div class="vols"><label><span>Громкость</span><b id="vMv">${Math.round(v.m*100)}%</b><input type="range" id="vM" min="0" max="100" value="${Math.round(v.m*100)}" aria-label="Общая громкость"></label><label><span>Музыка</span><b id="vMuv">${Math.round(v.mu*100)}%</b><input type="range" id="vMu" min="0" max="100" value="${Math.round(v.mu*100)}" aria-label="Громкость музыки"></label></div>`; })()}${(()=>{ const p=Perf.get(); return `<div class="perf"><span class="lbl">Оптимизация</span><div class="chips"><button class="chip ${p.sh?'on':''}" id="pfSh">Тени: ${p.sh?'вкл':'выкл'}</button></div><div class="chips" id="pfQ">${[['hi','Чёткость: высокая'],['mid','средняя'],['low','низкая']].map(([k,n])=>`<button class="chip ${p.q===k?'on':''}" data-q="${k}">${n}</button>`).join('')}</div><button class="btn sm" id="pfEco">Режим экономии (для слабых устройств)</button></div>`; })()}<div class="btns"><button class="btn pri" id="oRes">Продолжить</button><button class="btn" id="oRst">Начать заново</button><button class="btn" id="oExit">${this.ret==='editor'?'Назад в редактор':'В меню'}</button></div></div>`; ov.classList.add('on');
       Snd.init(); $('#vM').oninput=e=>{ Snd.setVol('m',e.target.value/100); $('#vMv').textContent=e.target.value+'%'; Snd.play('b:click',.6); }; $('#vMu').oninput=e=>{ Snd.setVol('mu',e.target.value/100); $('#vMuv').textContent=e.target.value+'%'; };
+      const pfSync=()=>{ const p=Perf.get(); $('#pfSh').classList.toggle('on',!!p.sh); $('#pfSh').textContent='Тени: '+(p.sh?'вкл':'выкл'); $$('#pfQ [data-q]').forEach(b=>b.classList.toggle('on',b.dataset.q===p.q)); };
+      $('#pfSh').onclick=()=>{ Perf.set('sh',Perf.get().sh?0:1); pfSync(); };
+      $$('#pfQ [data-q]').forEach(b=>b.onclick=()=>{ Perf.set('q',b.dataset.q); pfSync(); });
+      $('#pfEco').onclick=()=>{ Perf.get().sh=0; Perf.set('q','low'); pfSync(); toast('Режим экономии включён'); };
       $('#oRes').onclick=()=>this.pause(false); $('#oRst').onclick=()=>this.restart(); $('#oExit').onclick=()=>this.stop(); }
     else{ ov.classList.remove('on'); if(this.sl) this.slSet(true); }
   },
