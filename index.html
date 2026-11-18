@@ -572,14 +572,14 @@ const sndOptsHTML=sel=>`<option value="none">Нет</option><optgroup label="В�
 function npcDefault(){ return {name:'Житель',say:'Привет! Рад тебя видеть.\nЗаходи ещё!',turn:true,solid:true,look:{skin:'#f1c27d',shirt:'#ff8fb8',pants:'#2b2f3a',hat:'none',hatColor:'#ff5a4d',face:'smile',emblem:'none',head:'cube',build:'normal',hair:'short',hairColor:'#5a3a22',outfit:'none',outfitColor:'#e8433f'}}; }
 function npcLook(n){
   const l=(n&&n.look)||{}, o=Object.assign({},npcDefault().look);
-  for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor','accColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor','accColor','eyeColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
   for(const k of ['hat','face','head','build','hair','outfit','emblem','glasses','neck','back','chest']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
   for(const k of ['shirtTex','pantsTex']) if(typeof l[k]==='string'&&/^p:[a-z]{1,12}$/.test(l[k])) o[k]=l[k];
   return o;
 }
 const npcText=n=>String(n&&n.say!=null?n.say:'').replace(/[\u0000-\u0009\u000b-\u001f]/g,'').slice(0,600).split('\n').map(t=>t.trim().slice(0,200)).filter(Boolean).slice(0,12);
 const npcName=n=>String(n&&n.name!=null?n.name:'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24);
-const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',glasses:'none',neck:'none',back:'none',accColor:'#f2f2f2',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f',chest:'c1'};
+const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',glasses:'none',neck:'none',back:'none',accColor:'#f2f2f2',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f',chest:'c1',eyeColor:'#1b1b22'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
@@ -1885,7 +1885,17 @@ function drawAnimeClosed(g){
 function faceTex(cfg){ return canvasTex(128,128,(g,w,h)=>drawFace(g,w,h,cfg)); }
 /* ---- аккуратные «классические» лица ---- */
 function fcRR(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
-function fcEye(g,x,y,rx,ry){ const f=g.fillStyle; g.fillStyle='#1b1b22'; g.beginPath(); g.ellipse(x,y,rx,ry,0,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(x-rx*.32,y-ry*.36,rx*.34,0,7); g.fill(); g.beginPath(); g.arc(x+rx*.36,y+ry*.34,rx*.17,0,7); g.fill(); g.fillStyle=f; }
+const EYE_COLORS=['#1b1b22','#3a2214','#5a3418','#8a5a2b','#b8862a','#d4a017','#6b8e23','#2f9a52','#1f7a4a','#1fb8c0','#4aa8ff','#2a5fd0','#1a2f6a','#7a4ad0','#c05ac8','#e0609a','#d0283a','#8a93a6','#c9d6e6','#e8e8ee'];
+let FC_EYE=null;
+function fcMix(hex,t){ const m=/^#([0-9a-f]{6})$/i.exec(hex); if(!m) return hex; const n=parseInt(m[1],16), to=t<0?0:255, k=Math.abs(t), c=sh=>Math.round(((n>>sh)&255)*(1-k)+to*k); return 'rgb('+c(16)+','+c(8)+','+c(0)+')'; }
+function fcEye(g,x,y,rx,ry){ const f=g.fillStyle;
+  if(FC_EYE&&/^#[0-9a-f]{6}$/i.test(FC_EYE)){
+    const gr=g.createLinearGradient(0,y-ry,0,y+ry); gr.addColorStop(0,fcMix(FC_EYE,-.45)); gr.addColorStop(.5,FC_EYE); gr.addColorStop(1,fcMix(FC_EYE,.4));
+    g.fillStyle=gr; g.beginPath(); g.ellipse(x,y,rx,ry,0,0,7); g.fill(); g.strokeStyle='#1b1b22'; g.lineWidth=Math.max(1.4,rx*.22); g.beginPath(); g.ellipse(x,y,rx,ry,0,0,7); g.stroke();
+    g.fillStyle='#101016'; g.beginPath(); g.ellipse(x,y+ry*.04,rx*.46,ry*.5,0,0,7); g.fill();
+    g.fillStyle='#fff'; g.beginPath(); g.arc(x-rx*.32,y-ry*.36,rx*.3,0,7); g.fill(); g.beginPath(); g.arc(x+rx*.36,y+ry*.34,rx*.15,0,7); g.fill(); g.fillStyle=f; return;
+  }
+  g.fillStyle='#1b1b22'; g.beginPath(); g.ellipse(x,y,rx,ry,0,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(x-rx*.32,y-ry*.36,rx*.34,0,7); g.fill(); g.beginPath(); g.arc(x+rx*.36,y+ry*.34,rx*.17,0,7); g.fill(); g.fillStyle=f; }
 function fcHappyEyes(g,y){ g.strokeStyle='#1b1b22'; g.lineWidth=5.5; [38,90].forEach(x=>{ g.beginPath(); g.moveTo(x-12,y+5); g.quadraticCurveTo(x,y-9,x+12,y+5); g.stroke(); }); }
 function fcBrow(){}
 function fcBrows(g,x0,dy,lift,kind){ g.strokeStyle='#3a2c33'; g.lineWidth=4.2; g.lineCap='round'; const L=x0, R=128-x0; if(kind==='angry'){ g.lineWidth=5.5; g.beginPath(); g.moveTo(L-16,36); g.lineTo(L+14,46); g.moveTo(R+16,36); g.lineTo(R-14,46); g.stroke(); } else if(kind==='sad'){ g.beginPath(); g.moveTo(L-14,44); g.quadraticCurveTo(L,34,L+14,32); g.moveTo(R+14,44); g.quadraticCurveTo(R,34,R-14,32); g.stroke(); } else if(kind==='smirk'){ g.beginPath(); g.moveTo(L-12,40); g.lineTo(L+12,40); g.moveTo(R-12,32); g.quadraticCurveTo(R,26,R+12,34); g.stroke(); } else { const y=34+(dy||0); g.beginPath(); g.moveTo(L-12,y+4); g.quadraticCurveTo(L,y-5,L+12,y+4); g.moveTo(R-12,y+4); g.quadraticCurveTo(R,y-5,R+12,y+4); g.stroke(); } g.strokeStyle='#1b1b22'; }
@@ -1895,6 +1905,7 @@ function fcCheeks(g,a){ [[22,82],[106,82]].forEach(([x,y])=>{ const r=g.createRa
 function fcHeart(g,cx,cy,s){ const gr=g.createLinearGradient(cx,cy-s*.8,cx,cy+s*.6); gr.addColorStop(0,'#ff8fa9'); gr.addColorStop(1,'#ff4f78'); g.fillStyle=gr; g.beginPath(); g.moveTo(cx,cy+s*.62); g.bezierCurveTo(cx-s*1.15,cy-s*.05,cx-s*.78,cy-s*.95,cx,cy-s*.42); g.bezierCurveTo(cx+s*.78,cy-s*.95,cx+s*1.15,cy-s*.05,cx,cy+s*.62); g.fill(); g.fillStyle='rgba(255,255,255,.7)'; g.beginPath(); g.ellipse(cx-s*.42,cy-s*.28,s*.17,s*.11,-.6,0,7); g.fill(); g.fillStyle='#1b1b22'; }
 function fcShades(g){ g.fillStyle='#14151c'; fcRR(g,15,42,45,26,9); g.fill(); fcRR(g,68,42,45,26,9); g.fill(); g.fillRect(58,48,12,5); g.strokeStyle='#14151c'; g.lineWidth=3; g.beginPath(); g.moveTo(15,50); g.lineTo(8,47); g.moveTo(113,50); g.lineTo(120,47); g.stroke(); g.fillStyle='rgba(255,255,255,.28)'; fcRR(g,21,46,14,5,2.5); g.fill(); fcRR(g,74,46,14,5,2.5); g.fill(); g.fillStyle='#1b1b22'; }
 function drawFace(g,w,h,cfg){
+  FC_EYE=cfg.eyeColor&&cfg.eyeColor!=='#1b1b22'?cfg.eyeColor:null;
   {
     g.fillStyle=cfg.skin; g.fillRect(0,0,w,h); g.fillStyle='#1b1b22'; g.strokeStyle='#1b1b22'; g.lineCap='round'; g.lineWidth=7;
     const eyes=(f)=>{ f(38,54); f(90,54); };
@@ -3199,7 +3210,8 @@ const Ed={
     ${(BUILD_DEF[a.build]||{}).fem?`<div class="sec"><span class="lbl">Объём торса</span>${chips('chest',CHESTS)}</div>`:''}
     <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
     <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}${col('hairColor')}`:''}</div>
-    <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>`;
+    <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
+    <div class="sec"><span class="lbl">Цвет глаз (обычные лица)</span>${sws('eyeColor',EYE_COLORS)}</div>`;
   },
   npcBind(el,p){
     const keep=fn=>{ const a=el.scrollTop, par=el.parentElement, b=par?par.scrollTop:0; fn(); el.scrollTop=a; if(par) par.scrollTop=b; };
@@ -3426,7 +3438,7 @@ const AvS={
         <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
         ${(BUILD_DEF[a.build]||{}).fem?`<div class="sec"><span class="lbl">Объём торса</span>${chips('chest',CHESTS)}</div>`:''}
         <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>`,
-      face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div>`,
+      face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div><div class="sec"><span class="lbl">Цвет глаз (обычные лица)</span>${sws('eyeColor',EYE_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="eyeColor" value="${a.eyeColor||'#1b1b22'}" aria-label="Свой цвет глаз"></div></div>`,
       hair:`<div class="sec"><span class="lbl">Причёска</span>${chipsC('hair',HAIRS,16)}</div>${a.hair&&a.hair!=='none'?`<div class="sec"><span class="lbl">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="hairColor" value="${a.hairColor||'#2b2118'}" aria-label="Свой цвет волос"></div></div>`:''}`,
       wear:`<div class="sec"><span class="lbl">Наряд</span>${chipsC('outfit',OUTFITS,14)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>${texUI('outfitTex')}`:''}</div>
         <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
