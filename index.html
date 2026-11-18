@@ -573,13 +573,13 @@ function npcDefault(){ return {name:'Житель',say:'Привет! Рад т�
 function npcLook(n){
   const l=(n&&n.look)||{}, o=Object.assign({},npcDefault().look);
   for(const k of ['skin','shirt','pants','hatColor','hairColor','outfitColor','accColor']) if(typeof l[k]==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(l[k])) o[k]=l[k];
-  for(const k of ['hat','face','head','build','hair','outfit','emblem','glasses','neck','back']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
+  for(const k of ['hat','face','head','build','hair','outfit','emblem','glasses','neck','back','chest']) if(typeof l[k]==='string'&&/^[\w\-]{1,20}$/.test(l[k])) o[k]=l[k];
   for(const k of ['shirtTex','pantsTex']) if(typeof l[k]==='string'&&/^p:[a-z]{1,12}$/.test(l[k])) o[k]=l[k];
   return o;
 }
 const npcText=n=>String(n&&n.say!=null?n.say:'').replace(/[\u0000-\u0009\u000b-\u001f]/g,'').slice(0,600).split('\n').map(t=>t.trim().slice(0,200)).filter(Boolean).slice(0,12);
 const npcName=n=>String(n&&n.name!=null?n.name:'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24);
-const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',glasses:'none',neck:'none',back:'none',accColor:'#f2f2f2',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f'};
+const DEF_AVATAR={name:'Игрок',skin:'#f1c27d',shirt:'#59a8ff',pants:'#2b2f3a',hat:'cap',hatColor:'#ff5a4d',glasses:'none',neck:'none',back:'none',accColor:'#f2f2f2',face:'smile',emblem:'logo',head:'cube',build:'normal',hair:'none',hairColor:'#2b2118',outfit:'none',outfitColor:'#e8433f',chest:'c1'};
 const DEF_SET={sky:'day',baseplate:true,baseColor:'#79c267',speed:1,jump:1,gravity:1,winOnCoins:false};
 const DEF_SND={jump:'b:jump',coin:'b:coin',win:'b:win',bounce:'b:bounce',checkpoint:'b:checkpoint',music:'b:music1'};
 const S={games:[],avatar:Object.assign({},DEF_AVATAR),sounds:[]};
@@ -1239,6 +1239,9 @@ function softGeo(w,h,d,k){
   return geo;
 }
 const BUILDS=[['normal','Обычное'],['slim','Стройное'],['wide','Широкое'],['round','Круглое'],['stick','Тонкое'],['chunky','Крепкое'],['robot','Робот'],['girl','Девушка'],['slimgirl','Стройная'],['curvy','Пышная'],['sport','Спортивная'],['petite','Миниатюрная']];
+const CHESTS=[['c0','Минимальный'],['c1','Небольшой'],['c2','Средний'],['c3','Большой']];
+/* объём торса у женских фигур: масштаб готовой выпуклости (c1 — как было раньше); аксессуары и наряд подстраиваются под неё */
+function bdOf(cfg){ const b=BUILD_DEF[cfg.build]||BUILD_DEF.normal; if(!b.fem||!b.bust) return b; const mul={c0:0,c1:1,c2:1.7,c3:2.4}[cfg.chest]; if(mul==null||mul===1) return b; return Object.assign({},b,{bust:Math.min(.14,b.bust*mul)}); }
 const BUILD_DEF={normal:{tw:1.2,td:.6,k:0,aw:.4,lw:.55,cyl:0},slim:{tw:1,td:.5,k:0,aw:.32,lw:.44,cyl:0},wide:{tw:1.55,td:.75,k:0,aw:.5,lw:.62,cyl:0},round:{tw:1.4,td:.85,k:.55,aw:.38,lw:.5,cyl:0},stick:{tw:.8,td:.4,k:0,aw:.22,lw:.28,cyl:0},chunky:{tw:1.45,td:.7,k:0,aw:.62,lw:.7,cyl:0},robot:{tw:1.2,td:.6,k:0,aw:.36,lw:.45,cyl:1},
   /* женские тела: торс как у обычных, но руки и ноги кубические, тоньше и изящнее (lady) */
   girl:{bust:0.055,tw:1.1,td:.55,k:0,aw:.3,lw:.42,cyl:0,lady:1,fem:1,ww:.8,hw:1.2,dw:.46,dh:.54},slimgirl:{bust:0.04,tw:1,td:.5,k:0,aw:.26,lw:.36,cyl:0,lady:1,fem:1,ww:.68,hw:1.06,dw:.42,dh:.48},
@@ -1374,7 +1377,7 @@ const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','�
 /* Наряд — объёмные детали поверх тела: воротники, ремни, плащи, броня. Цвет акцентов задаёт outfitColor */
 function buildOutfit(id,cfg,c){
   const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, po=m=>{ m.polygonOffset=true; m.polygonOffsetFactor=-2; m.polygonOffsetUnits=-2; return m; }, mc=h=>MC[h]||(MC[h]=po(new THREE.MeshLambertMaterial({color:h})));   /* одежда чуть «ближе» к камере: на плечах кожа/рубашка с ней больше не мерцают и не смешиваются */
-  const oc=cfg.outfitColor||'#e8433f', O=cfg.outfitTex?(()=>{ const m0=new THREE.MeshLambertMaterial({color:'#ffffff'}); m0.map=userTex(cfg.outfitTex); return po(m0); })():mc(oc), tw=bd.tw, td=bd.td, fz=td/2, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
+  const oc=cfg.outfitColor||'#e8433f', O=cfg.outfitTex?(()=>{ const m0=new THREE.MeshLambertMaterial({color:'#ffffff'}); m0.map=userTex(cfg.outfitTex); return po(m0); })():mc(oc), tw=bd.tw, td=bd.td+(bd.bust||0)*.8, fz=td/2+(bd.bust||0)*.35, arms=[armL,armR], legs=[legL,legR], sx=[-1,1];
   const dark=h=>'#'+new THREE.Color(h).multiplyScalar(.6).getHexString();
   const hw=bd.hw||tw, part=(m,y0,y1,pad)=>{ if(y1>2.19) y1+=.015; if(bd.fem){ const k=new THREE.Mesh(femGeo(bd,y0,y1,pad),m); k.castShadow=true; body.add(k); return k; } return box(tw+pad,y1-y0,td+pad,m,0,(y0+y1)/2,0); };
   const sh=mc(cfg.shirt), shD=mc(dark(cfg.shirt)), pn=mc(cfg.pants), W=mc('#f4f4f6'), K=mc('#20222b'), G=mc('#f2c230'), S=mc('#aab3c0');
@@ -2002,7 +2005,7 @@ function buildAvatar(cfg){
   const vs=!!cfg.vipSuit, suitM=M('#0d0e12'), bare=!vs&&['dress','gown','kimono','tutu','croptop','sundress','maid','sailor','schooluni','lolita','witch','princess','swim','yukata','sportwear','qipao','nurse','angel','cheer','gothic','hanbok','dirndl','tennis','streetwear','fairy','mermaid','wedding','office','nightgown','idolstage','pinafore'].includes(cfg.outfit), shirtM=vs?suitM:bare?skin:shirt, pantsM=vs?suitM:pants;   /* у платьев и т.п. рубашка не торчит синим на плечах */
   const box=(w,h,d,m,x,y,z,parent)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); b.castShadow=true; b.receiveShadow=true; (parent||body).add(b); return b; };
   const front=vs?new THREE.MeshLambertMaterial({map:suitTex()}):bare?skin:cfg.shirtTex?shirt:new THREE.MeshLambertMaterial({map:torsoTex(cfg)});
-  const bd=BUILD_DEF[cfg.build]||BUILD_DEF.normal, tm=[shirtM,shirtM,shirtM,shirtM,front,shirtM];
+  const bd=bdOf(cfg), tm=[shirtM,shirtM,shirtM,shirtM,front,shirtM];
   if(bd.fem){ for(const t of [new THREE.Mesh(femGeo(bd,1.25,2.2),tm),new THREE.Mesh(femGeo(bd,1.0,1.25),pantsM)]){ t.castShadow=true; t.receiveShadow=true; body.add(t); } }
   else if(bd.k){ const t=new THREE.Mesh(softGeo(bd.tw,1.2,bd.td,bd.k),tm); t.position.set(0,1.6,0); t.castShadow=true; t.receiveShadow=true; body.add(t); } else box(bd.tw,1.2,bd.td,tm,0,1.6,0);
   /* сужающийся «кубик»: ширина сверху wt, снизу wb (для женских рук и ног) */
@@ -2070,11 +2073,12 @@ function buildAvatar(cfg){
       }
     }
     const nk=cfg.neck, ny=2.1;
-    if(nk==='scarf'){ box(tw0+.1,.26,tn+.1,am,0,ny+.02,0); box(.2,.75,.07,am,tw0*.22,ny-.42,tn/2+.07); box(.2,.5,.07,am,tw0*.22+.0,ny-.7,tn/2+.075); }
-    else if(nk==='bowtie'){ for(const sx of [-1,1]){ const w=new THREE.Mesh(new THREE.ConeGeometry(.15,.22,3),am); w.position.set(sx*.13,ny+.05,tn/2+.04); w.rotation.z=sx*Math.PI/2; w.scale.z=.3; body.add(w); } box(.08,.1,.08,am,0,ny+.05,tn/2+.05); }
-    else if(nk==='tie'){ box(.11,.1,.06,am,0,ny+.07,tn/2+.04); const t=box(.17,.7,.04,am,0,ny-.3,tn/2+.04); t.rotation.z=0; }
-    else if(nk==='chain'){ const c=new THREE.Mesh(new THREE.TorusGeometry(.27,.02,6,22,Math.PI),M('#d4af37')); c.position.set(0,ny+.1,tn/2+.02); c.rotation.z=Math.PI; c.scale.y=1.2; body.add(c); const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.06),am); gem.position.set(0,ny-.22,tn/2+.04); body.add(gem); }
-    else if(nk==='cross'){ const gd=M('#d4af37'), c=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); c.position.set(0,ny+.1,tn/2+.02); c.rotation.z=Math.PI; c.scale.y=1.4; body.add(c); box(.07,.3,.025,gd,0,ny-.38,tn/2+.05); box(.2,.06,.025,gd,0,ny-.3,tn/2+.05); }
+    const tf=tn/2+(bd.bust||0)*.5;
+    if(nk==='scarf'){ box(tw0+.1,.26,tn+.1,am,0,ny+.02,0); box(.2,.75,.07,am,tw0*.22,ny-.42,tf+.07); box(.2,.5,.07,am,tw0*.22+.0,ny-.7,tf+.075); }
+    else if(nk==='bowtie'){ for(const sx of [-1,1]){ const w=new THREE.Mesh(new THREE.ConeGeometry(.15,.22,3),am); w.position.set(sx*.13,ny+.05,tf+.04); w.rotation.z=sx*Math.PI/2; w.scale.z=.3; body.add(w); } box(.08,.1,.08,am,0,ny+.05,tf+.05); }
+    else if(nk==='tie'){ box(.11,.1,.06,am,0,ny+.07,tf+.04); const t=box(.17,.7,.04,am,0,ny-.3,tf+.04); t.rotation.z=0; }
+    else if(nk==='chain'){ const c=new THREE.Mesh(new THREE.TorusGeometry(.27,.02,6,22,Math.PI),M('#d4af37')); c.position.set(0,ny+.1,tf+.02); c.rotation.z=Math.PI; c.scale.y=1.2; body.add(c); const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.06),am); gem.position.set(0,ny-.22,tf+.04); body.add(gem); }
+    else if(nk==='cross'){ const gd=M('#d4af37'), c=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); c.position.set(0,ny+.1,tf+.02); c.rotation.z=Math.PI; c.scale.y=1.4; body.add(c); box(.07,.3,.025,gd,0,ny-.38,tf+.05); box(.2,.06,.025,gd,0,ny-.3,tf+.05); }
     else if(nk==='choker'){ box(tw0*.55,.07,tn*.78,am,0,ny+.1,0); box(.07,.07,.04,M('#d4af37'),0,ny+.08,tn*.4+.03); }
     else if(nk==='collar'){ box(tw0*.7,.1,tn*.8,M('#c43a3a'),0,ny+.12,0); const b=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),M('#e8c14a')); b.position.set(0,ny+.04,tn*.4+.05); body.add(b); }
     const bk=cfg.back, bz=-tn/2;
@@ -3192,6 +3196,7 @@ const Ed={
     <div class="sec"><span class="lbl">Головной убор</span>${chips('hat',HATS)}<span class="lbl" style="margin-top:.7em;display:block">Цвет убора</span>${sws('hatColor',CLOTHES)}</div>
     <div class="sec"><span class="lbl">Очки</span>${chips('glasses',GLASSES)}<span class="lbl" style="margin-top:.7em;display:block">Шея</span>${chips('neck',NECKS)}<span class="lbl" style="margin-top:.7em;display:block">Спина</span>${chips('back',BACKS)}<span class="lbl" style="margin-top:.7em;display:block">Цвет аксессуаров</span>${sws('accColor',CLOTHES)}</div>
     <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
+    ${(BUILD_DEF[a.build]||{}).fem?`<div class="sec"><span class="lbl">Объём торса</span>${chips('chest',CHESTS)}</div>`:''}
     <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
     <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}${col('hairColor')}`:''}</div>
     <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>`;
@@ -3419,6 +3424,7 @@ const AvS={
     const SEC={
       body:`<div class="sec"><span class="lbl">Кожа</span>${sws('skin',SKINS)}</div>
         <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
+        ${(BUILD_DEF[a.build]||{}).fem?`<div class="sec"><span class="lbl">Объём торса</span>${chips('chest',CHESTS)}</div>`:''}
         <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>`,
       face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div>`,
       hair:`<div class="sec"><span class="lbl">Причёска</span>${chipsC('hair',HAIRS,16)}</div>${a.hair&&a.hair!=='none'?`<div class="sec"><span class="lbl">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="hairColor" value="${a.hairColor||'#2b2118'}" aria-label="Свой цвет волос"></div></div>`:''}`,
