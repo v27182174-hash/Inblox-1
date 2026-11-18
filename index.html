@@ -1521,13 +1521,13 @@ function buildOutfit(id,cfg,c){
       pt.wrapS=pt.wrapT=THREE.RepeatWrapping; const P=po(new THREE.MeshLambertMaterial({color:oc,map:pt})), CO=mc('#4a3030');
       part(P,1.0,2.2,.05); for(const s of sx){ const c=box(.12,.9,.03,W,s*.16,1.75,fz+.04); c.rotation.z=-s*.28; } part(mc(dark(oc)),1.12,1.3,.1);
       cyl(tw*.6,tw*.8,.75,P,.62);
-      box(tw+.14,1.4,.06,CO,0,1.5,-fz-.05); for(const s of sx) box(.28,1.4,.05,CO,s*(tw/2-.04),1.5,fz+.05);
+      box(tabW(1.5)+.14,1.4,.06,CO,0,1.5,-fz-.05); for(const s of sx) box(.28,1.4,.05,CO,s*(tabW(1.5)/2-.04),1.5,fz+.05);
       arms.forEach(a=>box(bd.aw+.3,.9,bd.aw+.18,CO,0,-.55,0,a)); legs.forEach(l=>cx(bd.lw+.04,.55,bd.lw+.04,mc('#3a2a2a'),0,-.5,0,l)); break; }
     case 'turtle':
       part(O,1.0,2.2,.05); box(tw*.74,.2,td+.1,O,0,2.2,0); sleeve(O,1.1,.05,-.55); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l));
       { const gd=mc('#d4af37'), ch=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); ch.position.set(0,2.2,fz+.02); ch.rotation.z=Math.PI; ch.scale.y=1.4; body.add(ch); box(.07,.3,.025,gd,0,1.82,fz+.05); box(.2,.06,.025,gd,0,1.9,fz+.05); } break;
     case 'tabard':
-      part(W,1.0,2.2,.04); box(tw*.6,.2,td+.1,O,0,2.2,0); box(tw+.12,1.1,td+.1,O,0,1.65,0);
+      part(W,1.0,2.2,.04); box(tw*.6,.2,td+.1,O,0,2.2,0); part(O,1.1,2.1,.07);
       for(const s of sx){ box(.07,1.0,.03,G,s*.14,1.65,fz+.07); box(.07,1.0,.03,G,s*.3,1.65,fz+.07); box(.5,.12,.03,G,s*.22,2.0,fz+.07); box(.3,.2,.3,G,s*(tw/2+.02),2.12,0); }
       box(.05,1.1,.03,G,0,1.65,fz+.07); sleeve(W,1.0,.03,-.5); arms.forEach(a=>cx(bd.aw+.06,.22,bd.aw+.06,G,0,-.9,0,a)); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l)); break;
     case 'slayeruni':
@@ -1537,8 +1537,8 @@ function buildOutfit(id,cfg,c){
     case 'haori': {
       const D=mc(dark(oc));
       part(K,1.0,2.2,.04); part(D,1.1,1.3,.09); for(const s of sx){ const c=box(.12,.9,.03,W,s*.16,1.75,fz+.04); c.rotation.z=-s*.28; }
-      box(tw+.14,1.3,.06,O,0,1.55,-fz-.05); for(const s of sx){ box(.3,1.3,.05,O,s*(tw/2-.05),1.55,fz+.05); box(.3,.08,.07,W,s*(tw/2-.05),.93,fz+.05); }
-      box(tw+.16,.08,.08,W,0,.93,-fz-.05);
+      box(tabW(1.5)+.14,1.3,.06,O,0,1.55,-fz-.05); for(const s of sx){ box(.3,1.3,.05,O,s*(tabW(1.5)/2-.05),1.55,fz+.05); box(.3,.08,.07,W,s*(tabW(.95)/2-.05),.93,fz+.05); }
+      box(tabW(.95)+.16,.08,.08,W,0,.93,-fz-.05);
       arms.forEach(a=>{ box(bd.aw+.3,.9,bd.aw+.18,O,0,-.55,0,a); box(bd.aw+.32,.08,bd.aw+.2,W,0,-1.0,0,a); });
       legs.forEach(l=>cx(bd.lw+.03,.85,bd.lw+.03,K,0,-.42,0,l)); break; }
     case 'swordsman':
@@ -1547,14 +1547,14 @@ function buildOutfit(id,cfg,c){
       arms.forEach(a=>{ box(bd.aw+.4,.85,bd.aw+.2,K,0,-.55,0,a); box(bd.aw+.42,.07,bd.aw+.22,W,0,-.98,0,a); });
       box(.08,.08,.95,mc('#3a2a1a'),tw*.55,1.2,.05); box(.12,.12,.14,G,tw*.55,1.2,.5); break;
     case 'sorcerer':
-      part(K,1.0,2.2,.05); box(tw*.8,.24,td+.12,K,0,2.2,0); box(tw+.1,.5,td+.1,K,0,.95,0); box(.04,1.2,.03,S,0,1.6,fz+.04);
+      part(K,1.0,2.2,.05); box(tw*.8,.24,td+.12,K,0,2.2,0); box(tabW(.95)+.1,.5,td+.1,K,0,.95,0); box(.04,1.2,.03,S,0,1.6,fz+.04);
       for(const s of sx) box(.08,.08,.03,G,s*.16,2.2,fz+.07); box(tw*.8,.25,.3,K,0,2.12,-fz-.14);
       sleeve(K,1.05,.05,-.52); arms.forEach(a=>cx(bd.aw+.1,.14,bd.aw+.1,S,0,-1.0,0,a)); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l)); break;
     case 'hunter': {
       const V=O, B=mc('#3b4a3a');
       part(W,1.0,2.2,.04); box(tw*.6,.14,td+.08,W,0,2.17,0);
       for(const s of sx){ box(.32,.95,.05,V,s*(tw/2-.12),1.62,fz+.05); box(.2,.2,.05,mc(dark(oc)),s*.3,1.3,fz+.09); }
-      box(tw+.1,.95,.05,V,0,1.62,-fz-.05); part(K,1.0,1.12,.09); box(.16,.14,.04,G,0,1.06,fz+.07);
+      box(tabW(1.62)+.1,.95,.05,V,0,1.62,-fz-.05); part(K,1.0,1.12,.09); box(.16,.14,.04,G,0,1.06,fz+.07);
       arms.forEach(a=>{ cx(bd.aw+.04,.35,bd.aw+.04,W,0,-.17,0,a); cx(bd.aw+.06,.14,bd.aw+.06,K,0,-.95,0,a); });
       legs.forEach(l=>{ cx(bd.lw+.05,.38,bd.lw+.05,B,0,-.19,0,l); cx(bd.lw+.06,.22,bd.lw+.06,K,0,-.74,0,l); }); break; }
     case 'kimono':
@@ -2123,7 +2123,7 @@ function buildAvatar(cfg){
 const NPC_POSES=[['stand','Стоит',0],['hips','Руки на поясе',0],['crossed','Руки скрещены',0],['back','Руки за спиной',0],['wave','Машет рукой',0],['cheer','Радуется',0],['sit','Сидит на полу',0],['salute','Салют',0],['think','Задумался',0],
   ['jacks','Прыжки «звёздочка»',0],['march','Марширует',0],['clap','Хлопает',0],['point','Показывает вперёд',0],['flex','Силач',0],['bow','Кланяется',0],['robot','Робот',0],['guard','Боевая стойка',0],['run','Бежит на месте',0],['yawn','Зевает',0],['victory','Победа',0],
   ['dance','Танец',2],['disco','Диско',2],['hiphop','Хип-хоп',2],['twist','Твист',2],['shuffle','Шафл',2],['jumpstyle','Джампстайл',2],['kpop','К-поп',2],['ballroom','Вальс',2],['robotdance','Танец робота',2],
-  ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1],
+  ['shy','Смущается',1],['hair','Поправляет волосы',1],['model','Поза модели',1],['elegant','Изящная поза',1],['kawaii','Кавайная',1],['curtsy','Реверанс',1],['heart','Сердечко',1],['sidehand','Рука на бедре',1],['sitlady','Сидит скромно',1],['pose2','Игривая',1],['sleepy','Потягивается',1],
   ['twirl','Кружится',1],['kiss','Воздушный поцелуй',1],['peace','Знак «мир»',1],['catwalk','Подиум',1],['giggle','Хихикает',1],['ballet','Балет',1],['hugself','Обнимает себя',1],['tantrum','Дуется и топает',1],['flirt','Кокетничает',1],['sway','Покачивается',1],['wave2','Машет двумя',1],['bunny','Зайка',1],['idol','Поза айдола',1]];
 function npcPoseOf(n){ const v=n&&n.pose; return typeof v==='string'&&NPC_POSES.some(x=>x[0]===v)?v:'stand'; }
 function applyNpcPose(av,pose,t){
@@ -2165,6 +2165,7 @@ function applyNpcPose(av,pose,t){
     case 'victory': A([0,-.1],[0,2.9+s2*.15]); B.position.y+=Math.abs(Math.sin(t*5))*.18; break;
     case 'shy': A([-.55,.35],[-.55,-.35]); G([0,.07],[0,-.07]); B.rotation.z=.04+s*.01; break;
     case 'hair': A([-2.2+s*.05,.6],[.05,.08]); G([0,0],[-.12,.1]); B.rotation.z=-.04+s*.01; break;
+    case 'elegant': A([-2.3+Math.sin(t*1.3)*.04,.6],[.2,.55]); G([-.05,.04],[-.34,.3]); B.rotation.z=.07+Math.sin(t*1.2)*.012; B.rotation.y+=Math.sin(t*.9)*.07; break;
     case 'model': A([.1,-.45],[.55,-.1]); G([-.05,.04],[-.3,.35]); B.rotation.z=.06; break;
     case 'kawaii': A([-2.35,.45],[-2.35,-.45]); G([0,.1],[0,-.1]); B.position.y+=Math.abs(Math.sin(t*4))*.1; B.rotation.z=s*.04; break;
     case 'curtsy': { const d=(Math.sin(t*2)+1)/2; B.position.y-=.25*d; A([-.2,-.8],[-.2,.8]); G([-.3*d,.05],[.55*d,-.05]); break; }
@@ -3484,7 +3485,7 @@ const HomeBG={scene:null,cam:null,chars:[],t:0,
     {fx:.47,z:-.9,rot:.35,pose:'think',look:{build:'normal',skin:'#f1c27d',shirt:'#f2f2f0',pants:'#17171b',face:'anime36',head:'cube',hair:'short',hairColor:'#2b2118',outfit:'suit',outfitColor:'#1b1b20'}},
     {fx:.6,z:.5,rot:-.2,pose:'hair',look:{build:'curvy',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#8a5a2b',outfit:'sundress',outfitColor:'#e9e5dc'}},
     {fx:.73,z:-.6,rot:.2,pose:'victory',look:{build:'wide',skin:'#c68642',shirt:'#e8e6e1',pants:'#26262b',face:'anime37',head:'cube',hair:'spiky',hairColor:'#141414',outfit:'hoodie',outfitColor:'#3a3a3f'}},
-    {fx:.86,z:.5,rot:-.35,pose:'kawaii',look:{build:'petite',skin:'#f8d9b8',face:'anime15',head:'cutie',hair:'twinbuns',hairColor:'#d9d9de',outfit:'pinafore',outfitColor:'#1d1d21'}}
+    {fx:.86,z:.5,rot:-.3,pose:'elegant',look:{build:'petite',skin:'#fbe3cf',face:'anime3',head:'cutie',hair:'wavylocks',hairColor:'#f0c4dc',hat:'sideclip',hatColor:'#ffffff',outfit:'gown',outfitColor:'#cdb8f5',neck:'choker',accColor:'#ffffff'}}
   ],
 
   init(){
