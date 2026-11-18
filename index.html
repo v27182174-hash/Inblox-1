@@ -1212,11 +1212,11 @@ function makeWorld(game,editor){
    ============================================================ */
 const SKINS=['#f8d9b8','#f1c27d','#e0a370','#c68642','#8d5524','#5c3a21','#b5e3a0','#a0c8f0'];
 const CLOTHES=['#59a8ff','#ff5a4d','#ffd23d','#35e0a1','#c77dff','#ff8fb8','#f4f4f6','#2b2f3a','#14161c','#ff9a3d','#2f6fd6','#7a8b99'];
-const HATS=[['none','Без шапки'],['cap','Кепка'],['beanie','Шапка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Кошачьи ушки'],['bunny','Ушки зайца'],['horns','Рожки'],['halo','Нимб'],['witch','Шляпа ведьмы'],['headphones','Наушники'],['bow','Бантик'],['flower','Цветок'],['antenna','Антенна']];
-const GLASSES=[['none','Без очков'],['round','Круглые'],['square','Квадратные'],['sun','Солнцезащитные'],['heartg','Сердечки'],['monocle','Монокль']];
-const NECKS=[['none','Ничего'],['scarf','Шарф'],['bowtie','Бабочка'],['tie','Галстук'],['chain','Цепочка'],['collar','Ошейник с бубенчиком']];
+const HATS=[['none','Без шапки'],['cap','Кепка'],['beanie','Шапка'],['tophat','Цилиндр'],['crown','Корона'],['ears','Кошачьи ушки'],['bunny','Ушки зайца'],['horns','Рожки'],['halo','Нимб'],['witch','Шляпа ведьмы'],['headphones','Наушники'],['bow','Бантик'],['flower','Цветок'],['antenna','Антенна'],['sideclip','Заколка'],['headband','Ободок']];
+const GLASSES=[['none','Без очков'],['round','Круглые'],['square','Квадратные'],['sun','Солнцезащитные'],['heartg','Сердечки'],['monocle','Монокль'],['thin','Тонкие прямоугольные'],['cateye','Кошачий глаз']];
+const NECKS=[['none','Ничего'],['scarf','Шарф'],['bowtie','Бабочка'],['tie','Галстук'],['chain','Цепочка'],['collar','Ошейник с бубенчиком'],['cross','Цепочка с крестом'],['choker','Чокер']];
 const BACKS=[['none','Ничего'],['backpack','Рюкзак'],['wings','Крылья ангела'],['batwings','Крылья летучей мыши'],['cape','Плащ'],['foxtail','Лисий хвост'],['bunnytail','Пушистый хвостик'],['guitar','Гитара'],['satchel','Сумка через плечо']];
-const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот'],['anime23','Аниме: фиолетовые'],['anime24','Аниме: бирюзовые, смущение'],['anime25','Аниме: янтарные, улыбка'],['anime26','Аниме: лавандовые, подмигивание'],['anime27','Аниме: мятные, веснушки'],['anime28','Аниме: розовые, сердечки'],['anime29','Аниме: небесные, сонные'],['anime30','Аниме: рубиновые, веснушки'],['anime31','Аниме: счастливая'],['anime32','Аниме: слёзы радости'],['anime33','Аниме парень: дерзкий'],['anime34','Аниме парень: серьёзный'],['anime35','Аниме парень: клык'],['anime36','Аниме парень: спокойный'],['anime37','Аниме парень: хитрый'],['anime38','Аниме парень: тёмный'],['anime39','Аниме парень: подмигивает'],['anime40','Аниме парень: ухмылка'],['anime41','Аниме парень: скучает'],['anime42','Аниме парень: радость'],['anime43','Аниме парень: веснушки'],['anime44','Аниме парень: мягкий'],['anime45','Сёнэн: янтарный огонь'],['anime46','Сёнэн: змеиный взгляд'],['anime47','Сёнэн: красные, узкий зрачок'],['anime48','Сёнэн: ледяной взгляд'],['anime49','Сёнэн: светящиеся без зрачков'],['anime50','Сёнэн: гетерохромия'],['anime51','Сёнэн: решительный, зелёные'],['anime52','Сёнэн: усталый взгляд'],['anime53','Сёнэн: азарт, клык'],['anime54','Сёнэн: фиолетовый блеск'],['anime55','Сёнэн-девушка: решительная'],['anime56','Сёнэн-девушка: узкий зрачок']];
+const FACES=[['smile','Улыбка'],['happy','Радость'],['cool','Очки'],['wow','Удивление'],['wink','Подмигивание'],['angry','Злость'],['sad','Грусть'],['sleepy','Сон'],['love','Влюблён'],['tongue','Язык'],['laugh','Смех'],['blush','Смущение'],['robot','Робот'],['cat','Кот'],['glasses','Умник'],['smirk','Ухмылка'],['dead','Крестики'],['anime1','Аниме: радость'],['anime2','Аниме: глаза'],['anime3','Аниме: розовые'],['anime4','Аниме: сине-фиолетовые'],['anime5','Аниме: румянец'],['anime6','Аниме: кавай'],['anime7','Аниме: золотые'],['anime8','Аниме: закрытые глаза'],['anime9','Аниме: смущение'],['anime10','Аниме: смущённая улыбка'],['anime11','Аниме: стеснение'],['anime22','Аниме: смущённая, рубиновые'],['anime12','Аниме: зелёные глаза'],['anime13','Аниме: рубиновые глаза'],['anime14','Аниме: серые глаза'],['anime15','Аниме: сердечки'],['anime16','Аниме: подмигивание'],['anime17','Аниме: удивление'],['anime18','Аниме: сонные'],['anime19','Аниме: слёзки'],['anime20','Аниме: мечтательные'],['anime21','Аниме: кошачий рот'],['anime23','Аниме: фиолетовые'],['anime24','Аниме: бирюзовые, смущение'],['anime25','Аниме: янтарные, улыбка'],['anime26','Аниме: лавандовые, подмигивание'],['anime27','Аниме: мятные, веснушки'],['anime28','Аниме: розовые, сердечки'],['anime29','Аниме: небесные, сонные'],['anime30','Аниме: рубиновые, веснушки'],['anime31','Аниме: счастливая'],['anime32','Аниме: слёзы радости'],['anime33','Аниме парень: дерзкий'],['anime34','Аниме парень: серьёзный'],['anime35','Аниме парень: клык'],['anime36','Аниме парень: спокойный'],['anime37','Аниме парень: хитрый'],['anime38','Аниме парень: тёмный'],['anime39','Аниме парень: подмигивает'],['anime40','Аниме парень: ухмылка'],['anime41','Аниме парень: скучает'],['anime42','Аниме парень: радость'],['anime43','Аниме парень: веснушки'],['anime44','Аниме парень: мягкий'],['anime45','Сёнэн: янтарный огонь'],['anime46','Сёнэн: змеиный взгляд'],['anime47','Сёнэн: красные, узкий зрачок'],['anime48','Сёнэн: ледяной взгляд'],['anime49','Сёнэн: светящиеся без зрачков'],['anime50','Сёнэн: гетерохромия'],['anime51','Сёнэн: решительный, зелёные'],['anime52','Сёнэн: усталый взгляд'],['anime53','Сёнэн: азарт, клык'],['anime54','Сёнэн: фиолетовый блеск'],['anime55','Сёнэн-девушка: решительная'],['anime56','Сёнэн-девушка: узкий зрачок'],['anime57','Тихая: рубиновые, ровный рот'],['anime58','Тихая: серые, лёгкая улыбка'],['anime59','Нежная: большие розовые'],['anime60','Мягкий парень: серые, улыбка']];
 const HEADS=[['cube','Куб'],['cutie','Милая'],['soft','Мягкая'],['ball','Шар'],['tall','Вытянутая'],['wide','Широкая'],['big','Большая'],['small','Маленькая'],['pill','Капсула']];
 const HEAD_DEF={cube:{w:.8,h:.8,d:.8,k:0},cutie:{w:.78,h:.78,d:.76,k:.5},soft:{w:.8,h:.8,d:.8,k:.45},ball:{w:.86,h:.86,d:.86,k:1},tall:{w:.7,h:1,d:.7,k:0},wide:{w:1.05,h:.72,d:.8,k:0},big:{w:1.05,h:1.05,d:1.05,k:.25},small:{w:.62,h:.62,d:.62,k:.2},pill:{w:.75,h:1,d:.75,k:.8}};
 /* форма головы: куб, который «раздувается» к эллипсоиду (k: 0 — острые углы, 1 — шар); лицо остаётся на передней грани */
@@ -1262,7 +1262,7 @@ function femGeo(bd,y0,y1,pad=0){
   for(let i=0;i<P.count;i++){ const a=acc.get(P.getX(i).toFixed(3)+','+P.getY(i).toFixed(3)+','+P.getZ(i).toFixed(3)), l=Math.hypot(a[0],a[1],a[2])||1; N.setXYZ(i,a[0]/l,a[1]/l,a[2]/l); }
   geo.computeBoundingSphere(); return geo;
 }
-const HAIRS=[['none','Без волос'],['short','Короткие'],['spiky','Ёжик'],['long','Длинные'],['ponytail','Хвост'],['twin','Хвостики'],['bob','Каре'],['bun','Пучок'],['afro','Афро'],['mohawk','Ирокез'],['braid','Коса'],['curly','Кудри'],['bangs','Чёлка и длинные'],['wavy','Волнистые'],['highponytail','Высокий хвост'],['sidebraid','Боковая коса'],['twinbraids','Две косы'],['twinbuns','Два пучка'],['lob','Удлинённое каре'],['pixie','Пикси'],['halfup','Полу-хвост'],['ringlets','Локоны'],['sidetail','Боковой хвост'],['shonen','Сёнэн: острые пряди'],['wildspikes','Дикие шипы'],['messy','Растрёпанные'],['eyecover','Чёлка на глаз'],['samurai','Низкий хвост (воин)'],['longsharp','Длинные острые'],['slick','Зачёс назад']];
+const HAIRS=[['none','Без волос'],['short','Короткие'],['spiky','Ёжик'],['long','Длинные'],['ponytail','Хвост'],['twin','Хвостики'],['bob','Каре'],['bun','Пучок'],['afro','Афро'],['mohawk','Ирокез'],['braid','Коса'],['curly','Кудри'],['bangs','Чёлка и длинные'],['wavy','Волнистые'],['highponytail','Высокий хвост'],['sidebraid','Боковая коса'],['twinbraids','Две косы'],['twinbuns','Два пучка'],['lob','Удлинённое каре'],['pixie','Пикси'],['halfup','Полу-хвост'],['ringlets','Локоны'],['sidetail','Боковой хвост'],['shonen','Сёнэн: острые пряди'],['wildspikes','Дикие шипы'],['messy','Растрёпанные'],['eyecover','Чёлка на глаз'],['samurai','Низкий хвост (воин)'],['longsharp','Длинные острые'],['slick','Зачёс назад'],['raggedbob','Каре с рваными концами'],['fluffcap','Пушистая шапка с чёлкой'],['wavylocks','Волнистые с прядями у лица'],['facelocks','Короткие с длинными прядями у лица']];
 const HAIR_COLORS=['#1b1b1b','#2b2118','#5a3a22','#8a5a2b','#c9a26a','#e8d28a','#d9d9de','#b3262d','#e86aa5','#6a5acd','#35c0c0','#3fae5a','#f5e6b3','#ff8fb8','#8a2be2','#1f6fd6','#ff9a3d','#7a4a3a'];
 /* волосы строятся от размеров головы (hs), поэтому подходят к любой форме головы */
 /* текстура волос: тонкие пряди + затемнение у корней; цвет волос умножается на неё */
@@ -1351,10 +1351,19 @@ function buildHair(id,cfg,hs,body){
     case 'longsharp': scalp(); sides(.42,-.85,.54,.015); back(.35,-1.2,.42,.02);
       for(const [x,rz,y] of [[-.35,.3,.46],[-.12,.1,.5],[.12,-.1,.5],[.35,-.3,.46]]) hb(.2,.36,.12,x,y,.52,-.1,rz,.85);
       for(const q of [-1,1]) hb(.14,.5,.14,q*.5,.3,.5,0,q*.1,.85); break;
+    case 'raggedbob': scalp(); back(.3,-.45,.42,.02); sides(.42,-.4,.55,.02); fringe('full');
+      for(const [x,z,rz] of [[-.5,.05,.4],[-.3,.35,.2],[.3,.35,-.2],[.5,.05,-.4],[-.25,-.5,.3],[0,-.55,0],[.25,-.5,-.3]]) hb(.16,.3,.16,x,-.48,z,0,rz,.85); break;
+    case 'fluffcap': scalp(); sides(.42,-.25,.58,.04); back(.35,-.35,.46,.04); fringe('full');
+      for(const [x,y,z] of [[-.5,.55,.0],[.5,.55,.0],[-.35,.7,-.3],[.35,.7,-.3],[0,.76,-.1],[-.55,.2,-.35],[.55,.2,-.35],[0,.25,-.62]]) ball(.2,x,y,z);
+      for(const q of [-1,1]) hb(.2,.4,.14,q*.52,.15,.5,0,q*.1,.85); break;
+    case 'wavylocks': scalp(); sides(.42,-.95,.54,.06); back(.35,-1.1,.42,.07); fringe('part');
+      for(const q of [-1,1]) strand(q*.6,.2,.4,.2,1.2,.16,4,.05); break;
+    case 'facelocks': scalp(); sides(.42,-.05); back(.35,-.4,.4,.02); fringe('full');
+      for(const q of [-1,1]) strand(q*.58,.25,.32,.2,1.1,.18,4,.03); break;
     case 'slick': hb(1.16,.5,1.02,0,.3,-.08,0,0,.5); hb(1.0,.2,1.0,0,.6,-.02,0,0,.9); hb(1.1,.36,.3,0,.1,-.46,0,0,.55); sides(.38,.05); hb(1.12,.14,.2,0,.52,.44,0,0,.8); back(.3,-.35,.4); break;
   }
 }
-const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье'],['schooluni','Школьная форма'],['lolita','Лолита'],['witch','Ведьма'],['princess','Принцесса'],['swim','Купальник'],['yukata','Юката'],['sportwear','Спорт-комплект'],['qipao','Ципао'],['nurse','Медсестра'],['angel','Ангел'],['cheer','Чирлидер'],['knit','Свитер и юбка'],['gothic','Готик-лолита'],['hanbok','Ханбок'],['dirndl','Дирндль'],['tennis','Теннис'],['streetwear','Уличный стиль'],['fairy','Фея'],['mermaid','Русалка'],['wedding','Свадебное платье'],['office','Офисный костюм'],['nightgown','Ночная сорочка'],['idolstage','Сценический образ'],['pinafore','Школьное с фартуком'],['slayeruni','Форма бойца (тёмная)'],['haori','Хаори и кимоно'],['swordsman','Одеяние мечника'],['sorcerer','Тёмный плащ-мундир'],['hunter','Жилет охотника']];
+const OUTFITS=[['none','Без наряда'],['hoodie','Худи'],['jacket','Куртка'],['suit','Костюм'],['dress','Платье'],['overalls','Комбинезон'],['apron','Фартук'],['armor','Доспехи'],['robe','Мантия'],['pirate','Пират'],['astro','Космонавт'],['cape','Плащ'],['scarf','Шарф'],['backpack','Рюкзак'],['skirt','Юбка'],['sailor','Матроска'],['kimono','Кимоно'],['tutu','Пачка'],['croptop','Топ и шорты'],['gown','Бальное платье'],['maid','Горничная'],['sundress','Сарафан'],['cardigan','Кардиган'],['sweater','Свитер-платье'],['schooluni','Школьная форма'],['lolita','Лолита'],['witch','Ведьма'],['princess','Принцесса'],['swim','Купальник'],['yukata','Юката'],['sportwear','Спорт-комплект'],['qipao','Ципао'],['nurse','Медсестра'],['angel','Ангел'],['cheer','Чирлидер'],['knit','Свитер и юбка'],['gothic','Готик-лолита'],['hanbok','Ханбок'],['dirndl','Дирндль'],['tennis','Теннис'],['streetwear','Уличный стиль'],['fairy','Фея'],['mermaid','Русалка'],['wedding','Свадебное платье'],['office','Офисный костюм'],['nightgown','Ночная сорочка'],['idolstage','Сценический образ'],['pinafore','Школьное с фартуком'],['slayeruni','Форма бойца (тёмная)'],['haori','Хаори и кимоно'],['swordsman','Одеяние мечника'],['sorcerer','Тёмный плащ-мундир'],['hunter','Жилет охотника'],['patkimono','Узорчатое кимоно с накидкой'],['turtle','Облегающий свитер'],['tabard','Парадный жилет с отделкой']];
 /* Наряд — объёмные детали поверх тела: воротники, ремни, плащи, броня. Цвет акцентов задаёт outfitColor */
 function buildOutfit(id,cfg,c){
   const {body,box,cx,bd,armL,armR,legL,legR,limb,skin}=c, MC={}, po=m=>{ m.polygonOffset=true; m.polygonOffsetFactor=-2; m.polygonOffsetUnits=-2; return m; }, mc=h=>MC[h]||(MC[h]=po(new THREE.MeshLambertMaterial({color:h})));   /* одежда чуть «ближе» к камере: на плечах кожа/рубашка с ней больше не мерцают и не смешиваются */
@@ -1497,6 +1506,20 @@ function buildOutfit(id,cfg,c){
       const N=mc('#2a3f7a'); part(W,1.25,2.2,.04); box(tw*.96,.14,td+.1,N,0,2.14,0); box(tw*.3,.6,.03,N,0,1.9,fz+.045); box(.26,.14,.05,O,0,1.72,fz+.06); box(.1,.2,.05,O,0,1.6,fz+.06);
       arms.forEach(a=>{ cx(bd.aw+.04,.5,bd.aw+.04,W,0,-.25,0,a); cx(bd.aw+.05,.06,bd.aw+.05,N,0,-.5,0,a); });
       part(N,1.2,1.3,.05); cyl(tw*.62,tw*.95,.42,N,1.07); pleats(tw*.62,tw*.95,.42,1.07,N,mc('#1f2f5e')); break; }
+    case 'patkimono': {
+      const pt=canvasTex(128,128,(g,w,h)=>{ g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.strokeStyle='rgba(90,40,50,.7)'; g.lineWidth=2; for(let y=0;y<2;y++) for(let x=0;x<2;x++){ const cx0=x*64+32, cy0=y*64+32; for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; g.beginPath(); g.moveTo(cx0,cy0); g.lineTo(cx0+Math.cos(a)*30,cy0+Math.sin(a)*30); g.stroke(); } g.beginPath(); for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; g.lineTo(cx0+Math.cos(a)*30,cy0+Math.sin(a)*30); } g.closePath(); g.stroke(); } },true);
+      pt.wrapS=pt.wrapT=THREE.RepeatWrapping; const P=po(new THREE.MeshLambertMaterial({color:oc,map:pt})), CO=mc('#4a3030');
+      part(P,1.0,2.2,.05); for(const s of sx){ const c=box(.12,.9,.03,W,s*.16,1.75,fz+.04); c.rotation.z=-s*.28; } part(mc(dark(oc)),1.12,1.3,.1);
+      cyl(tw*.6,tw*.8,.75,P,.62);
+      box(tw+.14,1.4,.06,CO,0,1.5,-fz-.05); for(const s of sx) box(.28,1.4,.05,CO,s*(tw/2-.04),1.5,fz+.05);
+      arms.forEach(a=>box(bd.aw+.3,.9,bd.aw+.18,CO,0,-.55,0,a)); legs.forEach(l=>cx(bd.lw+.04,.55,bd.lw+.04,mc('#3a2a2a'),0,-.5,0,l)); break; }
+    case 'turtle':
+      part(O,1.0,2.2,.05); box(tw*.74,.2,td+.1,O,0,2.2,0); sleeve(O,1.1,.05,-.55); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l));
+      { const gd=mc('#d4af37'), ch=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); ch.position.set(0,2.2,fz+.02); ch.rotation.z=Math.PI; ch.scale.y=1.4; body.add(ch); box(.07,.3,.025,gd,0,1.82,fz+.05); box(.2,.06,.025,gd,0,1.9,fz+.05); } break;
+    case 'tabard':
+      part(W,1.0,2.2,.04); box(tw*.6,.2,td+.1,O,0,2.2,0); box(tw+.12,1.1,td+.1,O,0,1.65,0);
+      for(const s of sx){ box(.07,1.0,.03,G,s*.14,1.65,fz+.07); box(.07,1.0,.03,G,s*.3,1.65,fz+.07); box(.5,.12,.03,G,s*.22,2.0,fz+.07); box(.3,.2,.3,G,s*(tw/2+.02),2.12,0); }
+      box(.05,1.1,.03,G,0,1.65,fz+.07); sleeve(W,1.0,.03,-.5); arms.forEach(a=>cx(bd.aw+.06,.22,bd.aw+.06,G,0,-.9,0,a)); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l)); break;
     case 'slayeruni':
       part(K,1.0,2.2,.05); box(tw*.72,.16,td+.1,K,0,2.17,0); for(const y of [1.5,1.7,1.9]) box(.07,.07,.03,G,.12,y,fz+.04);
       part(O,.98,1.14,.09); box(.16,.16,.04,G,0,1.06,fz+.07); sleeve(K,1.0,.04,-.5); arms.forEach(a=>cx(bd.aw+.08,.2,bd.aw+.08,W,0,-.95,0,a));
@@ -1729,7 +1752,11 @@ const ANIME={
   anime53:mkAE('amber',{...MB,happy:1,mouth:'fang'}),
   anime54:mkAE('purple',{...MB,bt:'angry',mouth:'smirk',glow:'#e8d0ff'}),
   anime55:mkAE('ember',{bt:'angry',mouth:'grin',blush:0,star:1}),
-  anime56:mkAE('ruby',{slit:1,mouth:'smirk',bt:'angry'})
+  anime56:mkAE('ruby',{slit:1,mouth:'smirk',bt:'angry'}),
+  anime57:mkAE('ruby',{mouth:'flat',half:.12,bt:'strong',bw:2.4,lash:'#1c1018'}),
+  anime58:mkAE('gray',{mouth:'smile',bt:'strong',bw:2.2,half:.1}),
+  anime59:mkAE('pink',{ew:20,eh:23,iw:16,ih:20,mouth:'o',blush:1}),
+  anime60:mkAE('gray',{ew:17,eh:16,iw:12,ih:14,bt:'strong',bw:2.6,mouth:'smile',nolash:1,glow:'',lid:'',lw:3.4})
 };
 function animeStar(g,x,y,r){ g.beginPath(); g.moveTo(x,y-r); g.quadraticCurveTo(x+r*.15,y-r*.15,x+r,y); g.quadraticCurveTo(x+r*.15,y+r*.15,x,y+r); g.quadraticCurveTo(x-r*.15,y+r*.15,x-r,y); g.quadraticCurveTo(x-r*.15,y-r*.15,x,y-r); g.fill(); }
 function animeBrow(g,o,E,F){
@@ -2009,6 +2036,8 @@ function buildAvatar(cfg){
     case 'witch': { add(new THREE.CylinderGeometry(.66,.66,.05,24),0,3.02,0); const c=add(new THREE.ConeGeometry(.38,.85,16),0,3.45,0,0,.1); add(new THREE.CylinderGeometry(.4,.4,.1,16),0,3.1,0).material=new THREE.MeshLambertMaterial({color:'#2b2118'}); break; }
     case 'headphones': { add(new THREE.TorusGeometry(.47,.035,8,24,Math.PI),0,2.62,0); for(const sx of [-1,1]){ const c=add(new THREE.CylinderGeometry(.17,.17,.12,16),sx*.44,2.62,0,0,Math.PI/2); } break; }
     case 'bow': { for(const sx of [-1,1]){ const w=add(new THREE.SphereGeometry(.12,10,8),.27+sx*.13,3.0,.12); w.scale.set(1.2,.8,.6); } add(new THREE.SphereGeometry(.07,8,8),.27,3.0,.13); break; }
+    case 'sideclip': { add(new THREE.BoxGeometry(.3,.07,.05),.32,2.98,.42,0,.35); add(new THREE.BoxGeometry(.3,.07,.05),.32,2.9,.42,0,.35); break; }
+    case 'headband': { const r=add(new THREE.TorusGeometry(.44,.035,6,22,Math.PI),0,2.62,0); r.rotation.z=0; break; }
     case 'flower': { for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; add(new THREE.SphereGeometry(.07,8,8),.28+Math.cos(a)*.1,3.0+Math.sin(a)*.1,.2); } add(new THREE.SphereGeometry(.06,8,8),.28,3.0,.22).material=new THREE.MeshLambertMaterial({color:'#ffd84a'}); break; }
     case 'antenna': add(new THREE.CylinderGeometry(.03,.03,.45,8),0,3.22,0); add(new THREE.SphereGeometry(.1,12,10),0,3.5,0); break;
   }
@@ -2024,6 +2053,8 @@ function buildAvatar(cfg){
         for(const sx of [-1,1]){
           if(gl==='round'){ const r=new THREE.Mesh(new THREE.TorusGeometry(.12,.016,6,18),am); r.position.set(sx*.18,gy,gz); hat.add(r); const l=new THREE.Mesh(new THREE.CircleGeometry(.115,16),glass); l.position.set(sx*.18,gy,gz); hat.add(l); }
           else if(gl==='square'){ for(const [w,h,x,y] of [[.3,.025,0,.1],[.3,.025,0,-.1],[.025,.21,-.15,0],[.025,.21,.15,0]]) hb(w,h,.03,am,sx*.18+x,gy+y,gz); hb(.28,.19,.01,glass,sx*.18,gy,gz); }
+          else if(gl==='thin'){ for(const [w,h,x,y] of [[.33,.02,0,.1],[.33,.02,0,-.1],[.02,.2,-.165,0],[.02,.2,.165,0]]) hb(w,h,.03,dark,sx*.18+x,gy+y,gz); hb(.31,.18,.01,glass,sx*.18,gy,gz); }
+          else if(gl==='cateye'){ hb(.32,.02,.03,am,sx*.18,gy+.1,gz,0,0,-sx*.12); hb(.28,.02,.03,am,sx*.18,gy-.09,gz); hb(.02,.2,.03,am,sx*.18-.14,gy,gz); hb(.02,.22,.03,am,sx*.18+.15,gy+.01,gz); hb(.27,.18,.01,glass,sx*.18,gy,gz); }
           else if(gl==='sun'){ hb(.32,.21,.03,dark,sx*.18,gy,gz+.005); hb(.1,.03,.01,M('#ffffff'),sx*.23,gy+.06,gz+.025); }
           else if(gl==='heartg'){ const c=M(cfg.accColor&&cfg.accColor!=='#f2f2f2'?cfg.accColor:'#ff5a9a'); for(const q of [-1,1]){ const sp=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),c); sp.position.set(sx*.18+q*.05,gy+.035,gz); sp.scale.z=.3; hat.add(sp); } const tp=new THREE.Mesh(new THREE.ConeGeometry(.12,.17,4),c); tp.position.set(sx*.18,gy-.06,gz); tp.rotation.set(0,Math.PI/4,Math.PI); tp.scale.z=.3; hat.add(tp); }
           hb(.025,.025,.42,gl==='sun'?dark:am,sx*.4,gy+.02,gz-.2);
@@ -2036,6 +2067,8 @@ function buildAvatar(cfg){
     else if(nk==='bowtie'){ for(const sx of [-1,1]){ const w=new THREE.Mesh(new THREE.ConeGeometry(.15,.22,3),am); w.position.set(sx*.13,ny+.05,tn/2+.04); w.rotation.z=sx*Math.PI/2; w.scale.z=.3; body.add(w); } box(.08,.1,.08,am,0,ny+.05,tn/2+.05); }
     else if(nk==='tie'){ box(.11,.1,.06,am,0,ny+.07,tn/2+.04); const t=box(.17,.7,.04,am,0,ny-.3,tn/2+.04); t.rotation.z=0; }
     else if(nk==='chain'){ const c=new THREE.Mesh(new THREE.TorusGeometry(.27,.02,6,22,Math.PI),M('#d4af37')); c.position.set(0,ny+.1,tn/2+.02); c.rotation.z=Math.PI; c.scale.y=1.2; body.add(c); const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.06),am); gem.position.set(0,ny-.22,tn/2+.04); body.add(gem); }
+    else if(nk==='cross'){ const gd=M('#d4af37'), c=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); c.position.set(0,ny+.1,tn/2+.02); c.rotation.z=Math.PI; c.scale.y=1.4; body.add(c); box(.07,.3,.025,gd,0,ny-.38,tn/2+.05); box(.2,.06,.025,gd,0,ny-.3,tn/2+.05); }
+    else if(nk==='choker'){ box(tw0*.55,.07,tn*.78,am,0,ny+.1,0); box(.07,.07,.04,M('#d4af37'),0,ny+.08,tn*.4+.03); }
     else if(nk==='collar'){ box(tw0*.7,.1,tn*.8,M('#c43a3a'),0,ny+.12,0); const b=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),M('#e8c14a')); b.position.set(0,ny+.04,tn*.4+.05); body.add(b); }
     const bk=cfg.back, bz=-tn/2;
     if(bk==='backpack'){ box(tw0*.78,.95,.32,am,0,1.62,bz-.16); box(tw0*.78,.28,.36,M('#222630'),0,2.0,bz-.16); box(tw0*.5,.35,.1,M('#222630'),0,1.4,bz-.36); for(const sx of [-1,1]) box(.1,1.0,.04,M('#222630'),sx*tw0*.28,1.78,tn/2+.02); }
@@ -2196,6 +2229,9 @@ function avatarPic(look){
       case 'robe': F(oc,tx,112,tw,70); F('#e6d3a0',tx,150,tw,8); F('#f2c230',tx,174,tw,8); break;
       case 'pirate': for(const y of [124,140,156]) F('#f4f4f6',tx,y,tw,5); F('#b3262d',tx,166,tw,14); F('#f2c230',mid-6,168,12,9); break;
       case 'astro': F('#f4f4f6',tx,112,tw,70); F('#aab3c0',mid-tw*.3,126,tw*.6,26); F('#ff5a4d',mid-17,134,9,9); F('#35e0a1',mid-4,134,9,9); F('#59a8ff',mid+9,134,9,9); F('#aab3c0',tx,112,tw,8); break;
+      case 'patkimono': F(oc,tx,112,tw,70); F('rgba(255,255,255,.35)',tx+6,124,tw-12,14); F('#4a3030',tx,112,12,70); F('#4a3030',tx+tw-12,112,12,70); break;
+      case 'turtle': F(oc,tx,112,tw,70); F('#f2c230',mid-2,136,4,16); F('#f2c230',mid-7,141,14,4); break;
+      case 'tabard': F('#f4f4f6',tx,112,tw,70); F(oc,tx+4,116,tw-8,60); F('#f2c230',mid-tw*.3,120,4,54); F('#f2c230',mid+tw*.3-4,120,4,54); break;
       case 'slayeruni': F('#20222b',tx,112,tw,70); F('#f2c230',mid+6,122,5,5); F('#f2c230',mid+6,136,5,5); F(oc,tx,164,tw,10); break;
       case 'haori': F('#20222b',tx,112,tw,70); F(oc,tx,112,14,70); F(oc,tx+tw-14,112,14,70); F('#fff',tx,176,tw,5); break;
       case 'swordsman': F('#20222b',tx,112,tw,70); F('#fff',mid-18,112,6,22); F('#fff',mid+12,112,6,22); F('#f4f4f6',tx,150,tw,16); break;
@@ -2228,6 +2264,7 @@ function avatarPic(look){
     case 'halfup': HR(hx-5,hy+4,hw+10,hh*1.4,8); break;
     case 'ringlets': HR(hx-4,hy+4,hw+8,hh*1.0,8); for(let i=0;i<4;i++){ HC(hx-4,hy+hh*(.4+i*.28),11); HC(hx+hw+4,hy+hh*(.4+i*.28),11); } break;
     case 'sidetail': HR(hx+hw-4,hy+hh*.1,18,hh*1.1,8); break;
+    case 'wavylocks': HR(hx-6,hy+2,hw+12,hh*1.5,8); break;
     case 'samurai': HR(hx+hw/2-7,hy+hh*.2,14,hh*1.5,6); break;
     case 'longsharp': HR(hx-6,hy+2,hw+12,hh*1.5,8); break;
     case 'afro': HC(hx+hw/2,hy+hh*.25,hw*.78); break;
@@ -2245,6 +2282,8 @@ function avatarPic(look){
     case 'samurai': HR(hx-3,hy-5,hw+6,hh*.26,5); HC(hx+hw/2,hy-8,8); break;
     case 'longsharp': HR(hx-3,hy-5,hw+6,hh*.3,5); HR(hx-4,hy,10,hh*.7,4); HR(hx+hw-6,hy,10,hh*.7,4); break;
     case 'slick': HR(hx-3,hy-5,hw+6,hh*.2,5); break;
+    case 'raggedbob': case 'facelocks': HR(hx-4,hy-5,hw+8,hh*.3,5); HR(hx-4,hy,9,hh*.7,3); HR(hx+hw-5,hy,9,hh*.7,3); break;
+    case 'fluffcap': HR(hx-5,hy-8,hw+10,hh*.35,8); HC(hx+2,hy-6,12); HC(hx+hw-2,hy-6,12); break;
     case 'halfup': HR(hx-3,hy-5,hw+6,hh*.26,5); HC(hx+hw/2,hy-12,10); HR(hx-4,hy,10,hh*.55,4); HR(hx+hw-6,hy,10,hh*.55,4); break;
     case 'highponytail': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.5,4); HR(hx+hw-6,hy,10,hh*.5,4); HC(hx+hw/2,hy-8,8); break;
     case 'sidebraid': HR(hx-3,hy-5,hw+6,hh*.28,5); HR(hx-4,hy,10,hh*.55,4); for(let i=0;i<4;i++) HR(hx+hw-4+(i%2?1:-1),hy+hh*.5+i*14,13,15,5); break;
