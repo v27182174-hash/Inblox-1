@@ -498,6 +498,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--a1)!important;box-sha
 .joy i{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),rgba(140,180,255,.5));border:1px solid rgba(255,255,255,.55);box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 16px rgba(89,168,255,.4)}
 .jbtn{background:linear-gradient(135deg,rgba(89,168,255,.6),rgba(124,92,255,.6));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.5);color:#fff;font-family:var(--display);font-weight:800;letter-spacing:.02em;box-shadow:0 8px 28px rgba(0,0,0,.35),0 0 24px rgba(124,92,255,.4);transition:transform .12s,box-shadow .12s}
 .jbtn:active{background:linear-gradient(135deg,rgba(120,190,255,.85),rgba(150,120,255,.85));transform:scale(.93);box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 34px rgba(124,92,255,.7)}
+#jbtn{background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.9);box-shadow:0 8px 24px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;padding:0}
+#jbtn svg{width:58%;height:58%;pointer-events:none;transition:transform .12s}
+#jbtn:active{background:rgba(255,255,255,.98);transform:scale(.93);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+#jbtn:active svg{transform:translateY(-8%)}
 /* NPC-диалоги */
 .npcb{border-color:rgba(255,255,255,.22);box-shadow:0 12px 40px rgba(0,0,0,.45)}
 .npcb b{color:var(--gold);font-family:var(--display);font-weight:800}
@@ -2450,7 +2454,7 @@ const Play={
       <div class="pill" id="hCoins" ${this.coinsTotal?'':'hidden'}>Монеты <b id="hc">0</b> / ${this.coinsTotal}</div><div class="pill" id="pyStat" hidden></div>
       <button class="btn sm" id="pSL" title="Shift Lock: камера за плечом, персонаж смотрит туда же, куда камера (клавиша Shift)">⇧ Shift Lock</button><button class="btn sm" id="pChat">💬 Чат</button><button class="btn sm" id="pPause">Пауза</button></div>
       <div class="hintp">WASD / стрелки — движение · Пробел — прыжок · Мышь (зажать) / Q E — камера · Колесо — зум · F — поговорить с NPC · Enter — чат · Shift — Shift Lock · Esc — пауза</div>
-      <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn">Прыжок</button></div>
+      <div class="touch"><div class="joy" id="joy"><i id="joyK"></i></div><button class="jbtn" id="jbtn" aria-label="Прыжок"><svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#0b0b0f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 17v11"/><path d="M24 20l-8-6M24 20l8-6"/><path d="M24 28l-7 5l1 6M24 28l7 4l-1 7"/><path d="M14 44h20" stroke-width="2.4" opacity=".35"/></g><circle cx="24" cy="10" r="4.6" fill="#0b0b0f"/></svg></button></div>
       <div class="guil" id="pGui"></div><div class="phud" id="pHud"></div><div class="pban" id="pBan"></div><div class="pcross" id="pCross" hidden></div>
       <div class="chat" id="chat"><div class="clog" id="clog"></div><div class="cin"><input id="cIn" maxlength="140" autocomplete="off" placeholder="Сообщение… Enter — отправить, Esc — закрыть"></div></div>
       <button class="npcp" id="npcP" hidden></button><div class="npcb" id="npcB" hidden></div>
@@ -2794,6 +2798,7 @@ const Ed={
     game.settings={...DEF_SET,...game.settings}; game.sounds={...DEF_SND,...game.sounds};
     this.game=game; this.sel=null; this.undo=[]; this.redo=[]; this.tab='props'; this.mount(); this.build(); go('editor');
     this.orb.t.set(0,1,0); this.orb.dist=34; this.orb.yaw=.8; this.orb.pitch=.62;
+    orbitPlace(this.cam,{yaw:.8,pitch:.62,dist:34,t:this.orb.t}); this.setFly(true);   /* редактор всегда в режиме полёта */
   },
   resume(){ this.build(); go('editor'); this.renderBody(); },
   mount(){
@@ -2803,8 +2808,7 @@ const Ed={
       <button class="logo" id="edHome" title="Сохранить и выйти в меню">${LOGO}<span>Inblox</span></button>
       <input type="text" class="name" id="edName" maxlength="40" aria-label="Название игры">
       <span class="sp"></span>
-      <button class="btn ico" id="edFly" title="Свободный полёт камеры">✈ Полёт</button><button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
-      <button class="btn sm" id="edVert" title="Режим: тянуть блок вверх и вниз" style="flex:none">↕ Высота</button>
+      <button class="btn ico" id="edUndo" title="Отменить (Ctrl+Z)">↶</button><button class="btn ico" id="edRedo" title="Повторить (Ctrl+Y)">↷</button>
       <label class="row" style="flex:none;gap:.5em"><span class="muted">Сетка</span>
         <select id="edSnap" style="width:5.2em"><option value="0">Выкл</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label>
       <button class="btn" id="edSave">Сохранить</button><button class="btn pri" id="edTest">▶ Тест</button>
@@ -2822,11 +2826,10 @@ const Ed={
     $('#edSave').onclick=()=>this.save();
     $('#edTest').onclick=()=>{ this.save(true); this.stopMusicPreview(); Play.start(this.game,'editor'); };
     $('#edUndo').onclick=()=>this.doUndo(); $('#edRedo').onclick=()=>this.doRedo();
-    this.vmode=false; $('#edVert').onclick=()=>{ this.vmode=!this.vmode; $('#edVert').classList.toggle('pri',this.vmode); toast(this.vmode?'Тяните блок вверх и вниз':'Обычное перемещение',1300); };
+    this.vmode=false;
     $('#edSnap').onchange=e=>{ this.snapV=parseFloat(e.target.value); }; $('#edSnap').value=String(this.snapV);
     $$('#edTools .tool').forEach(b=>b.onclick=()=>this.addKind(KINDS[+b.dataset.k]));
     $$('#editor .tab').forEach(b=>b.onclick=()=>{ this.tab=b.dataset.t; this.renderBody(); });
-    $('#edFly').onclick=()=>this.setFly(!this.fly.on);
     $$('#flyBar [data-go]').forEach(b=>b.onclick=()=>this.goTo(b.dataset.go));
     $('#flySp').onchange=e=>{ this.fly.speed=+e.target.value; };
     this.bindFly(); this.bindPanels(); this.renderBody();
@@ -2874,7 +2877,7 @@ const Ed={
   },
   flyUI(){
     const on=this.fly.on, touch=stage.classList.contains('istouch');
-    $('#edFly').classList.toggle('on',on); $('#flyBar').style.display=on?'flex':'none'; $('#edTouch').style.display=on?'':'none';
+    $('#flyBar').style.display=on?'flex':'none'; $('#edTouch').style.display=on?'':'none';
     const h=$('#editor .thint'); if(h) h.style.visibility=on?'hidden':'';
     if(touch&&this.applyPanels&&!this._init){ if(on){ this.psSave={...this.ps}; this.ps.tools=false; this.ps.panel=false; } else if(this.psSave){ Object.assign(this.ps,this.psSave); this.psSave=null; } this.applyPanels(); }
   },
