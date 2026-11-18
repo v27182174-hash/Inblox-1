@@ -1827,6 +1827,7 @@ function animeHappyEye(g,o){
   animeBrow(g,{brow:o.brow||'#4a2a2e',bw:2,bt:o.bt},16,10);
 }
 function drawAnimeFace(g,o){
+  if(FC_EYE&&/^#[0-9a-f]{6}$/i.test(FC_EYE)) o=Object.assign({},o,{c1:fcMix(FC_EYE,-.5),c2:FC_EYE,c3:fcMix(FC_EYE,.55),glow:o.glow===''?'':fcMix(FC_EYE,.8),drop:fcMix(FC_EYE,-.6),alt:null});
   g.save();
   for(const side of [-1,1]){ g.save(); g.translate(64+side*29,64); g.scale(-side,1); if(o.happy) animeHappyEye(g,o); else if(o.wink&&side===1) animeClosedEye(g,o); else animeEye(g,(side===1&&o.alt)?Object.assign({},o,o.alt):o); g.restore(); }
   if(o.blush){ const big=o.blush>1; for(const x of [32,96]){ const rg=g.createRadialGradient(x,92,1,x,92,big?20:15); rg.addColorStop(0,big?'rgba(255,95,120,.78)':'rgba(255,110,130,.6)'); rg.addColorStop(1,'rgba(255,110,130,0)'); g.fillStyle=rg; g.beginPath(); g.ellipse(x,92,big?20:16,big?10:8,0,0,7); g.fill(); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.6; for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(x+i*6-2,89); g.lineTo(x+i*6+1,95); g.stroke(); } } }
@@ -2859,7 +2860,6 @@ const Ed={
     <button class="btn sm popen l" id="edToolsO" hidden>＋ Блоки</button><button class="btn sm popen r" id="edPanelO" hidden>⚙ Параметры</button>
     <div class="hint">ЛКМ — выбрать и двигать · Shift+ЛКМ или жёлтые стрелки — по высоте · ПКМ — вращать камеру · Колесо — зум · WASD — камера · Del — удалить · Ctrl+D — копия · R — повернуть</div>
     <div class="thint">Касание — выбрать и двигать · Жёлтые стрелки или «↕ Высота» — вверх и вниз · Пустое место — вращать камеру · Два пальца — зум</div>
-    <div class="flybar" id="flyBar" style="display:none"><button class="btn sm" data-go="start">⌂ Старт</button><button class="btn sm" data-go="center">◎ Центр</button><button class="btn sm" data-go="top">⬆ Сверху</button><button class="btn sm" data-go="sel">▣ Блок</button><button class="btn sm" data-go="nw" title="Северо-запад">↖</button><button class="btn sm" data-go="ne" title="Северо-восток">↗</button><button class="btn sm" data-go="sw" title="Юго-запад">↙</button><button class="btn sm" data-go="se" title="Юго-восток">↘</button><select id="flySp" style="width:7em"><option value="8">Медленно</option><option value="20" selected>Средне</option><option value="55">Быстро</option><option value="140">Супер</option></select></div>
     <div class="touch" id="edTouch" style="display:none"><div class="joy" id="edJoy"><i id="edJoyK"></i></div><button class="jbtn" id="edUp" style="bottom:12em">▲</button><button class="jbtn" id="edDn">▼</button></div>`;
     $('#edName').value=this.game.name; $('#edName').oninput=e=>{ this.game.name=e.target.value||'Без названия'; this.dirty=true; };
     $('#edHome').onclick=()=>{ this.save(true); this.leave(); };
@@ -2870,8 +2870,6 @@ const Ed={
     $('#edSnap').onchange=e=>{ this.snapV=parseFloat(e.target.value); }; $('#edSnap').value=String(this.snapV);
     $$('#edTools .tool').forEach(b=>b.onclick=()=>this.addKind(KINDS[+b.dataset.k]));
     $$('#editor .tab').forEach(b=>b.onclick=()=>{ this.tab=b.dataset.t; this.renderBody(); });
-    $$('#flyBar [data-go]').forEach(b=>b.onclick=()=>this.goTo(b.dataset.go));
-    $('#flySp').onchange=e=>{ this.fly.speed=+e.target.value; };
     this.bindFly(); this.bindPanels(); this.renderBody();
     if(this.fly.on){ this.fly.on=false; this.fly.tw=null; }
   },
@@ -2917,7 +2915,7 @@ const Ed={
   },
   flyUI(){
     const on=this.fly.on, touch=stage.classList.contains('istouch');
-    $('#flyBar').style.display=on?'flex':'none'; $('#edTouch').style.display=on?'':'none';
+    $('#edTouch').style.display=on?'':'none';
     const h=$('#editor .thint'); if(h) h.style.visibility=on?'hidden':'';
     if(touch&&this.applyPanels&&!this._init){ if(on){ this.psSave={...this.ps}; this.ps.tools=false; this.ps.panel=false; } else if(this.psSave){ Object.assign(this.ps,this.psSave); this.psSave=null; } this.applyPanels(); }
   },
@@ -3211,7 +3209,7 @@ const Ed={
     <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>
     <div class="sec"><span class="lbl">Волосы</span>${chips('hair',HAIRS)}${a.hair&&a.hair!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}${col('hairColor')}`:''}</div>
     <div class="sec"><span class="lbl">Лицо</span>${chips('face',FACES)}</div>
-    <div class="sec"><span class="lbl">Цвет глаз (обычные лица)</span>${sws('eyeColor',EYE_COLORS)}</div>`;
+    <div class="sec"><span class="lbl">Цвет глаз</span>${sws('eyeColor',EYE_COLORS)}</div>`;
   },
   npcBind(el,p){
     const keep=fn=>{ const a=el.scrollTop, par=el.parentElement, b=par?par.scrollTop:0; fn(); el.scrollTop=a; if(par) par.scrollTop=b; };
@@ -3438,7 +3436,7 @@ const AvS={
         <div class="sec"><span class="lbl">Тело</span>${chips('build',BUILDS)}</div>
         ${(BUILD_DEF[a.build]||{}).fem?`<div class="sec"><span class="lbl">Объём торса</span>${chips('chest',CHESTS)}</div>`:''}
         <div class="sec"><span class="lbl">Форма головы</span>${chips('head',HEADS)}</div>`,
-      face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div><div class="sec"><span class="lbl">Цвет глаз (обычные лица)</span>${sws('eyeColor',EYE_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="eyeColor" value="${a.eyeColor||'#1b1b22'}" aria-label="Свой цвет глаз"></div></div>`,
+      face:`<div class="sec"><span class="lbl">Лицо</span>${facesUI}</div><div class="sec"><span class="lbl">Цвет глаз</span>${sws('eyeColor',EYE_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="eyeColor" value="${a.eyeColor||'#1b1b22'}" aria-label="Свой цвет глаз"></div></div>`,
       hair:`<div class="sec"><span class="lbl">Причёска</span>${chipsC('hair',HAIRS,16)}</div>${a.hair&&a.hair!=='none'?`<div class="sec"><span class="lbl">Цвет волос</span>${sws('hairColor',HAIR_COLORS)}<div style="margin-top:.5em"><input type="color" data-k="hairColor" value="${a.hairColor||'#2b2118'}" aria-label="Свой цвет волос"></div></div>`:''}`,
       wear:`<div class="sec"><span class="lbl">Наряд</span>${chipsC('outfit',OUTFITS,14)}${a.outfit&&a.outfit!=='none'?`<span class="lbl" style="margin-top:.7em;display:block">Цвет наряда</span>${sws('outfitColor',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="outfitColor" value="${a.outfitColor||'#e8433f'}" aria-label="Свой цвет наряда"></div>${texUI('outfitTex')}`:''}</div>
         <div class="sec"><span class="lbl">Футболка</span>${sws('shirt',CLOTHES)}<div style="margin-top:.5em"><input type="color" data-k="shirt" value="${a.shirt}" aria-label="Свой цвет футболки"></div>${texUI('shirtTex')}</div>
