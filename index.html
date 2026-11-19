@@ -169,6 +169,7 @@ label.drop{position:relative;display:block;overflow:hidden}
 .flybar .btn{padding:.3em .6em}
 .btn.on{background:#fff;color:#000}
 .guil{position:absolute;inset:0;overflow:hidden;pointer-events:none!important;z-index:0}
+#play .hud{z-index:30}#play .touch{z-index:20}#play .chat{z-index:25}#play .npcp,#play .npcb{z-index:22}#play .ov{z-index:40}#play .pban{z-index:18}
 .gui-el{position:absolute;box-sizing:border-box;display:flex;align-items:center;padding:.1em .4em;line-height:1.2;overflow:hidden;pointer-events:none;user-select:none;-webkit-user-select:none;font-family:var(--body)}
 .gui-el .gt{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .gui-el.text .gt{text-shadow:0 1px 4px #000}
@@ -919,13 +920,16 @@ function tn(c,out,t,f0,f1,dur,type,vol){
   o.connect(g); g.connect(out); o.start(t); o.stop(t+dur+.03);
 }
 const JUMP_B64='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qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxCwDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tYxHoDwAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+/* мягкие «колокольчиковые» звуки: синус с обертонами, плавной атакой и затуханием */
+function bell(c,o,t,f,dur,vol){ for(const [m,a,d] of [[1,1,1],[2.01,.26,.55],[3.97,.07,.3]]){ const os=c.createOscillator(), g=c.createGain(); os.type='sine'; os.frequency.value=f*m; g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(vol*a,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+dur*d); os.connect(g); g.connect(o); os.start(t); os.stop(t+dur*d+.05); } }
+function soft(c,o,t,f0,f1,dur,vol,type){ const os=c.createOscillator(), g=c.createGain(), lp=c.createBiquadFilter(); os.type=type||'sine'; os.frequency.setValueAtTime(f0,t); if(f1!==f0) os.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur); lp.type='lowpass'; lp.frequency.value=2200; g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); os.connect(lp); lp.connect(g); g.connect(o); os.start(t); os.stop(t+dur+.05); }
 const SFX={
-  jump:(c,o,t,v)=>tn(c,o,t,260,620,.16,'square',.14*v),
-  coin:(c,o,t,v)=>{tn(c,o,t,988,988,.08,'square',.12*v);tn(c,o,t+.07,1319,1319,.22,'square',.12*v)},
-  win:(c,o,t,v)=>[523,659,784,1047].forEach((f,i)=>tn(c,o,t+i*.12,f,f,.34,'triangle',.25*v)),
-  bounce:(c,o,t,v)=>tn(c,o,t,200,900,.3,'sine',.3*v),
-  checkpoint:(c,o,t,v)=>{tn(c,o,t,660,660,.1,'triangle',.25*v);tn(c,o,t+.1,880,880,.25,'triangle',.25*v)},
-  click:(c,o,t,v)=>tn(c,o,t,900,500,.05,'square',.08*v)
+  jump:(c,o,t,v)=>{ soft(c,o,t,330,640,.16,.2*v); soft(c,o,t,660,1280,.12,.05*v); },
+  coin:(c,o,t,v)=>{ bell(c,o,t,1318.5,.5,.12*v); bell(c,o,t+.085,1975.5,.75,.11*v); },
+  win:(c,o,t,v)=>{ [523.25,659.25,783.99,1046.5].forEach((f,i)=>bell(c,o,t+i*.11,f,.9,.14*v)); [523.25,659.25,783.99,1318.5].forEach(f=>bell(c,o,t+.5,f,1.4,.09*v)); },
+  bounce:(c,o,t,v)=>{ const os=c.createOscillator(), g=c.createGain(), lp=c.createBiquadFilter(); os.type='sine'; os.frequency.setValueAtTime(180,t); os.frequency.exponentialRampToValueAtTime(620,t+.11); os.frequency.exponentialRampToValueAtTime(360,t+.32); lp.type='lowpass'; lp.frequency.value=1800; g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(.26*v,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+.38); os.connect(lp); lp.connect(g); g.connect(o); os.start(t); os.stop(t+.42); },
+  checkpoint:(c,o,t,v)=>{ bell(c,o,t,783.99,.6,.14*v); bell(c,o,t+.12,1174.7,.9,.13*v); },
+  click:(c,o,t,v)=>soft(c,o,t,720,480,.05,.09*v)
 };
 const SFX_LIST=[['b:jump','Прыжок'],['b:coin','Монета'],['b:win','Победа'],['b:bounce','Батут'],['b:checkpoint','Чекпоинт'],['b:click','Клик']];
 const MUS_LIST=[['b:music1','Мелодия: спокойная'],['b:music2','Мелодия: бодрая'],['b:music3','Мелодия: космос']];
@@ -962,8 +966,7 @@ const Snd={ctx:null,master:null,mg:null,cache:{},timer:null,src:null,tok:0,vol:n
     return this.jp;
   },
   playJump(vol){
-    const go=b=>{ if(!b){ SFX.jump(this.ctx,this.master,this.ctx.currentTime,vol); return; } const s=this.ctx.createBufferSource(); s.buffer=b; const g=this.ctx.createGain(); g.gain.value=.8*vol; s.connect(g); g.connect(this.master); s.start(); };
-    if(this.jbuf) go(this.jbuf); else this.loadJump().then(go);
+    SFX.jump(this.ctx,this.master,this.ctx.currentTime,vol);
   },
   buf(id){
     if(this.cache[id]) return this.cache[id];
@@ -1471,7 +1474,7 @@ function buildOutfit(id,cfg,c){
       arms.forEach(a=>{ cx(bd.aw+.04,.3,bd.aw+.04,W,0,-.15,0,a); cx(bd.aw+.05,.05,bd.aw+.05,O,0,-.3,0,a); }); legs.forEach(l=>{ cx(bd.lw+.03,.3,bd.lw+.03,W,0,-.65,0,l); cx(bd.lw+.04,.04,bd.lw+.04,O,0,-.52,0,l); }); break; }
     case 'streetwear': {
       const SH=mc('#2f3552');
-      part(O,1.2,2.2,.1); box(tw*.8,.5,.3,O,0,2.3,-fz-.12); box(tw*.6,.3,.04,mc(dark(oc)),0,1.45,fz+.07); for(const s of sx) box(.04,.4,.04,W,s*.13,1.95,fz+.08);
+      part(O,1.2,2.2,.1); box(tw*.8,.34,.2,O,0,2.22,-fz-.02); box(tw*.6,.3,.04,mc(dark(oc)),0,1.45,fz+.07); for(const s of sx) box(.04,.4,.04,W,s*.13,1.95,fz+.08);
       sleeve(O,1.0,.12,-.5); arms.forEach(a=>cx(bd.aw+.16,.14,bd.aw+.16,mc(dark(oc)),0,-1.0,0,a));
       part(SH,1.0,1.28,.08); legs.forEach(l=>{ cx(bd.lw+.03,.38,bd.lw+.03,W,0,-.6,0,l); cx(bd.lw+.04,.04,bd.lw+.04,O,0,-.45,0,l); }); break; }
     case 'fairy': {
@@ -1528,7 +1531,8 @@ function buildOutfit(id,cfg,c){
       { const gd=mc('#d4af37'), ch=new THREE.Mesh(new THREE.TorusGeometry(.27,.018,6,22,Math.PI),gd); ch.position.set(0,2.2,fz+.02); ch.rotation.z=Math.PI; ch.scale.y=1.4; body.add(ch); box(.07,.3,.025,gd,0,1.82,fz+.05); box(.2,.06,.025,gd,0,1.9,fz+.05); } break;
     case 'tabard':
       part(W,1.0,2.2,.04); box(tw*.6,.2,td+.1,O,0,2.2,0); part(O,1.1,2.1,.07);
-      for(const s of sx){ box(.07,1.0,.03,G,s*.14,1.65,fz+.07); box(.07,1.0,.03,G,s*.3,1.65,fz+.07); box(.5,.12,.03,G,s*.22,2.0,fz+.07); box(.3,.2,.3,G,s*(tw/2+.02),2.12,0); }
+      for(const s of sx){ box(.07,1.0,.03,G,s*.14,1.65,fz+.07); box(.07,1.0,.03,G,s*.3,1.65,fz+.07); box(.5,.12,.03,G,s*.22,2.0,fz+.07); }
+      arms.forEach(a=>box(bd.aw+.12,.16,bd.aw+.12,G,0,.0,0,a));
       box(.05,1.1,.03,G,0,1.65,fz+.07); sleeve(W,1.0,.03,-.5); arms.forEach(a=>cx(bd.aw+.06,.22,bd.aw+.06,G,0,-.9,0,a)); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l)); break;
     case 'slayeruni':
       part(K,1.0,2.2,.05); box(tw*.72,.16,td+.1,K,0,2.17,0); for(const y of [1.5,1.7,1.9]) box(.07,.07,.03,G,.12,y,fz+.04);
@@ -1545,10 +1549,10 @@ function buildOutfit(id,cfg,c){
       part(K,1.0,2.2,.05); for(const s of sx){ const c=box(.12,.9,.03,W,s*.16,1.75,fz+.04); c.rotation.z=-s*.28; } part(W,1.15,1.35,.1);
       cyl(tw*.62,tw*.9,.95,K,.6); cyl(tw*.64,tw*.64,.05,W,1.08);
       arms.forEach(a=>{ box(bd.aw+.4,.85,bd.aw+.2,K,0,-.55,0,a); box(bd.aw+.42,.07,bd.aw+.22,W,0,-.98,0,a); });
-      box(.08,.08,.95,mc('#3a2a1a'),tw*.55,1.2,.05); box(.12,.12,.14,G,tw*.55,1.2,.5); break;
+      break;
     case 'sorcerer':
       part(K,1.0,2.2,.05); box(tw*.8,.24,td+.12,K,0,2.2,0); box(tabW(.95)+.1,.5,td+.1,K,0,.95,0); box(.04,1.2,.03,S,0,1.6,fz+.04);
-      for(const s of sx) box(.08,.08,.03,G,s*.16,2.2,fz+.07); box(tw*.8,.25,.3,K,0,2.12,-fz-.14);
+      for(const s of sx) box(.08,.08,.03,G,s*.16,2.2,fz+.07); box(tw*.8,.3,.2,K,0,2.1,-fz-.03);
       sleeve(K,1.05,.05,-.52); arms.forEach(a=>cx(bd.aw+.1,.14,bd.aw+.1,S,0,-1.0,0,a)); legs.forEach(l=>cx(bd.lw+.04,.85,bd.lw+.04,K,0,-.42,0,l)); break;
     case 'hunter': {
       const V=O, B=mc('#3b4a3a');
@@ -1593,7 +1597,7 @@ function buildOutfit(id,cfg,c){
       for(const y of [1.6,1.8]) part(mc(dark(oc)),y-.04,y+.04,.065); break;
     case 'hoodie':
       sleeve(sh); arms.forEach(a=>cx(bd.aw+.05,.14,bd.aw+.05,shD,0,-1.08,0,a));
-      box(tw*.85,.5,.36,sh,0,2.3,-fz-.1); box(tw*.55,.3,.04,shD,0,1.3,fz+.025);
+      box(tw*.8,.34,.2,sh,0,2.22,-fz-.02); box(tw*.55,.3,.04,shD,0,1.3,fz+.025);
       for(const s of sx) box(.04,.4,.04,W,s*.14,1.95,fz+.03); break;
     case 'jacket':
       sleeve(shD); arms.forEach(a=>cx(bd.aw+.06,.1,bd.aw+.06,K,0,-1.1,0,a));
