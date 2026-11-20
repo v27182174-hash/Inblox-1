@@ -805,6 +805,8 @@ const mk=(shape,type,x,y,z,sx,sy,sz,color,ry=0,mv=null)=>({id:uid(),shape,type,x
 function newGame(name='Моя игра'){
   return {id:uid(),name,settings:{...DEF_SET},sounds:{...DEF_SND},parts:[mk('box','spawn',0,.2,0,4,.4,4,'#e8e8ee')]};
 }
+/* элементы GUI для встроенных игр: [тип, имя, текст, свойства] */
+function guiPack(list){ return list.map(([type,name,text,o])=>guiClean({id:uid(),type,name,text,...(o||{})})); }
 /* набор помощников для встроенных карт: блок с текстурой, NPC, дерево */
 function tplKit(){
   const P=[];
@@ -813,26 +815,28 @@ function tplKit(){
   const N=(x,top,z,o)=>{ const p=mk('box','npc',x,top+1.7,z,1.2,3.4,1.2,'#59a8ff',o.ry||0), d=npcDefault();
     p.npc=Object.assign({},d,{name:o.name,say:o.say,pose:o.pose||'stand',look:Object.assign({},d.look,o.look||{})});
     if(o.walk){ p.npc.walk=o.walk; p.npc.wspeed=o.wspeed||2.5; p.npc.wr=o.wr||6; } P.push(p); return p; };
-  const tree=(x,top,z,k=1,crown='#3f9b4f')=>{ A('cyl','decor',x,top+1.5*k,z,.9*k,3*k,.9*k,'#8b5a2b',0,null,'dirt'); A('sphere','decor',x,top+4*k,z,3.8*k,3.2*k,3.8*k,crown,0,null,'grass'); };
-  const palm=(x,top,z)=>{ A('cyl','decor',x,top+2.2,z,.7,4.4,.7,'#b9854e',0,null,'planks'); for(const [dx,dz] of [[1.2,0],[-1.2,0],[0,1.2],[0,-1.2]]) A('box','decor',x+dx,top+4.5,z+dz,dx?2.8:.8,.25,dx?.8:2.8,'#3fae5a',0,null,'grass'); };
-  return {P,A,N,tree,palm};
+  /* G — всё, что создано внутри fn, объединяется в группу (двигается и копируется как один объект) */
+  const G=fn=>{ const i0=P.length; fn(); const gid=uid(); P.slice(i0).forEach(p=>{ p.gid=gid; }); };
+  const tree=(x,top,z,k=1,crown='#3f9b4f')=>G(()=>{ A('cyl','decor',x,top+1.5*k,z,.9*k,3*k,.9*k,'#8b5a2b',0,null,'dirt'); A('sphere','decor',x,top+4*k,z,3.8*k,3.2*k,3.8*k,crown,0,null,'grass'); });
+  const palm=(x,top,z)=>G(()=>{ A('cyl','decor',x,top+2.2,z,.7,4.4,.7,'#b9854e',0,null,'planks'); for(const [dx,dz] of [[1.2,0],[-1.2,0],[0,1.2],[0,-1.2]]) A('box','decor',x+dx,top+4.5,z+dz,dx?2.8:.8,.25,dx?.8:2.8,'#3fae5a',0,null,'grass'); });
+  return {P,A,N,tree,palm,G};
 }
 function tplObby(){
   const g=newGame('Башня Оби'); g.id='b-obby'; g.builtin=true; g.settings={...DEF_SET,sky:'sunset',baseplate:false};
-  const {P,A,N,tree}=tplKit();
+  const {P,A,N,tree,G}=tplKit();
   let c={x:0,y:0,z:0,w:8};
   /* платформа w×w: зазор gap до предыдущей, подъём dy, сдвиг dx */
   const hop=(w,gap,dy,dx,type,color,tex,mv)=>{ const z=c.z-(c.w/2+gap+w/2), x=c.x+dx, y=c.y+dy; A('box',type,x,y-.5,z,w,1,w,color,0,mv,tex); c={x,y,z,w}; return c; };
   const coin=(x,y,z)=>A('cyl','coin',x,y,z,1.2,1.2,1.2,'#ffcc33');
   A('box','spawn',0,-.2,0,8,.4,8,'#e8e8ee',0,null,'tiles');
-  N(3,0,-1.5,{name:'Лео',pose:'wave',look:{build:'normal',face:'anime36',hair:'spiky',hairColor:'#2b2118',outfit:'jacket',outfitColor:'#2f6fe0'},
+  N(3,0,-1.5,{name:'Лео',pose:'wave',look:{build:'normal',face:'anime45',hair:'shonen',hairColor:'#2b2118',outfit:'slayeruni',outfitColor:'#2f6fe0'},
     say:'Привет! Я Лео, проводник по Башне.\nПрыгай по платформам и не падай в лаву.\nСиние чекпоинты запоминают прогресс, а наверху тебя ждёт финиш!'});
   tree(-6.5,0,-3); tree(6.5,0,-7,1.2);
   /* 1. Луг */
   const dxA=[0,3,-3,2,-2,0,3];
   dxA.forEach((dx,i)=>{ hop(4.5,3,.35,dx,'solid',i%2?'#ffd166':'#8fd17a',i%2?'planks':'grass'); if(i%2===0) coin(c.x,c.y+2,c.z); if(i===2) tree(c.x-5,c.y,c.z,.9); if(i===5) tree(c.x+5,c.y,c.z,1.1,'#2f8a4a'); });
   hop(6,3,.3,0,'checkpoint','#59a8ff','stone'); const cp1=c;
-  N(cp1.x+1.8,cp1.y,cp1.z,{name:'Мира',pose:'hair',look:{build:'girl',skin:'#f8d9b8',face:'anime23',head:'cutie',hair:'wavy',hairColor:'#c9a26a',outfit:'sundress',outfitColor:'#ff8fb8'},
+  N(cp1.x+1.8,cp1.y,cp1.z,{name:'Мира',pose:'hair',look:{build:'girl',skin:'#f8d9b8',face:'anime59',head:'cutie',hair:'wavylocks',hairColor:'#c9a26a',outfit:'patkimono',outfitColor:'#f4a6c0',hat:'sideclip',hatColor:'#ffffff'},
     say:'Ой, ты дошёл! Молодец.\nДальше камни — часть платформ ездит туда-сюда, а между ними лава.\nЖди момента и прыгай уверенно.'});
   /* 2. Камни и лава */
   hop(4,3,.5,0,'solid','#b8bec9','stone',{axis:'x',dist:4,speed:1.2}); coin(c.x,c.y+2.2,c.z);
@@ -843,7 +847,7 @@ function tplObby(){
   hop(4,3,.5,2,'solid','#c9a86a','brick');
   hop(3.4,3.5,.4,0,'solid','#b8bec9','stone'); coin(c.x,c.y+2,c.z);
   hop(6,3,.3,0,'checkpoint','#59a8ff','brick'); const cp2=c;
-  N(cp2.x-1.8,cp2.y,cp2.z,{name:'Кай',pose:'flex',look:{build:'wide',skin:'#c68642',face:'anime35',hair:'mohawk',hairColor:'#1b1b1b',outfit:'armor',outfitColor:'#9aa0aa'},
+  N(cp2.x-1.8,cp2.y,cp2.z,{name:'Кай',pose:'flex',look:{build:'wide',skin:'#c68642',face:'anime35',hair:'wildspikes',hairColor:'#1b1b1b',outfit:'hunter',outfitColor:'#4f8f4a'},
     say:'Силён? Тут нужна не сила, а ловкость.\nВпереди скользкий лёд и узкие плитки.\nА зелёный батут подкинет тебя очень высоко!'});
   /* 3. Лёд и батут */
   [3,-3,3,-3,3].forEach((dx,i)=>{ hop(3,3.5,.4,dx,'solid','#bfe8f7','ice'); if(i%2===0) coin(c.x,c.y+2,c.z); });
@@ -863,14 +867,58 @@ function tplObby(){
   /* финиш */
   hop(14,3.5,.4,0,'solid','#ffffff','tiles'); const fin=c;
   A('box','goal',fin.x,fin.y+1.5,fin.z-3,3,3,3,'#ffd23d');
-  N(fin.x-4.5,fin.y,fin.z+2,{name:'Софи',pose:'kpop',look:{build:'petite',face:'anime31',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'cheer',outfitColor:'#e86aa5'},say:'Ура-а-а! Ты почти у цели!\nКоснись золотого куба — и ты победитель!'});
-  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'jumpstyle',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'spiky',hairColor:'#8a5a2b',outfit:'hoodie',outfitColor:'#e8433f'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
+  N(fin.x-4.5,fin.y,fin.z+2,{name:'Софи',pose:'kpop',look:{build:'petite',face:'anime31',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'cheer',outfitColor:'#e86aa5',eyeColor:'#c05ac8'},say:'Ура-а-а! Ты почти у цели!\nКоснись золотого куба — и ты победитель!'});
+  N(fin.x+4.5,fin.y,fin.z+2,{name:'Макс',pose:'jumpstyle',look:{build:'normal',skin:'#f1c27d',face:'anime42',hair:'messy',hairColor:'#8a5a2b',outfit:'sorcerer',outfitColor:'#e8433f',eyeColor:'#2f9a52'},say:'Я дошёл первым! …ладно, вторым.\nПоздравляю!'});
   for(let i=0;i<5;i++) coin(fin.x-4+i*2,fin.y+1.8,fin.z+5);
-  A('box','kill',0,-14,-110,300,1,420,'#ff4d3d',0,null,'lava'); g.parts=P; g.sounds.music='b:music2'; return g;
+  A('box','kill',0,-14,-110,300,1,420,'#ff4d3d',0,null,'lava');
+  let ci=0; P.forEach(p=>{ if(p.type==='checkpoint') p.name='cp'+(++ci); else if(p.type==='goal') p.name='finish'; else if(p.type==='solid'&&p.tex==='neon') p.name='neon'; else if(p.type==='spawn') p.name='start'; });
+  g.gui=guiPack([['text','prog','Высота: 0%',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','barbg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','bar','',{x:30,y:9.6,w:1,h:2,bg:'#35e0e6',alpha:1,radius:1}]]);
+  g.script=`import math
+
+TOP = ${fin.y.toFixed(1)}
+reached = set()
+neon = get_all("neon")
+fin = get("finish")
+
+
+def hexc(r, g, b):
+    return "#{:02x}{:02x}{:02x}".format(int(r), int(g), int(b))
+
+
+def on_start():
+    banner("Башня Оби: доберись до вершины!", 4)
+    say("Синие чекпоинты запоминают прогресс. Удачи!")
+
+
+def on_touch(part):
+    n = part.name
+    if n and n.startswith("cp") and n not in reached:
+        reached.add(n)
+        sound("checkpoint")
+        banner("Чекпоинт " + str(len(reached)) + " из 3", 2)
+    elif n == "finish":
+        say("Ты на вершине! Собрано монет: " + str(player.coins))
+
+
+def on_die():
+    say("Не сдавайся — у тебя получится!")
+
+
+def on_update(dt):
+    t = elapsed()
+    for i, p in enumerate(neon):
+        k = (math.sin(t * 2 + i) + 1) / 2
+        p.color = hexc(40 + 40 * k, 200 + 50 * k, 220 + 30 * k)
+    if fin:
+        fin.color = hexc(255, 190 + 60 * math.sin(t * 3) ** 2, 60)
+    pct = max(0, min(100, int(player.y / TOP * 100)))
+    gui("bar").w = max(1, pct * 0.4)
+    gui("prog").text = "Высота: " + str(pct) + "%"
+`; g.parts=P; g.sounds.music='b:music2'; return g;
 }
 function tplIsland(){
   const g=newGame('Остров монет'); g.id='b-island'; g.builtin=true; g.settings={...DEF_SET,sky:'day',baseplate:false,winOnCoins:true};
-  const {P,A,N,tree,palm}=tplKit();
+  const {P,A,N,tree,palm,G}=tplKit();
   const coin=(x,y,z)=>A('cyl','coin',x,y,z,1.2,1.2,1.2,'#ffcc33');
   /* море (вода — «лава»: упал — вернулся на старт) и сам остров */
   A('box','kill',0,-2.4,0,420,.6,420,'#2a8fe0',0,null,'ice');
@@ -886,9 +934,10 @@ function tplIsland(){
   for(let i=0;i<8;i++){ const a=i/8*Math.PI*2+.4; coin(Math.cos(a)*22,2,Math.sin(a)*22); }
   /* маяк со спиральной лестницей */
   const LX=-20,LZ=-12;
-  [['#d9dde3','tiles'],['#d9534f','brick'],['#d9dde3','tiles'],['#d9534f','brick']].forEach(([col,tx],i)=>A('cyl','solid',LX,1.4+i*2.85,LZ,6,2.85,6,col,0,null,tx));
-  for(let i=0;i<10;i++){ const a=i/10*Math.PI*2*1.0; A('box','solid',LX+Math.cos(a)*5.6,.4+.85+i*1.05-.5,LZ+Math.sin(a)*5.6,3,1,3,'#c9a86a',0,null,'planks'); if(i%3===1) coin(LX+Math.cos(a)*5.6,.4+i*1.05+2.4,LZ+Math.sin(a)*5.6); }
-  A('cyl','solid',LX,11.2,LZ,9,.6,9,'#b8bec9',0,null,'stone'); A('sphere','decor',LX,13.4,LZ,2.6,2.6,2.6,'#fff3a0');
+  G(()=>{ [['#d9dde3','tiles'],['#d9534f','brick'],['#d9dde3','tiles'],['#d9534f','brick']].forEach(([col,tx],i)=>A('cyl','solid',LX,1.4+i*2.85,LZ,6,2.85,6,col,0,null,tx));
+    for(let i=0;i<10;i++){ const a=i/10*Math.PI*2*1.0; A('box','solid',LX+Math.cos(a)*5.6,.4+.85+i*1.05-.5,LZ+Math.sin(a)*5.6,3,1,3,'#c9a86a',0,null,'planks'); }
+    A('cyl','solid',LX,11.2,LZ,9,.6,9,'#b8bec9',0,null,'stone'); A('sphere','decor',LX,13.4,LZ,2.6,2.6,2.6,'#fff3a0').name='beacon'; });
+  for(let i=0;i<10;i++){ const a=i/10*Math.PI*2; if(i%3===1) coin(LX+Math.cos(a)*5.6,.4+i*1.05+2.4,LZ+Math.sin(a)*5.6); }
   for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; coin(LX+Math.cos(a)*3,12.8,LZ+Math.sin(a)*3); }
   N(LX+2.5,11.5,LZ+2.5,{name:'Смотритель',pose:'salute',look:{build:'chunky',skin:'#e0a370',face:'anime34',hair:'short',hairColor:'#d9d9de',outfit:'pirate',outfitColor:'#2f3552',hat:'cap',hatColor:'#2f3552'},
     say:'Добро пожаловать на маяк!\nОтсюда видно весь остров.\nГде-то на востоке есть архипелаг с сокровищем — но туда нужно перепрыгать.'});
@@ -907,21 +956,196 @@ function tplIsland(){
     say:'Хо-хо! Ты добрался до клада!\nЗабирай монеты — они твои.\nЕсли собрал все на острове, победа за тобой!'});
   /* танцпол у воды */
   A('box','solid',-12,.5,8,12,.3,10,'#1b1b20',0,null,'neon');
-  N(-14,.65,6,{name:'Диджей Нова',pose:'hiphop',look:{build:'sport',skin:'#e0a370',face:'anime33',hair:'mohawk',hairColor:'#d9d9de',outfit:'streetwear',outfitColor:'#2a2a2e'},say:'Давай к нам, тут всегда музыка!\nПодойди ближе — и мы подвинемся.'});
+  N(-14,.65,6,{name:'Диджей Нова',pose:'hiphop',look:{build:'sport',skin:'#e0a370',face:'anime33',hair:'mohawk',hairColor:'#d9d9de',outfit:'streetwear',outfitColor:'#2a2a2e',glasses:'thin',neck:'chain'},say:'Давай к нам, тут всегда музыка!\nПодойди ближе — и мы подвинемся.'});
   N(-10,.65,6,{name:'Рин',pose:'kpop',look:{build:'slimgirl',skin:'#f8d9b8',face:'anime24',head:'cutie',hair:'highponytail',hairColor:'#1b1b1b',outfit:'idolstage',outfitColor:'#e9e5dc'},say:'Танцуем весь вечер!'});
   N(-12,.65,10,{name:'Эми',pose:'ballroom',look:{build:'girl',skin:'#f8d9b8',face:'anime27',head:'soft',hair:'lob',hairColor:'#5a3a22',outfit:'qipao',outfitColor:'#1d1d21'},say:'Вальс под волны — что может быть лучше?'});
   /* жители острова */
-  N(3,.4,5,{name:'Мэри',pose:'hair',look:{build:'girl',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavy',hairColor:'#e8d28a',outfit:'sundress',outfitColor:'#ff8fb8'},
+  N(3,.4,5,{name:'Мэри',pose:'elegant',look:{build:'girl',skin:'#f8d9b8',face:'anime28',head:'cutie',hair:'wavylocks',hairColor:'#e8d28a',outfit:'gown',outfitColor:'#cdb8f5',neck:'choker',accColor:'#ffffff',hat:'sideclip',hatColor:'#ffffff',eyeColor:'#4aa8ff'},
     say:'Привет, путешественник!\nНа острове спрятано много монет: на холмах, у маяка и на небесной площадке.\nСобери их все — и ты победишь!'});
   N(-8,.4,-2,{name:'Лили',walk:'follow',wspeed:4,wr:12,pose:'kawaii',look:{build:'petite',skin:'#f8d9b8',face:'anime15',head:'cutie',hair:'twinbuns',hairColor:'#e86aa5',outfit:'idolstage',outfitColor:'#6a5acd'},
     say:'Я пойду за тобой! Показывай, где монетки!\nА если захочешь — вот батут на западе, он закинет тебя в небо.'});
   N(14,.4,12,{name:'Страж Бор',walk:'wander',wspeed:2.2,wr:7,pose:'guard',look:{build:'chunky',skin:'#8d5524',face:'anime38',hair:'short',hairColor:'#1b1b1b',outfit:'armor',outfitColor:'#9aa0aa'},
     say:'Я охраняю берег.\nВ воду лучше не падать — вернёшься на старт.'});
-  N(-20,.4,18,{name:'Аня',pose:'model',look:{build:'slimgirl',skin:'#e0a370',face:'anime26',head:'soft',hair:'highponytail',hairColor:'#35c0c0',outfit:'yukata',outfitColor:'#6a5acd'},
+  N(-20,.4,18,{name:'Аня',pose:'model',look:{build:'slimgirl',skin:'#e0a370',face:'anime26',head:'soft',hair:'highponytail',hairColor:'#35c0c0',outfit:'yukata',outfitColor:'#6a5acd',hat:'headband',hatColor:'#ffffff',eyeColor:'#1fb8c0'},
     say:'Красивый закат, правда?\nПодсказка: на небесный остров попадёшь через зелёный батут.'});
-  g.parts=P; g.sounds.music='b:music1'; return g;
+  g.gui=guiPack([['text','ctxt','Собрано 0 из ?',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','cbg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','cbar','',{x:30,y:9.6,w:1,h:2,bg:'#ffcc33',alpha:1,radius:1}]]);
+  g.script=`import math
+
+beacon = get("beacon")
+hints = ["Отлично!", "Так держать!", "Ещё одна!", "Блестяще!"]
+
+
+def on_start():
+    banner("Остров монет: собери всё!", 4)
+    say("Команды в чате: !маяк  !клад  !старт  !луна  !земля")
+    hud("Монеты: 0 / " + str(player.coins_total))
+
+
+def on_coin(total):
+    n = player.coins_total
+    hud("Монеты: " + str(total) + " / " + str(n))
+    gui("cbar").w = max(1, 40 * total / max(1, n))
+    gui("ctxt").text = "Собрано " + str(total) + " из " + str(n)
+    if total % 10 == 0:
+        banner(random.choice(hints) + " " + str(total) + " монет!", 2)
+
+
+def on_chat(name, text):
+    t = text.strip().lower()
+    if t == "!маяк":
+        player.teleport(-20, 14, -12)
+        say("Вы на маяке!")
+    elif t == "!клад":
+        player.teleport(87, 4, 2)
+        say("Вот и клад!")
+    elif t == "!старт":
+        player.teleport(0, 3, 0)
+    elif t == "!луна":
+        player.gravity = 0.4
+        say("Лунная гравитация включена")
+    elif t == "!земля":
+        player.gravity = 1
+        say("Обычная гравитация")
+
+
+def on_update(dt):
+    if beacon:
+        k = (math.sin(elapsed() * 2.4) + 1) / 2
+        beacon.color = "#{:02x}{:02x}{:02x}".format(255, int(220 + 35 * k), int(120 + 100 * k))
+`; g.parts=P; g.sounds.music='b:music1'; return g;
 }
-const BUILTIN=[tplObby,tplIsland];
+/* Орбита — игра, построенная на Python-скрипте: кислород, кнопки и шлюз, лунная гравитация, вращающиеся планеты */
+function tplStation(){
+  const g=newGame('Орбита'); g.id='b-station'; g.builtin=true; g.settings={...DEF_SET,sky:'space',baseplate:false};
+  const {P,A,N,G}=tplKit();
+  const crystal=(x,y,z)=>A('cyl','coin',x,y,z,1.2,1.2,1.2,'#7ae8ff');
+  /* хаб */
+  G(()=>{ A('cyl','solid',0,-.5,0,16,1,16,'#9aa3ad',0,null,'metal'); A('cyl','solid',0,-.15,0,17.4,.3,17.4,'#35e0e6',0,null,'neon');
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2+.2; A('box','decor',Math.cos(a)*7.6,.8,Math.sin(a)*7.6,.5,1.6,.5,'#c77dff',0,null,'neon'); } });
+  A('box','spawn',0,.2,0,4,.4,4,'#e8e8ee',0,null,'tiles').name='start';
+  [[-5,3],[5,-4]].forEach(([x,z])=>{ A('cyl','solid',x,.2,z,2.6,.4,2.6,'#35e0e6',0,null,'neon').name='o2'; });
+  /* три луча к островам с кнопками */
+  for(let i=0;i<3;i++){
+    const a=Math.PI/2+i*Math.PI*2/3, dx=Math.cos(a), dz=Math.sin(a);
+    for(let k=0;k<5;k++){ const r=11+k*4.6; A('box','solid',dx*r,-.5,dz*r,3,1,3,k%2?'#c77dff':'#9aa3ad',0,k%2?{axis:'y',dist:1.6,speed:1.1+i*.15}:null,k%2?'neon':'metal'); if(k%2) crystal(dx*r,2.4,dz*r); }
+    G(()=>{ A('cyl','solid',dx*34,-.5,dz*34,10,1,10,'#9aa3ad',0,null,'metal'); A('box','solid',dx*34,.2,dz*34,2.4,.4,2.4,'#ff5a5a',0,null,'neon').name='btn'+(i+1); });
+    for(let j=0;j<6;j++){ const b=j/6*Math.PI*2; crystal(dx*34+Math.cos(b)*3.4,1.6,dz*34+Math.sin(b)*3.4); }
+  }
+  /* шлюз и финиш */
+  A('box','solid',0,2.5,-9.6,8,6,1,'#ff4d6d',0,null,'neon').name='door';
+  A('box','solid',0,-.5,-17,10,1,10,'#ffffff',0,null,'tiles'); A('box','goal',0,1.5,-18,3,3,3,'#ffd23d').name='finish';
+  /* лунная башня */
+  A('cyl','solid',7,.2,6,3,.4,3,'#c77dff',0,null,'neon').name='lowg';
+  [[14,5,6],[19,10,8],[24,15,6],[29,20,4]].forEach(([x,y,z],i)=>{ A('box','solid',x,y-.5,z,3,1,3,i%2?'#35e0e6':'#c77dff',0,null,'neon'); crystal(x,y+2,z); });
+  /* планеты (двигает скрипт) и пустота */
+  [[-60,18,-40,16,'#e8845a'],[70,30,-70,22,'#5aa8e8'],[10,50,60,10,'#b8e85a']].forEach(([x,y,z,r,col])=>{ A('sphere','decor',x,y,z,r,r,r,col,0,null,'stone').name='planet'; });
+  A('box','kill',0,-30,0,400,1,400,'#1b1230',0,null,'lava');
+  /* команда */
+  N(3,0,2.5,{name:'Командир Вега',pose:'salute',look:{build:'normal',skin:'#d9a777',face:'anime47',hair:'slick',hairColor:'#2b2118',outfit:'sorcerer',outfitColor:'#2f3552',eyeColor:'#d0283a'},
+    say:'Добро пожаловать на «Орбиту»!\nНа каждом острове есть красная кнопка. Нажми все три — и шлюз откроется.\nСледи за кислородом: пополнить его можно на голубых площадках.'});
+  N(-3,0,-5,{name:'Инженер Нова',pose:'elegant',look:{build:'petite',skin:'#fbe3cf',face:'anime59',head:'cutie',hair:'wavylocks',hairColor:'#b9a6ff',outfit:'turtle',outfitColor:'#f4f4f6',glasses:'cateye',eyeColor:'#7a4ad0'},
+    say:'Фиолетовая площадка включает лунную гравитацию на 25 секунд.\nНа ней можно допрыгнуть до верхней башни — там много кристаллов.\nКнопка «?» слева показывает подсказки.'});
+  g.gui=guiPack([['text','o2txt','Кислород 100%',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','o2bg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','o2bar','',{x:30,y:9.6,w:40,h:2,bg:'#35e0e6',alpha:1,radius:1}],['text','obj','Кнопки: 0 / 3',{x:30,y:12.4,w:40,h:3,size:.9}],['button','help','?',{x:1.5,y:14,w:6,h:9,size:1.4}]]);
+  g.script=`import math
+
+oxygen = 100.0
+pressed = set()
+door = get("door")
+planets = [(p, p.x, p.z, 55 + 18 * i) for i, p in enumerate(get_all("planet"))]
+low_until = 0.0
+warned = False
+
+
+def hexc(r, g, b):
+    return "#{:02x}{:02x}{:02x}".format(int(r), int(g), int(b))
+
+
+def refill():
+    global oxygen, warned
+    oxygen = 100.0
+    warned = False
+
+
+def on_start():
+    banner("Орбита: открой шлюз и дойди до финиша", 4)
+    say("Нажми три красные кнопки на островах. Следи за кислородом!")
+
+
+def on_touch(part):
+    global low_until
+    n = part.name
+    if n == "o2":
+        refill()
+        sound("coin")
+    elif n and n.startswith("btn") and n not in pressed:
+        pressed.add(n)
+        part.color = "#35e0a0"
+        refill()
+        sound("checkpoint")
+        gui("obj").text = "Кнопки: " + str(len(pressed)) + " / 3"
+        if len(pressed) == 3:
+            if door:
+                door.visible = False
+            banner("Шлюз открыт!", 3)
+        else:
+            say("Кнопка нажата. Кислород пополнен!")
+    elif n == "lowg":
+        low_until = elapsed() + 25
+        player.gravity = 0.35
+        banner("Низкая гравитация: 25 сек", 2)
+    elif n == "finish":
+        say("Миссия выполнена! Кристаллов: " + str(player.coins))
+
+
+def on_gui_click(name):
+    if name == "help":
+        sound("click")
+        say("Красные кнопки на трёх островах открывают шлюз. Голубые площадки дают кислород.")
+        say("Фиолетовая площадка включает низкую гравитацию — на ней можно взобраться на башню.")
+
+
+def on_chat(name, text):
+    t = text.strip().lower()
+    if t == "!хаб":
+        player.teleport(0, 2, 0)
+    elif t == "!кислород":
+        refill()
+        say("Кислород пополнен")
+
+
+def on_die():
+    global pressed
+    refill()
+    say("Систему перезагрузили. Попробуй снова!")
+
+
+def on_update(dt):
+    global oxygen, low_until, warned
+    t = elapsed()
+    oxygen -= dt * 0.9
+    k = max(0.0, oxygen) / 100
+    bar = gui("o2bar")
+    bar.w = max(1, 40 * k)
+    bar.bg = "#35e0e6" if k > 0.25 else "#ff4d3d"
+    gui("o2txt").text = "Кислород " + str(int(k * 100)) + "%"
+    if k < 0.25 and not warned:
+        warned = True
+        banner("Мало кислорода!", 2)
+    if oxygen <= 0:
+        say("Кислород закончился!")
+        refill()
+        die()
+    if low_until and t > low_until:
+        low_until = 0.0
+        player.gravity = 1
+        say("Гравитация вернулась в норму")
+    for p, x0, z0, rad in planets:
+        a = t * 0.05 + x0 * 0.01
+        p.x = x0 + math.cos(a) * 6
+        p.z = z0 + math.sin(a) * 6
+`; g.parts=P; g.sounds.music='b:music3'; return g;
+}
+const BUILTIN=[tplObby,tplIsland,tplStation];
 
 /* ---------- логотип ---------- */
 const LOGO='<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(45 50 50)"><rect x="22" y="22" width="56" height="56" rx="11" fill="#fff"/><rect class="in" x="33.5" y="33.5" width="33" height="33" rx="6"/></g><rect x="46.9" y="35.6" width="6.2" height="28.6" fill="#fff"/></svg>';
