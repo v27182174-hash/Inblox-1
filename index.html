@@ -872,7 +872,7 @@ function tplObby(){
   for(let i=0;i<5;i++) coin(fin.x-4+i*2,fin.y+1.8,fin.z+5);
   A('box','kill',0,-14,-110,300,1,420,'#ff4d3d',0,null,'lava');
   let ci=0; P.forEach(p=>{ if(p.type==='checkpoint') p.name='cp'+(++ci); else if(p.type==='goal') p.name='finish'; else if(p.type==='solid'&&p.tex==='neon') p.name='neon'; else if(p.type==='spawn') p.name='start'; });
-  g.gui=guiPack([['text','prog','Высота: 0%',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','barbg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','bar','',{x:30,y:9.6,w:1,h:2,bg:'#35e0e6',alpha:1,radius:1}]]);
+  g.gui=guiPack([['text','prog','Высота: 0%',{x:30,y:15,w:40,h:3,size:.95}],['frame','barbg','',{x:30,y:18.4,w:40,h:2,alpha:.45,radius:1}],['frame','bar','',{x:30,y:18.4,w:1,h:2,bg:'#35e0e6',alpha:1,radius:1}]]);
   g.script=`import math
 
 TOP = ${fin.y.toFixed(1)}
@@ -968,7 +968,7 @@ function tplIsland(){
     say:'Я охраняю берег.\nВ воду лучше не падать — вернёшься на старт.'});
   N(-20,.4,18,{name:'Аня',pose:'model',look:{build:'slimgirl',skin:'#e0a370',face:'anime26',head:'soft',hair:'highponytail',hairColor:'#35c0c0',outfit:'yukata',outfitColor:'#6a5acd',hat:'headband',hatColor:'#ffffff',eyeColor:'#1fb8c0'},
     say:'Красивый закат, правда?\nПодсказка: на небесный остров попадёшь через зелёный батут.'});
-  g.gui=guiPack([['text','ctxt','Собрано 0 из ?',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','cbg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','cbar','',{x:30,y:9.6,w:1,h:2,bg:'#ffcc33',alpha:1,radius:1}]]);
+  g.gui=guiPack([['text','ctxt','Собрано 0 из ?',{x:30,y:15,w:40,h:3,size:.95}],['frame','cbg','',{x:30,y:18.4,w:40,h:2,alpha:.45,radius:1}],['frame','cbar','',{x:30,y:18.4,w:1,h:2,bg:'#ffcc33',alpha:1,radius:1}]]);
   g.script=`import math
 
 beacon = get("beacon")
@@ -1020,32 +1020,32 @@ function tplStation(){
   const {P,A,N,G}=tplKit();
   const crystal=(x,y,z)=>A('cyl','coin',x,y,z,1.2,1.2,1.2,'#7ae8ff');
   /* хаб */
-  G(()=>{ A('cyl','solid',0,-.5,0,16,1,16,'#9aa3ad',0,null,'metal'); A('cyl','solid',0,-.15,0,17.4,.3,17.4,'#35e0e6',0,null,'neon');
+  G(()=>{ A('cyl','solid',0,-.5,0,16,1,16,'#c9d0da',0,null,'hull'); A('cyl','decor',0,-.55,0,17.6,.9,17.6,'#35e0e6',0,null,'neon');
     for(let i=0;i<8;i++){ const a=i/8*Math.PI*2+.2; A('box','decor',Math.cos(a)*7.6,.8,Math.sin(a)*7.6,.5,1.6,.5,'#c77dff',0,null,'neon'); } });
-  A('box','spawn',0,.2,0,4,.4,4,'#e8e8ee',0,null,'tiles').name='start';
-  [[-5,3],[5,-4]].forEach(([x,z])=>{ A('cyl','solid',x,.2,z,2.6,.4,2.6,'#35e0e6',0,null,'neon').name='o2'; });
+  A('box','spawn',0,.25,0,4,.5,4,'#e8e8ee',0,null,'grid').name='start';
+  [[-5,3],[5,-4]].forEach(([x,z])=>{ A('cyl','solid',x,.25,z,2.6,.5,2.6,'#35e0e6',0,null,'neon').name='o2'; });
   /* три луча к островам с кнопками */
   for(let i=0;i<3;i++){
     const a=Math.PI/2+i*Math.PI*2/3, dx=Math.cos(a), dz=Math.sin(a);
-    for(let k=0;k<5;k++){ const r=11+k*4.6; A('box','solid',dx*r,-.5,dz*r,3,1,3,k%2?'#c77dff':'#9aa3ad',0,k%2?{axis:'y',dist:1.6,speed:1.1+i*.15}:null,k%2?'neon':'metal'); if(k%2) crystal(dx*r,2.4,dz*r); }
-    G(()=>{ A('cyl','solid',dx*34,-.5,dz*34,10,1,10,'#9aa3ad',0,null,'metal'); A('box','solid',dx*34,.2,dz*34,2.4,.4,2.4,'#ff5a5a',0,null,'neon').name='btn'+(i+1); });
+    for(let k=0;k<5;k++){ const r=11+k*4.6; A('box','solid',dx*r,-.5,dz*r,3,1,3,k%2?'#c77dff':'#c9d0da',0,k%2?{axis:'y',dist:1.6,speed:1.1+i*.15}:null,k%2?'solar':'hull'); if(k%2) crystal(dx*r,2.4,dz*r); }
+    G(()=>{ A('cyl','solid',dx*34,-.5,dz*34,10,1,10,'#9aa3ad',0,null,'crater'); A('box','solid',dx*34,.25,dz*34,2.4,.5,2.4,'#ff5a5a',0,null,'neon').name='btn'+(i+1); });
     for(let j=0;j<6;j++){ const b=j/6*Math.PI*2; crystal(dx*34+Math.cos(b)*3.4,1.6,dz*34+Math.sin(b)*3.4); }
   }
   /* шлюз и финиш */
-  A('box','solid',0,2.5,-9.6,8,6,1,'#ff4d6d',0,null,'neon').name='door';
-  A('box','solid',0,-.5,-17,10,1,10,'#ffffff',0,null,'tiles'); A('box','goal',0,1.5,-18,3,3,3,'#ffd23d').name='finish';
+  A('box','solid',0,2.5,-9.6,8,6,1,'#ff4d6d',0,null,'hazard').name='door';
+  A('box','solid',0,-.5,-17,10,1,10,'#ffffff',0,null,'hull'); A('box','goal',0,1.5,-18,3,3,3,'#ffd23d').name='finish';
   /* лунная башня */
-  A('cyl','solid',7,.2,6,3,.4,3,'#c77dff',0,null,'neon').name='lowg';
-  [[14,5,6],[19,10,8],[24,15,6],[29,20,4]].forEach(([x,y,z],i)=>{ A('box','solid',x,y-.5,z,3,1,3,i%2?'#35e0e6':'#c77dff',0,null,'neon'); crystal(x,y+2,z); });
+  A('cyl','solid',7,.25,6,3,.5,3,'#c77dff',0,null,'nebula').name='lowg';
+  [[14,5,6],[19,10,8],[24,15,6],[29,20,4]].forEach(([x,y,z],i)=>{ A('box','solid',x,y-.5,z,3,1,3,i%2?'#35e0e6':'#c77dff',0,null,i%2?'grid':'nebula'); crystal(x,y+2,z); });
   /* планеты (двигает скрипт) и пустота */
-  [[-60,18,-40,16,'#e8845a'],[70,30,-70,22,'#5aa8e8'],[10,50,60,10,'#b8e85a']].forEach(([x,y,z,r,col])=>{ A('sphere','decor',x,y,z,r,r,r,col,0,null,'stone').name='planet'; });
+  [[-60,18,-40,16,'#e8845a'],[70,30,-70,22,'#5aa8e8'],[10,50,60,10,'#b8e85a']].forEach(([x,y,z,r,col])=>{ A('sphere','decor',x,y,z,r,r,r,col,0,null,'crater').name='planet'; });
   A('box','kill',0,-30,0,400,1,400,'#1b1230',0,null,'lava');
   /* команда */
   N(3,0,2.5,{name:'Командир Вега',pose:'salute',look:{build:'normal',skin:'#d9a777',face:'anime47',hair:'slick',hairColor:'#2b2118',outfit:'sorcerer',outfitColor:'#2f3552',eyeColor:'#d0283a'},
     say:'Добро пожаловать на «Орбиту»!\nНа каждом острове есть красная кнопка. Нажми все три — и шлюз откроется.\nСледи за кислородом: пополнить его можно на голубых площадках.'});
   N(-3,0,-5,{name:'Инженер Нова',pose:'elegant',look:{build:'petite',skin:'#fbe3cf',face:'anime59',head:'cutie',hair:'wavylocks',hairColor:'#b9a6ff',outfit:'turtle',outfitColor:'#f4f4f6',glasses:'cateye',eyeColor:'#7a4ad0'},
     say:'Фиолетовая площадка включает лунную гравитацию на 25 секунд.\nНа ней можно допрыгнуть до верхней башни — там много кристаллов.\nКнопка «?» слева показывает подсказки.'});
-  g.gui=guiPack([['text','o2txt','Кислород 100%',{x:30,y:6.4,w:40,h:3,size:.95}],['frame','o2bg','',{x:30,y:9.6,w:40,h:2,alpha:.45,radius:1}],['frame','o2bar','',{x:30,y:9.6,w:40,h:2,bg:'#35e0e6',alpha:1,radius:1}],['text','obj','Кнопки: 0 / 3',{x:30,y:12.4,w:40,h:3,size:.9}],['button','help','?',{x:1.5,y:14,w:6,h:9,size:1.4}]]);
+  g.gui=guiPack([['text','o2txt','Кислород 100%',{x:30,y:15,w:40,h:3,size:.95}],['frame','o2bg','',{x:30,y:18.4,w:40,h:2,alpha:.45,radius:1}],['frame','o2bar','',{x:30,y:18.4,w:40,h:2,bg:'#35e0e6',alpha:1,radius:1}],['text','obj','Кнопки: 0 / 3',{x:30,y:22,w:40,h:3,size:.9}],['button','help','?',{x:1.5,y:34,w:6,h:9,size:1.4}]]);
   g.script=`import math
 
 oxygen = 100.0
@@ -1143,7 +1143,7 @@ def on_update(dt):
         a = t * 0.05 + x0 * 0.01
         p.x = x0 + math.cos(a) * 6
         p.z = z0 + math.sin(a) * 6
-`; g.parts=P; g.sounds.music='b:music3'; return g;
+`; g.parts=P; g.sounds.music='b:music4'; return g;
 }
 const BUILTIN=[tplObby,tplIsland,tplStation];
 
@@ -1172,7 +1172,7 @@ const SFX={
   click:(c,o,t,v)=>soft(c,o,t,720,480,.05,.09*v)
 };
 const SFX_LIST=[['b:jump','Прыжок'],['b:coin','Монета'],['b:win','Победа'],['b:bounce','Батут'],['b:checkpoint','Чекпоинт'],['b:click','Клик']];
-const MUS_LIST=[['b:music1','Мелодия: спокойная'],['b:music2','Мелодия: бодрая'],['b:music3','Мелодия: космос']];
+const MUS_LIST=[['b:music1','Мелодия: спокойная'],['b:music2','Мелодия: бодрая'],['b:music3','Мелодия: космос'],['b:music4','Мелодия: звёздный дрейф']];
 /* параметры встроенных треков: аккорды Am-F-C-G (смещения от тоники), тонкая обработка и ударные */
 const MUS_TRACKS={
   music1:{bpm:84,root:57,echo:3,sc:[0,3,5,7,10],pad:'triangle',padV:.035,padCut:1400,arp:1,arpStep:2,arpSeq:[0,1,2,4,2,1,3,1],arpLen:5,arpType:'triangle',arpV:.05,arpCut:2600,
@@ -1186,7 +1186,11 @@ const MUS_TRACKS={
   music3:{bpm:64,root:50,echo:6,sc:[0,2,4,7,9],pad:'sine',padV:.05,padCut:1800,arp:1,arpStep:4,arpSeq:[2,1,0,2,1,3],arpLen:12,arpType:'sine',arpV:.06,arpCut:3500,
     bass:(n,t,k,r,st)=>{ if(k===0) n(t,r-24,st*14,'sine',.14,400,.2); },
     mel:[-1,-1,-1,-1,-1,-1,-1,-1,4,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1, -1,-1,-1,-1,5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],melLen:14,melType:'triangle',melV:.045,melCut:2800,
-    drums:(kick,hit,t,k)=>{ if(k===0) kick(t,.12); if(k%4===2) hit(t,.04,.008,9000); }}
+    drums:(kick,hit,t,k)=>{ if(k===0) kick(t,.12); if(k%4===2) hit(t,.04,.008,9000); }},
+  music4:{bpm:72,root:45,echo:5,sc:[0,2,3,7,10],pad:'sawtooth',padV:.022,padCut:700,arp:1,arpStep:2,arpSeq:[0,2,4,2,3,1,4,3],arpLen:6,arpType:'sine',arpV:.05,arpCut:3800,
+    bass:(n,t,k,r,st)=>{ if(k===0||k===8) n(t,r-24,st*7,'sine',.15,300,.05); if(k===12) n(t,r-12,st*2,'triangle',.05,600,.02); },
+    mel:[-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 6,-1,-1,-1,-1,-1,-1,-1,4,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,9,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1, 5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],melLen:9,melType:'triangle',melV:.05,melCut:2400,
+    drums:(kick,hit,t,k)=>{ if(k===0||k===10) kick(t,.16); if(k%4===2) hit(t,.05,.012,10000); if(k===14) hit(t,.1,.02,3000); }}
 };
 const EVENTS=[['jump','Прыжок'],['coin','Монета'],['win','Победа'],['bounce','Батут'],['checkpoint','Чекпоинт'],['music','Музыка']];
 
@@ -2654,6 +2658,11 @@ const BTEXS=[
 ['snow','Снег',(g,w,h)=>{ g.fillStyle='#f2f6fb'; g.fillRect(0,0,w,h); const r=seeded(31); for(let i=0;i<300;i++){ g.fillStyle=r()>.5?'rgba(190,210,235,.55)':'rgba(255,255,255,.9)'; g.fillRect(r()*w,r()*h,2,2); } }],
 ['lava','Лавовый камень',(g,w,h)=>{ g.fillStyle='#2a1b19'; g.fillRect(0,0,w,h); const r=seeded(37); g.lineJoin='round'; for(const [c,lw] of [['rgba(255,110,30,.55)',5],['#ff8a2a',2.5],['#ffd27a',1]]){ g.strokeStyle=c; g.lineWidth=lw; const q=seeded(41); for(let i=0;i<9;i++){ let x=q()*w, y=q()*h; g.beginPath(); g.moveTo(x,y); for(let k=0;k<4;k++){ x+=(q()-.5)*40; y+=(q()-.3)*34; g.lineTo(x,y); } g.stroke(); } } }],
 ['hazard','Предупреждение',(g,w,h)=>{ g.fillStyle='#f2c230'; g.fillRect(0,0,w,h); g.fillStyle='#17181c'; for(let k=-4;k<8;k++){ g.beginPath(); g.moveTo(32*k,0); g.lineTo(32*k+16,0); g.lineTo(32*k+16-h,h); g.lineTo(32*k-h,h); g.closePath(); g.fill(); } }],
+['hull','Обшивка станции',(g,w,h)=>{ g.fillStyle='#c9d0da'; g.fillRect(0,0,w,h); for(let y=0;y<2;y++) for(let x=0;x<2;x++){ g.fillStyle=(x+y)%2?'#b4bcc8':'#d8dde6'; g.fillRect(x*64+2,y*64+2,60,60); g.strokeStyle='rgba(60,70,90,.55)'; g.lineWidth=2; g.strokeRect(x*64+2,y*64+2,60,60); g.fillStyle='#6b7488'; for(const [a,b] of [[8,8],[54,8],[8,54],[54,54]]){ g.beginPath(); g.arc(x*64+a,y*64+b,2.2,0,7); g.fill(); } } g.fillStyle='#35e0e6'; g.fillRect(0,62,w,4); }],
+['grid','Сетка корабля',(g,w,h)=>{ g.fillStyle='#161a2b'; g.fillRect(0,0,w,h); g.strokeStyle='#2f3b66'; g.lineWidth=2; for(let i=0;i<=8;i++){ g.beginPath(); g.moveTo(i*16,0); g.lineTo(i*16,h); g.moveTo(0,i*16); g.lineTo(w,i*16); g.stroke(); } g.strokeStyle='#7a8cff'; g.lineWidth=3; g.strokeRect(1.5,1.5,w-3,h-3); }],
+['crater','Лунный грунт',(g,w,h)=>{ g.fillStyle='#8d8f96'; g.fillRect(0,0,w,h); const r=seeded(41); for(let i=0;i<420;i++){ g.fillStyle=r()>.5?'rgba(255,255,255,.12)':'rgba(0,0,0,.14)'; g.fillRect(r()*w,r()*h,2,2); } for(let i=0;i<6;i++){ const x=r()*w,y=r()*h,q=8+r()*14; g.fillStyle='rgba(50,52,60,.5)'; g.beginPath(); g.arc(x,y,q,0,7); g.fill(); g.fillStyle='rgba(190,192,200,.55)'; g.beginPath(); g.arc(x-1.5,y-1.5,q-3,0,7); g.fill(); } }],
+['nebula','Туманность',(g,w,h)=>{ const r=seeded(43); g.fillStyle='#0b0820'; g.fillRect(0,0,w,h); for(const c of ['rgba(150,70,230,.35)','rgba(40,160,240,.3)','rgba(240,80,160,.25)']) for(let i=0;i<5;i++){ const x=r()*w,y=r()*h,q=22+r()*30,gr=g.createRadialGradient(x,y,0,x,y,q); gr.addColorStop(0,c); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,w,h); } for(let i=0;i<70;i++){ g.fillStyle='rgba(255,255,255,'+(.4+r()*.6)+')'; g.fillRect(r()*w,r()*h,r()>.9?2:1,r()>.9?2:1); } }],
+['solar','Солнечные панели',(g,w,h)=>{ g.fillStyle='#14306b'; g.fillRect(0,0,w,h); for(let y=0;y<4;y++) for(let x=0;x<4;x++){ const gr=g.createLinearGradient(x*32,y*32,x*32+32,y*32+32); gr.addColorStop(0,'#2a5bc4'); gr.addColorStop(1,'#16398a'); g.fillStyle=gr; g.fillRect(x*32+2,y*32+2,28,28); g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(x*32+2,y*32+2,28,2); } g.fillStyle='#c9d0da'; for(let i=0;i<=4;i++){ g.fillRect(i*32-1,0,2,h); g.fillRect(0,i*32-1,w,2); } }],
 ['neon','Неон',(g,w,h)=>{ g.fillStyle='#0f1220'; g.fillRect(0,0,w,h); g.fillStyle='rgba(53,224,230,.25)'; for(let i=0;i<4;i++){ g.fillRect(i*32-2,0,5,h); g.fillRect(0,i*32-2,w,5); } g.fillStyle='#35e0e6'; for(let i=0;i<4;i++){ g.fillRect(i*32-1,0,2,h); g.fillRect(0,i*32-1,w,2); } }]
 ];
 const BTEX_IDS=new Set(BTEXS.map(x=>x[0])), BTEXC={}, BTEXT={};
