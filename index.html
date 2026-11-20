@@ -599,11 +599,20 @@ addEventListener('appinstalled',()=>{ installEv=null; if(typeof Home!=='undefine
 if('serviceWorker' in navigator&&location.protocol==='https:') addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 const hideBoot=()=>{ const b=document.getElementById('boot'); if(!b||b._h) return; b._h=1; setTimeout(()=>{ b.classList.add('off'); setTimeout(()=>b.remove(),700); },Math.max(0,1000-performance.now())); };
 const banUntil=u=>u?(u<4e12?' (до '+new Date(u).toLocaleString('ru-RU')+')':' (навсегда)'):'';
+/* разблокировка звука: создаём/возобновляем AudioContext на любом жесте и при возврате на вкладку */
+(()=>{ const un=()=>{ try{ if(typeof Snd!=='undefined') Snd.init(); }catch(e){} };
+  ['pointerdown','touchend','keydown','click'].forEach(ev=>addEventListener(ev,un,{passive:true,capture:true}));
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) un(); }); })();
 const Api={tok:store.get('inblox.token',null),
   async call(method,path,body){
     let r,d=null;
-    try{ r=await fetch('/api/'+path,{method,headers:{'Content-Type':'application/json',...(this.tok?{Authorization:'Bearer '+this.tok}:{})},body:body===undefined?undefined:JSON.stringify(body)}); }
-    catch(e){ return {ok:false,net:true,status:0,d:{},error:'Нет связи с сервером'}; }
+    /* чтение (GET) переживает кратковременные обрывы связи: таймаут 20 c и одна повторная попытка */
+    for(let a=0;a<(method==='GET'?2:1);a++){
+      let ac=null,tm=null; try{ if(method==='GET'&&window.AbortController){ ac=new AbortController(); tm=setTimeout(()=>ac.abort(),20000); } }catch(e){}
+      try{ r=await fetch('/api/'+path,{method,signal:ac?ac.signal:undefined,headers:{'Content-Type':'application/json',...(this.tok?{Authorization:'Bearer '+this.tok}:{})},body:body===undefined?undefined:JSON.stringify(body)}); clearTimeout(tm); break; }
+      catch(e){ clearTimeout(tm); r=null; if(a===0&&method==='GET') await new Promise(q=>setTimeout(q,700)); }
+    }
+    if(!r) return {ok:false,net:true,status:0,d:{},error:'Нет связи с сервером'};
     try{ d=await r.json(); }catch(e){ d={}; }
     d=d||{};
     if(d.banned&&Acc.cur) Acc.kick(d.nameBan?'Ваш ник неприемлем'+(d.reason&&d.reason!=='Неприемлемый ник'?': '+d.reason:'')+'. Войдите, чтобы сменить ник':'Аккаунт заблокирован'+(d.reason?': '+d.reason:'')+banUntil(d.until));
@@ -3539,7 +3548,7 @@ const HomeBG={scene:null,cam:null,chars:[],t:0,
    СООБЩЕСТВО: каталог игр, лайки, чат — через сервер (Api)
    ============================================================ */
 const Net={
-  async list(){ const r=await Api.call('GET','pub'); return r.ok&&Array.isArray(r.d.items)?r.d.items:[]; },
+  async list(){ const r=await Api.call('GET','pub'); return r.ok&&Array.isArray(r.d.items)?r.d.items:null; },   /* null — не удалось загрузить: старый список не затирается */
   async get(id){
     const r=await Api.call('GET','pub/'+encodeURIComponent(id)); if(!r.ok) return null; const it=r.d.item;
     if(it&&Array.isArray(it.sounds)) it.sounds=(await Promise.all(it.sounds.map(async s=>{ if(s.data) return s; const q=await Api.call('GET','pub/'+encodeURIComponent(id)+'/sound/'+encodeURIComponent(s.id)); return q.ok&&q.d.data?{id:s.id,name:s.name,data:q.d.data}:null; }))).filter(Boolean);
@@ -3672,7 +3681,8 @@ const Home={
     $$('[data-del]',el).forEach(b=>b.onclick=()=>{ const id=b.dataset.del; if(this.confirm===id){ S.games=S.games.filter(g=>g.id!==id); saveGames(); this.confirm=null; toast('Игра удалена'); } else { this.confirm=id; setTimeout(()=>{ if(this.confirm===id){ this.confirm=null; if(Home.on) this.render(); } },2500); } this.render(); });
     $$('[data-pub]',el).forEach(b=>b.onclick=()=>{ const g=byId(b.dataset.pub); if(this.pub.some(e=>e.id===g.id&&Acc.cur&&e.authorId===Acc.cur.id)) this.openPage(g.id); else this.pubDialog(g); });
     $$('[data-sort]',el).forEach(b=>b.onclick=()=>{ this.sort=b.dataset.sort; $$('[data-sort]',el).forEach(x=>x.classList.toggle('on',x===b)); this.fillComm(); });
-    Net.list().then(l=>{ this.pub=l; if(Home.on) this.fillComm(); });
+    const loadPub=(again)=>Net.list().then(l=>{ if(l){ this.pub=l; } else if(!again){ setTimeout(()=>{ if(Home.on) loadPub(true); },4000); } if(Home.on) this.fillComm(); });
+    loadPub(false);
     $('#hImp').onclick=()=>$('#hFile').click();
     $('#hFile').onchange=e=>this.importFile(e.target.files[0]);
   },
@@ -3696,7 +3706,7 @@ const Home={
     $$('[data-pub]').forEach(b=>b.textContent=mine.has(b.dataset.pub)?'Страница':'Опубликовать');
   },
   async playPub(id){
-    if(this._pp) return; this._pp=1;
+    if(this._pp) return; this._pp=1; try{ Snd.init(); }catch(e){}
     const bs=$$('[data-cplay="'+id+'"],#gpPlay'); bs.forEach(b=>{ b.disabled=true; b.classList.add('busy'); }); toast('Загрузка игры…',1800);
     try{
       const e=await Net.get(id); if(!e){ toast('Игра не найдена'); return; }
